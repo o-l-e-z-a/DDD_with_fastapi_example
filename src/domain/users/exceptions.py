@@ -2,7 +2,6 @@ from src.domain.base.exceptions import DomainError
 
 
 class PhoneInvalidError(ValueError, DomainError):
-
     @property
     def title(self) -> str:
         return "Телефон не валидный"

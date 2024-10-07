@@ -2,11 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
-from src.domain.base.exceptions import (
-    CountNumberError,
-    IntegerError,
-    PositiveNumberError,
-)
+from src.domain.base.exceptions import CountNumberError, IntegerError, PositiveNumberError
 
 VT = TypeVar("VT", bound=Any)
 

@@ -1,0 +1,81 @@
+[tool.ruff]
+exclude = [
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".mypy_cache",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "venv",
+    "tests",
+    "migrations",
+    "settings.py",
+]
+
+line-length = 120
+show-fixes = true
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "C", "F", "N"]
+ignore = ["E402", "W605", "N801", "N818", 'C901']
+
+fixable = ["ALL"]
+unfixable = []
+
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+
+[tool.isort]
+profile = "black"
+lines_between_sections = 1
+lines_between_types = 1
+line_length = 120
+group_by_package = true
+py_version=311
+force_sort_within_sections = false
+skip = [
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".mypy_cache",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "build",
+    "dist",
+    "venv",
+    "deployment",
+    "migrations",
+    "settings.py",
+]
+
+
+[tool.mypy]
+ignore_missing_imports = true
+no_strict_optional = true
+no_warn_no_return = true
+disable_error_code = "attr-defined"
+allow_redefinition = true
+explicit_package_bases = true
+check_untyped_defs = true
