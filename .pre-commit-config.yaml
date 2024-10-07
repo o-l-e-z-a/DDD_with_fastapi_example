@@ -8,31 +8,27 @@ repos:
       - id: check-toml
       - id: detect-private-key
       - id: check-added-large-files
-      - id: requirements-txt-fixer
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
         args: ["--profile", "black", "--filter-files"]
-  - repo: https://github.com/psf/black
-    rev: 24.8.0
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.6.9
     hooks:
-      - id: black
-        exclude: ^.*\b(migrations)\b.*$
-  -   repo: https://github.com/PyCQA/flake8
-      rev: 7.1.1
-      hooks:
-        - id: flake8
-          additional_dependencies: [
-              'flake8-bugbear',
-              'flake8-import-order',
-              'flake8-builtins'
-          ]
+      # Run the linter.
+      - id: ruff
+        args: [ --fix ]
+      - id: ruff-format
+
   -   repo: https://github.com/pre-commit/mirrors-mypy
       rev: v1.11.2
       hooks:
           -   id: mypy
               exclude: ^tests/
+
   - repo: https://github.com/hadolint/hadolint
     rev: v2.12.0
     hooks:
