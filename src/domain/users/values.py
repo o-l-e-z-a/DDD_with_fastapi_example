@@ -2,19 +2,12 @@ import re
 
 from dataclasses import dataclass
 
+from src.domain.base.exceptions import NameEmptyError, NameTooLongError
 from src.domain.base.values import BaseValueObject
-from src.domain.users.exceptions import (
-    EmailInvalidError,
-    NameEmptyError,
-    NameInvalidError,
-    NameTooLongError,
-    PhoneInvalidError,
-)
+from src.domain.users.exceptions import EmailInvalidError, NameInvalidError, PhoneInvalidError
 
 MAX_HUMAN_NAME_LENGTH = 16
-MAX_NAME_LENGTH = 50
 NAME_REGEX = re.compile(r"^[а-яА-Яa-zA-Z]+$")
-SLOT_TIME_REGEX = re.compile(r"^(?:[01][0-9]|2?[0-3]):[0-5]\d$")
 RU_PHONE_NUMBER_REGEX = re.compile(r"(^8|7|\+7)((\d{10})|(\s\(\d{3}\)\s\d{3}\s\d{2}\s\d{2}))")
 EMAIL_REGEX = re.compile(
     r"^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9]"

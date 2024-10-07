@@ -2,9 +2,17 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
-from src.domain.base.exceptions import CountNumberError, IntegerError, PositiveNumberError
+from src.domain.base.exceptions import (
+    CountNumberError,
+    IntegerError,
+    NameEmptyError,
+    NameTooLongError,
+    PositiveNumberError,
+)
 
 VT = TypeVar("VT", bound=Any)
+
+MAX_NAME_LENGTH = 50
 
 
 @dataclass(frozen=True)
@@ -76,3 +84,14 @@ class CountNumber(BaseIntValueObject):
         super().validate()
         if self.value < 0:
             raise CountNumberError()
+
+
+@dataclass(frozen=True)
+class Name(BaseValueObject[str]):
+    value: str
+
+    def validate(self):
+        if len(self.value) > MAX_NAME_LENGTH:
+            raise NameTooLongError()
+        if not self.value:
+            raise NameEmptyError()

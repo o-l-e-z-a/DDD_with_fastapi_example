@@ -4,13 +4,6 @@ from datetime import date
 from src.domain.base.values import CountNumber
 from src.domain.users.values import Email, HumanName, Telephone
 
-START_HOUR = 10
-END_HOUR = 20
-SLOT_DELTA = 1
-MINIMUM_BALANCE = 200
-LESS_POINT_WARNINGS = "На балансе пользователя меньше баллов"
-MORE_POINT_WARNINGS = "На балансе пользователя больше баллов, уменьшили количество"
-
 
 @dataclass
 class User:
