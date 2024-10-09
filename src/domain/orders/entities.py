@@ -23,9 +23,9 @@ class Promotion:
 class Order:
     user: User
     slot: Slot
-    point_uses: CountNumber = CountNumber(0)
-    promotion_sale: CountNumber = CountNumber(0)
-    total_amount: PositiveIntNumber = PositiveIntNumber(0)
+    point_uses: CountNumber
+    promotion_sale: CountNumber
+    total_amount: PositiveIntNumber
     date_add: date = datetime.today()
 
 
