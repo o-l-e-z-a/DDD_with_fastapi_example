@@ -11,6 +11,7 @@ from src.domain.users.entities import User, UserPoint
 
 @dataclass
 class Promotion:
+    id: int = field(init=False)
     code: Name
     sale: PositiveIntNumber
     is_active: bool
@@ -21,6 +22,7 @@ class Promotion:
 
 @dataclass
 class Order:
+    id: int = field(init=False)
     user: User
     slot: Slot
     point_uses: CountNumber

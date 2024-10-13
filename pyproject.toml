@@ -79,3 +79,7 @@ disable_error_code = "attr-defined"
 allow_redefinition = true
 explicit_package_bases = true
 check_untyped_defs = true
+plugins = [
+    "pydantic.mypy",
+    "sqlalchemy.ext.mypy.plugin"
+]

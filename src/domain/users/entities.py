@@ -7,7 +7,7 @@ from src.domain.users.values import Email, HumanName, Telephone
 
 @dataclass
 class User:
-    # id: int
+    id: int = field(init=False)
     email: Email
     hashed_password: str = field(init=False, default="")
     first_name: HumanName
@@ -22,6 +22,6 @@ class User:
 
 @dataclass
 class UserPoint:
-    # id: int
+    id: int = field(init=False)
     user: User
     count: CountNumber = CountNumber(0)

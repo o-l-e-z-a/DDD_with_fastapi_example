@@ -1,0 +1,67 @@
+from pathlib import Path
+from typing import Literal
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from dotenv import find_dotenv, load_dotenv
+
+
+load_dotenv(find_dotenv(".env"))
+env_file = find_dotenv(".env")
+# env_file = Path(__file__).parent.parent.parent.parent / '.env'
+
+
+class Settings(BaseSettings):
+    MODE: Literal["DEV", "TEST", "PROD"]
+    # LOG_LEVEL: str
+
+    DB_HOST: str
+    DB_PORT: int
+    DB_USER: str
+    DB_PASS: str
+    DB_NAME: str
+
+    TEST_DB_HOST: str
+    TEST_DB_PORT: int
+    TEST_DB_USER: str
+    TEST_DB_PASS: str
+    TEST_DB_NAME: str
+
+    EMAIL_USER: str
+    EMAIL_HOST: str
+    EMAIL_PASSWORD: str
+    EMAIL_PORT: int
+
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    REFRESH_TOKEN_EXPIRE_DAYS: int
+
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_DB: int
+
+    @property
+    def DATABASE_URL(self):
+        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+    @property
+    def DATABASE_URL_SYNC(self):
+        return f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+    @property
+    def TEST_DATABASE_URL(self):
+        return f"postgresql+asyncpg://{self.TEST_DB_USER}:{self.TEST_DB_PASS}@{self.TEST_DB_HOST}:{self.TEST_DB_PORT}" \
+               f"/{self.TEST_DB_NAME}"
+
+    @property
+    def TEST_DATABASE_URL_SYNC(self):
+        return f"postgresql+psycopg://{self.TEST_DB_USER}:{self.TEST_DB_PASS}@{self.TEST_DB_HOST}:{self.TEST_DB_PORT}" \
+               f"/{self.TEST_DB_NAME}"
+
+    # model_config = SettingsConfigDict(env_file=".env.docker")
+    model_config = SettingsConfigDict(env_file=env_file)
+    # model_config = SettingsConfigDict()
+
+
+settings = Settings()

@@ -8,7 +8,7 @@ from src.domain.users.entities import User
 
 @dataclass
 class Inventory:
-    # id: int
+    id: int = field(init=False)
     name: Name
     unit: Name
     stock_count: CountNumber
@@ -16,14 +16,14 @@ class Inventory:
 
 @dataclass
 class Consumable:
-    #     id: int
+    id: int = field(init=False)
     inventory: Inventory
     count: PositiveIntNumber
 
 
 @dataclass
 class Service:
-    #     id: int
+    id: int = field(init=False)
     name: Name
     description: str
     price: PositiveIntNumber
@@ -32,7 +32,7 @@ class Service:
 
 @dataclass
 class Master:
-    #     id: int
+    id: int = field(init=False)
     description: str
     user: User
     services: list[Service] = field(default_factory=list)
@@ -40,7 +40,7 @@ class Master:
 
 @dataclass
 class Schedule:
-    #     id: int
+    id: int = field(init=False)
     day: date
     master: Master
     service: Service
@@ -48,7 +48,7 @@ class Schedule:
 
 @dataclass
 class Slot:
-    #     id: int
+    id: int = field(init=False)
     time_start: SlotTime
     schedule: Schedule
 
