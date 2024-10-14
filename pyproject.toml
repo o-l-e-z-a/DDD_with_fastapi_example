@@ -81,4 +81,5 @@ explicit_package_bases = true
 check_untyped_defs = true
 plugins = [
     "pydantic.mypy",
+#    "sqlalchemy.ext.mypy.plugin"
 ]
