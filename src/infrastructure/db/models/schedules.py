@@ -43,6 +43,7 @@ class Consumables(Base):
     inventory: Mapped["Inventory"] = relationship(back_populates="consumables")
     count: Mapped[int]
     services: Mapped[list["Service"]] = relationship(back_populates="consumables", secondary="consumable_to_inventory")
+
     __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
 
     # def __repr__(self):

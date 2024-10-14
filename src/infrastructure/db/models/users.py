@@ -5,6 +5,8 @@ from sqlalchemy import CheckConstraint, Date, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy_utils import EmailType
 
+from src.domain.users import entities
+from src.domain.users.values import Email, HumanName, Telephone
 from src.infrastructure.db.models.base import Base, created_at, int_pk, updated_at
 
 if TYPE_CHECKING:
@@ -31,6 +33,17 @@ class Users(Base):
     )
     points: Mapped[list["UserPoint"]] = relationship(back_populates="user")
 
+    def to_domain(self) -> entities.User:
+        user = entities.User(
+            email=Email(self.email),
+            first_name=HumanName(self.first_name),
+            last_name=HumanName(self.last_name),
+            telephone=Telephone(self.telephone),
+            date_birthday=self.date_birthday,
+        )
+        user.id = self.id
+        return user
+
     def __repr__(self):
         return f"User c id: {id}, email: {self.email}"
 
@@ -45,3 +58,11 @@ class UserPoint(Base):
     user: Mapped[Users] = relationship(back_populates="points")
 
     __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
+
+    def to_domain(self) -> entities.UserPoint:
+        user_point = entities.UserPoint(
+            count=self.count,
+            user=self.user,
+        )
+        user_point.id = self.id
+        return user_point
