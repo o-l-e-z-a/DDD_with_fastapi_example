@@ -2,16 +2,12 @@ from datetime import datetime
 from typing import Annotated
 
 from sqlalchemy import BigInteger, func
-from sqlalchemy.orm import DeclarativeBase, declared_attr, mapped_column
+from sqlalchemy.orm import DeclarativeBase, mapped_column
 
 
 class Base(DeclarativeBase):
     repr_cols_num = 3
     repr_cols: tuple = ()
-
-    @declared_attr
-    def __tablename__(self) -> str:
-        return self.__name__.lower()
 
     def __repr__(self):
         cols = []
