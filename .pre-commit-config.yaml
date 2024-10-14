@@ -20,7 +20,7 @@ repos:
         -   id: mypy
             exclude: ^tests/
             additional_dependencies: [
-#              pydantic-mypy,
+              pydantic==2.9.2,
 #              sqlalchemy-ext-mypy-plugin
             ]
 
