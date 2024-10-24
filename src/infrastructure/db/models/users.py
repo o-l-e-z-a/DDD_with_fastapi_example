@@ -1,16 +1,16 @@
 from datetime import date
-from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, Date, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy_utils import EmailType
 
+from src.domain.base.values import CountNumber
 from src.domain.users import entities
 from src.domain.users.values import Email, HumanName, Telephone
 from src.infrastructure.db.models.base import Base, created_at, int_pk, updated_at
 
-if TYPE_CHECKING:
-    from src.infrastructure.db.models.schedules import Master
+# if TYPE_CHECKING:
+from src.infrastructure.db.models.schedules import Master
 
 
 class Users(Base):
@@ -45,7 +45,7 @@ class Users(Base):
         return user
 
     def __repr__(self):
-        return f"User c id: {id}, email: {self.email}"
+        return f"User c id: {self.id}, email: {self.email}"
 
 
 class UserPoint(Base):
@@ -55,14 +55,14 @@ class UserPoint(Base):
     count: Mapped[int] = mapped_column(Integer, default=0)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
 
-    user: Mapped[Users] = relationship(back_populates="points")
+    user: Mapped["Users"] = relationship(back_populates="points")
 
     __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
 
     def to_domain(self) -> entities.UserPoint:
         user_point = entities.UserPoint(
-            count=self.count,
-            user=self.user,
+            count=CountNumber(self.count),
+            user=self.user.to_domain(),
         )
         user_point.id = self.id
         return user_point

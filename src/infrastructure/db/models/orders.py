@@ -6,12 +6,14 @@ from sqlalchemy import CheckConstraint, ForeignKey, String
 # from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.domain.base.values import CountNumber, Name, PositiveIntNumber
+from src.domain.orders import entities
 from src.infrastructure.db.models.base import Base, int_pk
-from src.infrastructure.db.models.schedules import Slot
-from src.infrastructure.db.models.users import Users
 
 if TYPE_CHECKING:
-    from src.infrastructure.db.models.schedules import Service
+    from src.infrastructure.db.models.schedules import Service, Slot
+    from src.infrastructure.db.models.users import Users
+
 
 POINT_AFTER_ORDER = 50
 
@@ -42,6 +44,18 @@ class Promotion(Base):
 
     __table_args__ = (CheckConstraint("sale > 0 AND sale < 100", name="check_sale_percent"),)
 
+    def to_domain(self) -> entities.Promotion:
+        promotion = entities.Promotion(
+            code=Name(self.code),
+            sale=PositiveIntNumber(self.sale),
+            is_active=self.is_active,
+            day_start=self.day_start,
+            day_end=self.day_end,
+            services={service.to_domain() for service in self.services},
+        )
+        promotion.id = self.id
+        return promotion
+
 
 class Order(Base):
     __tablename__ = "order"
@@ -64,6 +78,19 @@ class Order(Base):
         CheckConstraint("promotion_sale >= 0", name="check_promotion_sale_positive"),
         CheckConstraint("total_amount >= 0", name="check_total_amount_positive"),
     )
+
+    def to_domain(self) -> entities.Order:
+        order = entities.Order(
+            point_uses=CountNumber(self.point_uses),
+            promotion_sale=CountNumber(self.promotion_sale),
+            total_amount=PositiveIntNumber(self.total_amount),
+            user=self.user.to_domain(),
+            slot=self.slot.to_domain(),
+            date_add=self.date_add,
+        )
+        order.id = self.id
+        return order
+
     #
     # @hybrid_property
     # def photo_before_path(self):

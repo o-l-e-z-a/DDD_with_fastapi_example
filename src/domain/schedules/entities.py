@@ -27,7 +27,7 @@ class Service:
     name: Name
     description: str
     price: PositiveIntNumber
-    consumables: list[Consumable] = field(default_factory=list)
+    consumables: set[Consumable] = field(default_factory=set)
 
 
 @dataclass
@@ -35,7 +35,7 @@ class Master:
     id: int = field(init=False)
     description: str
     user: User
-    services: list[Service] = field(default_factory=list)
+    services: set[Service] = field(default_factory=set)
 
 
 @dataclass

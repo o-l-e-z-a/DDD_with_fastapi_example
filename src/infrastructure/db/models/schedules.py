@@ -4,10 +4,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import CheckConstraint, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.domain.base.values import CountNumber, Name, PositiveIntNumber
+from src.domain.schedules import entities
+from src.domain.schedules.values import SlotTime
 from src.infrastructure.db.models.base import Base, int_pk, str_255
+from src.infrastructure.db.models.orders import Order
 
 if TYPE_CHECKING:
-    from src.infrastructure.db.models import Order
     from src.infrastructure.db.models.users import Users
 
 
@@ -21,9 +24,16 @@ class Inventory(Base):
 
     consumables: Mapped[list["Consumables"]] = relationship(back_populates="inventory")
 
+    def to_domain(self) -> entities.Inventory:
+        inventory = entities.Inventory(
+            name=Name(self.name), unit=Name(self.unit), stock_count=CountNumber(self.stock_count)
+        )
+        inventory.id = self.id
+        return inventory
+
 
 class ConsumableToInventory(Base):
-    __tablename__ = "consumable_to_inventory"
+    __tablename__ = "consumable_to_service"
 
     consumable_id: Mapped[int] = mapped_column(
         ForeignKey("consumable.id", ondelete="CASCADE"),
@@ -42,12 +52,17 @@ class Consumables(Base):
     inventory_id: Mapped[int] = mapped_column(ForeignKey("inventory.id", ondelete="CASCADE"))
     inventory: Mapped["Inventory"] = relationship(back_populates="consumables")
     count: Mapped[int]
-    services: Mapped[list["Service"]] = relationship(back_populates="consumables", secondary="consumable_to_inventory")
+    services: Mapped[list["Service"]] = relationship(back_populates="consumables", secondary="consumable_to_service")
 
     __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
 
-    # def __repr__(self):
-    #     return f'{self.inventory.name}: {self.count}'
+    def to_domain(self) -> entities.Consumable:
+        consumable = entities.Consumable(
+            inventory=self.inventory.to_domain(),
+            count=PositiveIntNumber(self.count),
+        )
+        consumable.id = self.id
+        return consumable
 
 
 class Service(Base):
@@ -59,9 +74,7 @@ class Service(Base):
     price: Mapped[int]
     # photo = models.ImageField('Фото услуги', upload_to='service_photo/', blank=True, null=True)
 
-    consumables: Mapped[list["Consumables"]] = relationship(
-        back_populates="services", secondary="consumable_to_inventory"
-    )
+    consumables: Mapped[set["Consumables"]] = relationship(back_populates="services", secondary="consumable_to_service")
     masters: Mapped[list["Master"]] = relationship(
         back_populates="services",
         secondary="service_to_master",
@@ -71,6 +84,16 @@ class Service(Base):
     )
 
     __table_args__ = (CheckConstraint("price >= 0", name="check_count_positive"),)
+
+    def to_domain(self) -> entities.Service:
+        service = entities.Service(
+            name=Name(self.name),
+            description=self.description,
+            price=PositiveIntNumber(self.price),
+            consumables={consumable.to_domain() for consumable in self.consumables},
+        )
+        service.id = self.id
+        return service
 
     def __repr__(self):
         return f"{self.name} - {self.price}"
@@ -85,7 +108,7 @@ class Master(Base):
     # photo = models.ImageField('Фото мастера', upload_to='service_photo/', blank=True, null=True)
 
     user: Mapped["Users"] = relationship(back_populates="master")
-    services: Mapped[list["Service"]] = relationship(
+    services: Mapped[set["Service"]] = relationship(
         back_populates="masters",
         secondary="service_to_master",
     )
@@ -94,6 +117,15 @@ class Master(Base):
     )
 
     __table_args__ = (UniqueConstraint("user_id"),)
+
+    def to_domain(self) -> entities.Master:
+        master = entities.Master(
+            description=self.description,
+            user=self.user.to_domain(),
+            services={service.to_domain() for service in self.services},
+        )
+        master.id = self.id
+        return master
 
     # def __repr__(self):
     # return f'{self.user.last_name} {self.user.first_name} , {self.user.email}'
@@ -127,6 +159,15 @@ class Schedule(Base):
 
     __table_args__ = (UniqueConstraint("day", "master_id", "service_id"),)
 
+    def to_domain(self) -> entities.Schedule:
+        schedule = entities.Schedule(
+            master=self.master.to_domain(),
+            service=self.service.to_domain(),
+            day=self.day,
+        )
+        schedule.id = self.id
+        return schedule
+
 
 class Slot(Base):
     __tablename__ = "slot"
@@ -140,3 +181,11 @@ class Slot(Base):
     order: Mapped["Order"] = relationship(back_populates="slot")
 
     __table_args__ = (UniqueConstraint("schedule_id", "time_start"),)
+
+    def to_domain(self) -> entities.Slot:
+        slot = entities.Slot(
+            time_start=SlotTime(str(self.time_start)),
+            schedule=self.schedule.to_domain(),
+        )
+        slot.id = self.id
+        return slot

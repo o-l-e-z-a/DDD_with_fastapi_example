@@ -64,14 +64,14 @@ def shampoo_consumable(shampoo_inventory):
 @pytest.fixture()
 def henna_staining_service(henna_consumable, shampoo_consumable):
     return Service(
-        consumables=[henna_consumable, shampoo_consumable], name=Name('henna staining'),
+        consumables={henna_consumable, shampoo_consumable}, name=Name('henna staining'),
         description='includes shampooing and henna staining', price=PositiveIntNumber(1500)
     )
 
 
 @pytest.fixture()
 def henna_master(user_petrov, henna_staining_service):
-    return Master(user=user_petrov, services=[henna_staining_service], description='master of henna staining')
+    return Master(user=user_petrov, services={henna_staining_service}, description='master of henna staining')
 
 
 @pytest.fixture()
