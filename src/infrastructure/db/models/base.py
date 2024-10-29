@@ -1,11 +1,17 @@
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Generic, Self, TypeVar
 
 from sqlalchemy import BigInteger, func
 from sqlalchemy.orm import DeclarativeBase, mapped_column
 
+from src.domain.base.entities import BaseEntity
 
-class Base(DeclarativeBase):
+E = TypeVar("E", bound=BaseEntity)
+
+
+class Base(DeclarativeBase, Generic[E]):
     repr_cols_num = 3
     repr_cols: tuple = ()
 
@@ -15,6 +21,14 @@ class Base(DeclarativeBase):
             if col in self.repr_cols or idx < self.repr_cols_num:
                 cols.append(f"{col} = {getattr(self, col)}")
         return f'<{self.__class__.__name__} {", ".join(cols)}>'
+
+    @classmethod
+    def from_entity(cls, entity: E) -> Self: ...
+
+    def to_domain(self) -> BaseEntity: ...
+
+
+T = TypeVar("T", bound=Base)
 
 
 int_pk = Annotated[int, mapped_column(BigInteger, primary_key=True)]

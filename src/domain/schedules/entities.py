@@ -1,13 +1,14 @@
 from dataclasses import dataclass, field
 from datetime import date
 
+from src.domain.base.entities import BaseEntity
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.schedules.values import END_HOUR, SLOT_DELTA, START_HOUR, SlotTime
 from src.domain.users.entities import User
 
 
 @dataclass
-class Inventory:
+class Inventory(BaseEntity):
     id: int = field(init=False)
     name: Name
     unit: Name
@@ -15,14 +16,14 @@ class Inventory:
 
 
 @dataclass
-class Consumable:
+class Consumable(BaseEntity):
     id: int = field(init=False)
     inventory: Inventory
     count: PositiveIntNumber
 
 
 @dataclass
-class Service:
+class Service(BaseEntity):
     id: int = field(init=False)
     name: Name
     description: str
@@ -31,7 +32,7 @@ class Service:
 
 
 @dataclass
-class Master:
+class Master(BaseEntity):
     id: int = field(init=False)
     description: str
     user: User
@@ -39,7 +40,7 @@ class Master:
 
 
 @dataclass
-class Schedule:
+class Schedule(BaseEntity):
     id: int = field(init=False)
     day: date
     master: Master
@@ -47,7 +48,7 @@ class Schedule:
 
 
 @dataclass
-class Slot:
+class Slot(BaseEntity):
     id: int = field(init=False)
     time_start: SlotTime
     schedule: Schedule

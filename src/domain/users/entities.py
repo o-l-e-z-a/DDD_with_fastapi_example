@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
 from datetime import date
 
+from src.domain.base.entities import BaseEntity
 from src.domain.base.values import CountNumber
 from src.domain.users.values import Email, HumanName, Telephone
 
 
 @dataclass
-class User:
+class User(BaseEntity):
     id: int = field(init=False)
     email: Email
     hashed_password: str = field(init=False, default="")
@@ -21,7 +22,7 @@ class User:
 
 
 @dataclass
-class UserPoint:
+class UserPoint(BaseEntity):
     id: int = field(init=False)
     user: User
     count: CountNumber = CountNumber(0)

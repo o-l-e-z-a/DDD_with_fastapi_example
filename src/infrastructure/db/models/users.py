@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date
 
 from sqlalchemy import CheckConstraint, Date, ForeignKey, Integer
@@ -13,7 +15,7 @@ from src.infrastructure.db.models.base import Base, created_at, int_pk, updated_
 from src.infrastructure.db.models.schedules import Master
 
 
-class Users(Base):
+class Users(Base[entities.User]):
     __tablename__ = "users"
 
     id: Mapped[int_pk]
@@ -41,8 +43,21 @@ class Users(Base):
             telephone=Telephone(self.telephone),
             date_birthday=self.date_birthday,
         )
+        user.hashed_password = self.hashed_password
         user.id = self.id
         return user
+
+    @classmethod
+    def from_entity(cls, entity: entities.User) -> Users:
+        return cls(
+            id=entity.id,
+            email=entity.email.as_generic_type(),
+            hashed_password=entity.hashed_password,
+            first_name=entity.first_name.as_generic_type(),
+            last_name=entity.last_name.as_generic_type(),
+            telephone=entity.telephone.as_generic_type(),
+            date_birthday=entity.date_birthday,
+        )
 
     def __repr__(self):
         return f"User c id: {self.id}, email: {self.email}"

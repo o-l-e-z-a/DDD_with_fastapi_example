@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
+from src.domain.base.entities import BaseEntity
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders.values import LESS_POINT_WARNINGS, MINIMUM_BALANCE, MORE_POINT_WARNINGS
 from src.domain.schedules.entities import Schedule, Service, Slot, SlotsForSchedule
@@ -10,7 +11,7 @@ from src.domain.users.entities import User, UserPoint
 
 
 @dataclass
-class Promotion:
+class Promotion(BaseEntity):
     id: int = field(init=False)
     code: Name
     sale: PositiveIntNumber
@@ -21,7 +22,7 @@ class Promotion:
 
 
 @dataclass
-class Order:
+class Order(BaseEntity):
     id: int = field(init=False)
     user: User
     slot: Slot
@@ -32,7 +33,7 @@ class Order:
 
 
 @dataclass
-class TotalAmountResult:
+class TotalAmountResult(BaseEntity):
     total_amount: int
     point_uses: int
     promotion_sale: int
