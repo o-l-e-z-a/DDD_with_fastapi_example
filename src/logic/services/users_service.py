@@ -39,12 +39,12 @@ class UserService:
             user.hashed_password = password_hash
             await self.uow.users.add(entity=user)
             user_point = UserPoint(user=user)
-            await self.uow.user_point.add(entity=user_point)
+            await self.uow.user_points.add(entity=user_point)
             await self.uow.commit()
 
     async def get_user_point(self, user: User):
         async with self.uow:
-            user_point = await self.uow.user_point.find_one_or_none(user_id=user.id)
+            user_point = await self.uow.user_points.find_one_or_none(user_id=user.id)
         return user_point
 
     async def get_user_by_id(self, user_id: int):

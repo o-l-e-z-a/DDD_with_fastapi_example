@@ -74,7 +74,9 @@ class Service(Base):
     price: Mapped[int]
     # photo = models.ImageField('Фото услуги', upload_to='service_photo/', blank=True, null=True)
 
-    consumables: Mapped[set["Consumables"]] = relationship(back_populates="services", secondary="consumable_to_service")
+    consumables: Mapped[list["Consumables"]] = relationship(
+        back_populates="services", secondary="consumable_to_service"
+    )
     masters: Mapped[list["Master"]] = relationship(
         back_populates="services",
         secondary="service_to_master",
@@ -90,7 +92,7 @@ class Service(Base):
             name=Name(self.name),
             description=self.description,
             price=PositiveIntNumber(self.price),
-            consumables={consumable.to_domain() for consumable in self.consumables},
+            consumables=[consumable.to_domain() for consumable in self.consumables],
         )
         service.id = self.id
         return service
@@ -108,7 +110,7 @@ class Master(Base):
     # photo = models.ImageField('Фото мастера', upload_to='service_photo/', blank=True, null=True)
 
     user: Mapped["Users"] = relationship(back_populates="master")
-    services: Mapped[set["Service"]] = relationship(
+    services: Mapped[list["Service"]] = relationship(
         back_populates="masters",
         secondary="service_to_master",
     )
@@ -122,7 +124,7 @@ class Master(Base):
         master = entities.Master(
             description=self.description,
             user=self.user.to_domain(),
-            services={service.to_domain() for service in self.services},
+            services=[service.to_domain() for service in self.services],
         )
         master.id = self.id
         return master

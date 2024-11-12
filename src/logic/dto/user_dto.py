@@ -14,8 +14,8 @@ class UserCreateDTO(BaseDTO):
     first_name: str
     last_name: str
     telephone: PhoneNumber
-    date_birthday: date | None
     password: str
+    date_birthday: date | None = None
 
     @field_validator("password")
     @classmethod

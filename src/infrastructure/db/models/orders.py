@@ -51,7 +51,7 @@ class Promotion(Base):
             is_active=self.is_active,
             day_start=self.day_start,
             day_end=self.day_end,
-            services={service.to_domain() for service in self.services},
+            services=[service.to_domain() for service in self.services],
         )
         promotion.id = self.id
         return promotion

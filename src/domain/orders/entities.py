@@ -10,20 +10,20 @@ from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User, UserPoint
 
 
-@dataclass
+@dataclass()
 class Promotion(BaseEntity):
-    id: int = field(init=False)
+    id: int = field(init=False, hash=False)
     code: Name
     sale: PositiveIntNumber
     is_active: bool
     day_start: date
     day_end: date
-    services: set[Service] = field(default_factory=set)
+    services: list[Service] = field(default_factory=list)
 
 
-@dataclass
+@dataclass()
 class Order(BaseEntity):
-    id: int = field(init=False)
+    id: int = field(init=False, hash=False)
     user: User
     slot: Slot
     point_uses: CountNumber
@@ -32,7 +32,7 @@ class Order(BaseEntity):
     date_add: date = datetime.today()
 
 
-@dataclass
+@dataclass()
 class TotalAmountResult(BaseEntity):
     total_amount: int
     point_uses: int

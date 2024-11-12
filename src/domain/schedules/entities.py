@@ -7,49 +7,49 @@ from src.domain.schedules.values import END_HOUR, SLOT_DELTA, START_HOUR, SlotTi
 from src.domain.users.entities import User
 
 
-@dataclass
+@dataclass()
 class Inventory(BaseEntity):
-    id: int = field(init=False)
+    id: int = field(init=False, hash=False)
     name: Name
     unit: Name
     stock_count: CountNumber
 
 
-@dataclass
+@dataclass()
 class Consumable(BaseEntity):
-    id: int = field(init=False)
+    id: int = field(init=False, hash=False)
     inventory: Inventory
     count: PositiveIntNumber
 
 
-@dataclass
+@dataclass()
 class Service(BaseEntity):
-    id: int = field(init=False)
+    id: int = field(init=False, hash=False)
     name: Name
     description: str
     price: PositiveIntNumber
-    consumables: set[Consumable] = field(default_factory=set)
+    consumables: list[Consumable] = field(default_factory=list)
 
 
-@dataclass
+@dataclass()
 class Master(BaseEntity):
-    id: int = field(init=False)
+    id: int = field(init=False, hash=False)
     description: str
     user: User
-    services: set[Service] = field(default_factory=set)
+    services: list[Service] = field(default_factory=list)
 
 
-@dataclass
+@dataclass()
 class Schedule(BaseEntity):
-    id: int = field(init=False)
+    id: int = field(init=False, hash=False)
     day: date
     master: Master
     service: Service
 
 
-@dataclass
+@dataclass()
 class Slot(BaseEntity):
-    id: int = field(init=False)
+    id: int = field(init=False, hash=False)
     time_start: SlotTime
     schedule: Schedule
 
