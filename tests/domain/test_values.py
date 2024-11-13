@@ -6,6 +6,7 @@ import pytest
 
 from src.domain.base.exceptions import IntegerError, PositiveNumberError
 from src.domain.base.values import PositiveIntNumber
+from src.domain.users.values import Telephone
 
 
 @pytest.mark.parametrize('valid_number', [1, 100*100, 1000*1000])
@@ -66,3 +67,10 @@ def test_radd_positive_int_number_with_positive_int_number(int_number, operation
     res = operation(p, p2)
 
     assert res == operation(value, int_number)
+
+
+@pytest.mark.parametrize('valid_phone', ['+79003333333', '880005553535', '777777777777'])
+def test_telephone_valid(valid_phone):
+    positive_int_number = Telephone(valid_phone)
+
+    assert positive_int_number.value == valid_phone

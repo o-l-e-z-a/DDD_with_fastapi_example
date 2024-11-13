@@ -42,12 +42,12 @@ class UserService:
             await self.uow.user_points.add(entity=user_point)
             await self.uow.commit()
 
-    async def get_user_point(self, user: User):
+    async def get_user_point(self, user: User) -> UserPoint | None:
         async with self.uow:
             user_point = await self.uow.user_points.find_one_or_none(user_id=user.id)
         return user_point
 
-    async def get_user_by_id(self, user_id: int):
+    async def get_user_by_id(self, user_id: int) -> User | None:
         async with self.uow:
             user = await self.uow.users.find_one_or_none(id=user_id)
         return user

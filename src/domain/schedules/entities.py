@@ -9,7 +9,6 @@ from src.domain.users.entities import User
 
 @dataclass()
 class Inventory(BaseEntity):
-    id: int = field(init=False, hash=False)
     name: Name
     unit: Name
     stock_count: CountNumber
@@ -17,14 +16,12 @@ class Inventory(BaseEntity):
 
 @dataclass()
 class Consumable(BaseEntity):
-    id: int = field(init=False, hash=False)
     inventory: Inventory
     count: PositiveIntNumber
 
 
 @dataclass()
 class Service(BaseEntity):
-    id: int = field(init=False, hash=False)
     name: Name
     description: str
     price: PositiveIntNumber
@@ -33,7 +30,6 @@ class Service(BaseEntity):
 
 @dataclass()
 class Master(BaseEntity):
-    id: int = field(init=False, hash=False)
     description: str
     user: User
     services: list[Service] = field(default_factory=list)
@@ -41,7 +37,6 @@ class Master(BaseEntity):
 
 @dataclass()
 class Schedule(BaseEntity):
-    id: int = field(init=False, hash=False)
     day: date
     master: Master
     service: Service
@@ -49,7 +44,6 @@ class Schedule(BaseEntity):
 
 @dataclass()
 class Slot(BaseEntity):
-    id: int = field(init=False, hash=False)
     time_start: SlotTime
     schedule: Schedule
 

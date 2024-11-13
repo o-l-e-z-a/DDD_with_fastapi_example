@@ -12,7 +12,6 @@ from src.domain.users.entities import User, UserPoint
 
 @dataclass()
 class Promotion(BaseEntity):
-    id: int = field(init=False, hash=False)
     code: Name
     sale: PositiveIntNumber
     is_active: bool
@@ -23,7 +22,6 @@ class Promotion(BaseEntity):
 
 @dataclass()
 class Order(BaseEntity):
-    id: int = field(init=False, hash=False)
     user: User
     slot: Slot
     point_uses: CountNumber

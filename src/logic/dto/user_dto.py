@@ -4,7 +4,6 @@ from datetime import date
 
 from pydantic import EmailStr
 from pydantic.functional_validators import field_validator
-from pydantic_extra_types.phone_numbers import PhoneNumber
 
 from src.logic.dto.base_dto import BaseDTO
 
@@ -13,7 +12,7 @@ class UserCreateDTO(BaseDTO):
     email: EmailStr
     first_name: str
     last_name: str
-    telephone: PhoneNumber
+    telephone: str
     password: str
     date_birthday: date | None = None
 

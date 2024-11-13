@@ -8,7 +8,7 @@ from src.domain.users.exceptions import EmailInvalidError, NameInvalidError, Pho
 
 MAX_HUMAN_NAME_LENGTH = 16
 NAME_REGEX = re.compile(r"^[а-яА-Яa-zA-Z]+$")
-RU_PHONE_NUMBER_REGEX = re.compile(r"(^8|7|\+7)((\d{10})|(\s\(\d{3}\)\s\d{3}\s\d{2}\s\d{2}))")
+RU_PHONE_NUMBER_REGEX = re.compile(r"(^8|7|\+7)((\d{10,11})|(\s\(\d{3}\)\s\d{3}\s\d{2}\s\d{2}))")
 EMAIL_REGEX = re.compile(
     r"^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9]"
     r"(?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"

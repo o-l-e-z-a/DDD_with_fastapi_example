@@ -8,9 +8,8 @@ from src.domain.users.values import Email, HumanName, Telephone
 
 @dataclass()
 class User(BaseEntity):
-    id: int = field(init=False, hash=False)
     email: Email
-    hashed_password: str = field(init=False, default="")
+    hashed_password: str = field(init=False, default="", compare=False)
     first_name: HumanName
     last_name: HumanName
     telephone: Telephone
@@ -23,6 +22,5 @@ class User(BaseEntity):
 
 @dataclass()
 class UserPoint(BaseEntity):
-    id: int = field(init=False, hash=False)
     user: User
     count: CountNumber = CountNumber(0)

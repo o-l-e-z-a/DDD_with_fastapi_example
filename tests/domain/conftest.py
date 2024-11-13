@@ -14,83 +14,110 @@ TODAY = date(year=2024, month=7, day=8)
 
 @pytest.fixture()
 def promotion_20():
-    return Promotion(
+    promotion = Promotion(
         code=Name('sale_20'), day_start=TODAY, is_active=True,
         day_end=TODAY + timedelta(days=7), sale=PositiveIntNumber(20)
     )
+    return promotion
 
 
 @pytest.fixture()
 def user_ivanov():
-    return User(
+    user = User(
         email=Email('ivanov@mail.ru'), first_name=HumanName('Ivan'),
         last_name=HumanName('Ivanov'), telephone=Telephone('880005553535')
     )
+    user.id = 1
+    return user
 
 
 @pytest.fixture()
 def user_petrov():
-    return User(
+    user = User(
         email=Email('petrov@mail.ru'), first_name=HumanName('Petr'),
         last_name=HumanName('Petrov'), telephone=Telephone('880005553636')
     )
+    user.id = 2
+    return user
 
 
 @pytest.fixture()
 def ivanov_user_point(user_ivanov):
-    return UserPoint(user=user_ivanov, count=CountNumber(700))
+    user_point = UserPoint(user=user_ivanov, count=CountNumber(700))
+    user_point.id = 1
+    return user_point
 
 
 @pytest.fixture()
 def petrov_user_point(user_petrov):
-    return UserPoint(user=user_petrov, count=CountNumber(0))
+    user_point = UserPoint(user=user_petrov, count=CountNumber(0))
+    user_point.id = 2
+    return user_point
 
 
 @pytest.fixture()
 def henna_inventory():
-    return Inventory(name=Name('henna'), unit=Name('ml'), stock_count=CountNumber(1000))
+    inventory = Inventory(name=Name('henna'), unit=Name('ml'), stock_count=CountNumber(1000))
+    inventory.id = 1
+    return inventory
 
 
 @pytest.fixture()
 def henna_consumable(henna_inventory):
-    return Consumable(inventory=henna_inventory, count=PositiveIntNumber(5))
+    consumable = Consumable(inventory=henna_inventory, count=PositiveIntNumber(5))
+    consumable.id = 1
+    return consumable
 
 
 @pytest.fixture()
 def shampoo_inventory():
-    return Inventory(name=Name('shampoo'), unit=Name('ml'), stock_count=CountNumber(1000))
+    inventory = Inventory(name=Name('shampoo'), unit=Name('ml'), stock_count=CountNumber(1000))
+    inventory.id = 2
+    return inventory
 
 
 @pytest.fixture()
 def shampoo_consumable(shampoo_inventory):
-    return Consumable(inventory=shampoo_inventory, count=PositiveIntNumber(10))
+    consumable = Consumable(inventory=shampoo_inventory, count=PositiveIntNumber(10))
+    consumable.id = 2
+    return consumable
 
 
 @pytest.fixture()
 def henna_staining_service(henna_consumable, shampoo_consumable):
-    return Service(
+    service = Service(
         consumables=[henna_consumable, shampoo_consumable], name=Name('henna staining'),
         description='includes shampooing and henna staining', price=PositiveIntNumber(1500)
     )
+    service.id = 1
+    return service
 
 
 @pytest.fixture()
 def henna_master(user_petrov, henna_staining_service):
-    return Master(user=user_petrov, services=[henna_staining_service], description='master of henna staining')
+    master = Master(user=user_petrov, services=[henna_staining_service], description='master of henna staining')
+    master.id = 1
+    return master
 
 
 @pytest.fixture()
 def henna_staining_today_schedule(henna_staining_service, henna_master):
-    return Schedule(
+    schedule = Schedule(
         service=henna_staining_service, master=henna_master, day=TODAY
     )
+    schedule.id = 1
+    return schedule
 
 
 @pytest.fixture()
 def henna_staining_today_12_slot(henna_staining_today_schedule):
-    return Slot(schedule=henna_staining_today_schedule, time_start=SlotTime("12:00"))
+    slot = Slot(schedule=henna_staining_today_schedule, time_start=SlotTime("12:00"))
+    slot.id = 1
+    return slot
 
 
 @pytest.fixture()
 def henna_staining_today_14_slot(henna_staining_today_schedule):
-    return Slot(schedule=henna_staining_today_schedule, time_start=SlotTime("14:00"))
+    slot = Slot(schedule=henna_staining_today_schedule, time_start=SlotTime("14:00"))
+    slot.id = 2
+    return slot

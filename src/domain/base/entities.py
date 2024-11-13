@@ -1,6 +1,7 @@
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
-class BaseEntity(ABC): ...
+class BaseEntity(ABC):
+    id: int = field(init=False, hash=False, repr=False, compare=False)
