@@ -39,6 +39,7 @@ class FakeGenericSQLAlchemyRepository:
 
     async def add(self, entity: E) -> None:
         self.models.append(entity)
+        return entity
 
     async def update(self, entity: E) -> None:
         for model in self.models:
@@ -48,6 +49,7 @@ class FakeGenericSQLAlchemyRepository:
                 break
         else:
             raise IndexError
+        return entity
 
     async def delete(self, **filter_by) -> None:
         results = []

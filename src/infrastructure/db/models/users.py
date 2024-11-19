@@ -50,7 +50,7 @@ class Users(Base[entities.User]):
     @classmethod
     def from_entity(cls, entity: entities.User) -> Users:
         return cls(
-            id=entity.id,
+            id=getattr(entity, "id", None),
             email=entity.email.as_generic_type(),
             hashed_password=entity.hashed_password,
             first_name=entity.first_name.as_generic_type(),
@@ -63,7 +63,7 @@ class Users(Base[entities.User]):
         return f"User c id: {self.id}, email: {self.email}"
 
 
-class UserPoint(Base):
+class UserPoint(Base[entities.UserPoint]):
     __tablename__ = "user_point"
 
     id: Mapped[int_pk]

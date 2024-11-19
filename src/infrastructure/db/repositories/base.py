@@ -27,13 +27,17 @@ class GenericSQLAlchemyRepository(Generic[T, E], AbstractRepository):
         result = await self.session.execute(query)
         return [el.to_domain() for el in result.scalars().all()]
 
-    async def add(self, entity: E) -> None:
+    async def add(self, entity: E) -> E:
         model = self.model.from_entity(entity)
         self.session.add(model)
+        await self.session.flush()
+        return model.to_domain()
 
-    async def update(self, entity: E) -> None:
+    async def update(self, entity: E) -> E:
         model = self.model.from_entity(entity)
         await self.session.merge(model)
+        await self.session.flush()
+        return model.to_domain()
 
     async def delete(self, **filter_by) -> None:
         query = delete(self.model).filter_by(**filter_by)

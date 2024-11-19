@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from src.infrastructure.db.models.users import Users
 
 
-class Inventory(Base):
+class Inventory(Base[entities.Inventory]):
     __tablename__ = "inventory"
 
     id: Mapped[int_pk]

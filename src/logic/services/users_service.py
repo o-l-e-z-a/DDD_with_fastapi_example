@@ -21,7 +21,7 @@ class UserService:
     def __init__(self, uow: SQLAlchemyUsersUnitOfWork):
         self.uow = uow
 
-    async def add_user(self, user_data: UserCreateDTO):
+    async def add_user(self, user_data: UserCreateDTO) -> User:
         async with self.uow:
             existing_user = await self.uow.users.find_duplicate_user(
                 email=user_data.email, telephone=user_data.telephone
@@ -37,10 +37,11 @@ class UserService:
                 date_birthday=user_data.date_birthday,
             )
             user.hashed_password = password_hash
-            await self.uow.users.add(entity=user)
+            user_from_repo = await self.uow.users.add(entity=user)
             user_point = UserPoint(user=user)
             await self.uow.user_points.add(entity=user_point)
             await self.uow.commit()
+            return user_from_repo
 
     async def get_user_point(self, user: User) -> UserPoint | None:
         async with self.uow:

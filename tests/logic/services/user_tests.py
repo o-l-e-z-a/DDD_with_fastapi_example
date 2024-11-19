@@ -5,8 +5,9 @@ from src.presentation.api.exceptions import UserAlreadyExistsException
 
 class TestUserService:
     async def test_add_user_correct(self, user_service_with_data, new_user_dto, new_user_model, new_user_point_model):
-        await user_service_with_data.add_user(new_user_dto)
+        new_user = await user_service_with_data.add_user(new_user_dto)
 
+        assert new_user == new_user_model
         assert new_user_model in user_service_with_data.uow.users.models
         assert new_user_point_model in user_service_with_data.uow.user_points.models
         assert user_service_with_data.uow.committed
