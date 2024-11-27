@@ -41,12 +41,12 @@ class ServiceRepository(GenericSQLAlchemyRepository[Service, entities.Service]):
 class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
     model = Master
 
-    async def get_users_to_masters(self) -> Sequence[entities.User]:
+    async def get_users_to_masters(self) -> list[entities.User]:
         query = select(Users).where(~Users.master.has())
         result = await self.session.execute(query)
         return [el.to_domain() for el in result.scalars().all()]
 
-    async def find_all(self, **filter_by) -> Sequence[entities.Master]:
+    async def find_all(self, **filter_by) -> list[entities.Master]:
         query = (
             select(self.model)
             .options(joinedload(self.model.user))
@@ -119,7 +119,7 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
 class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule]):
     model = Schedule
 
-    async def find_all(self, **filter_by) -> Sequence[entities.Schedule]:
+    async def find_all(self, **filter_by) -> list[entities.Schedule]:
         query = (
             select(self.model)
             .options(joinedload(self.model.master).joinedload(Master.user))
@@ -156,7 +156,7 @@ class SlotRepository(GenericSQLAlchemyRepository[Slot, entities.Slot]):
         scalar = result.scalar_one_or_none()
         return scalar.to_domain() if scalar else None
 
-    async def find_all(self, **filter_by) -> Sequence[entities.Slot]:
+    async def find_all(self, **filter_by) -> list[entities.Slot]:
         query = select(self.model).join(Schedule).filter_by(**filter_by)
         result = await self.session.execute(query)
         return [el.to_domain() for el in result.scalars().all()]

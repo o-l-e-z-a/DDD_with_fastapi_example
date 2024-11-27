@@ -61,7 +61,7 @@ class FakeGenericSQLAlchemyRepository:
 
 
 class FakeUserRepository(FakeGenericSQLAlchemyRepository, UserRepository):
-    async def find_duplicate_user(self, email: str, telephone: str) -> Sequence[entities.User]:
+    async def find_duplicate_user(self, email: str, telephone: str) -> list[entities.User]:
         results = []
         for model in self.models:
             if to_generic_type(model.email) == email or to_generic_type(model.telephone) == telephone:

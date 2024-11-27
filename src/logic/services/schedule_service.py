@@ -1,12 +1,11 @@
+from datetime import date
 from typing import Sequence, Type
 
-from src.domain.base.values import BaseValueObject, CountNumber, Name  # , PositiveIntNumber
-from src.domain.schedules.entities import Inventory, Master, Service
+from src.domain.base.values import BaseValueObject, CountNumber, Name
+from src.domain.schedules.entities import Inventory, Master, Schedule, Service
 from src.domain.users.entities import User
-from src.logic.dto.user_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO
+from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
-
-# from src.domain.schedules.values import END_HOUR, SLOT_DELTA, START_HOUR, SlotTime
 
 
 class ProcedureService:
@@ -91,4 +90,41 @@ class MasterService:
         return masters
 
     async def get_master_report(self):
+        pass
+
+
+class ScheduleService:
+    def __init__(self, uow: SQLAlchemyScheduleUnitOfWork):
+        self.uow = uow
+
+    async def get_schedules(self) -> list[Schedule]:
+        async with self.uow:
+            schedules = await self.uow.schedules.find_all()
+        return schedules
+
+    async def add_schedule(self, schedule_data: ScheduleAddDTO) -> Schedule:
+        pass
+        # async with self.uow:
+        #     services = await self.uow.services.get_services_by_ids(master_data.services_id)
+        #     if not services:
+        #         raise Exception
+        #     user = await self.uow.users.find_one_or_none(id=master_data.user_id)
+        #     if not user:
+        #         raise Exception
+        #     master = Master(
+        #         description=master_data.description,
+        #         user=user,
+        #         services=services,
+        #     )
+        #     master_from_repo = await self.uow.masters.add(entity=master)
+        #     await self.uow.commit()
+        #     return master_from_repo
+
+    async def get_day_for_master(self, master_pk: int, service_pk: int):
+        pass
+
+    async def get_slot_for_day(self, schedule_pk: int):
+        pass
+
+    async def get_current_master_schedule(self, day: date, master: Master):
         pass

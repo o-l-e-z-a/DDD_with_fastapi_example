@@ -1,5 +1,3 @@
-from typing import Sequence
-
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
@@ -35,7 +33,7 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         scalar = result.scalar_one_or_none()
         return scalar.to_domain() if scalar else None
 
-    async def find_all(self, **filter_by) -> Sequence[entities.Order]:
+    async def find_all(self, **filter_by) -> list[entities.Order]:
         query = self.get_query_to_find_all(**filter_by)
         result = await self.session.execute(query)
         return [el.to_domain() for el in result.scalars().all()]

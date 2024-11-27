@@ -1,5 +1,3 @@
-from typing import Sequence
-
 from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload
 
@@ -11,7 +9,7 @@ from src.infrastructure.db.repositories.base import GenericSQLAlchemyRepository
 class UserRepository(GenericSQLAlchemyRepository[Users, entities.User]):
     model = Users
 
-    async def find_duplicate_user(self, email: str, telephone: str) -> Sequence[entities.User]:
+    async def find_duplicate_user(self, email: str, telephone: str) -> list[entities.User]:
         query = select(self.model).where(or_(self.model.email == email, self.model.telephone == telephone))
         result = await self.session.execute(query)
         return [el.to_domain() for el in result.scalars().all()]
