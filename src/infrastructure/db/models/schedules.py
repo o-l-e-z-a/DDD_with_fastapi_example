@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date, time
 from typing import TYPE_CHECKING
 
@@ -24,12 +26,21 @@ class Inventory(Base[entities.Inventory]):
 
     consumables: Mapped[list["Consumables"]] = relationship(back_populates="inventory")
 
-    def to_domain(self) -> entities.Inventory:
+    def to_domain(self, with_join: bool = False) -> entities.Inventory:
         inventory = entities.Inventory(
             name=Name(self.name), unit=Name(self.unit), stock_count=CountNumber(self.stock_count)
         )
         inventory.id = self.id
         return inventory
+
+    @classmethod
+    def from_entity(cls, entity: entities.Inventory) -> Inventory:
+        return cls(
+            id=getattr(entity, "id", None),
+            name=entity.name.as_generic_type(),
+            unit=entity.unit.as_generic_type(),
+            stock_count=entity.stock_count.as_generic_type(),
+        )
 
 
 class ConsumableToInventory(Base):
@@ -56,7 +67,7 @@ class Consumables(Base):
 
     __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
 
-    def to_domain(self) -> entities.Consumable:
+    def to_domain(self, with_join: bool = False) -> entities.Consumable:
         consumable = entities.Consumable(
             inventory=self.inventory.to_domain(),
             count=PositiveIntNumber(self.count),
@@ -87,12 +98,13 @@ class Service(Base):
 
     __table_args__ = (CheckConstraint("price >= 0", name="check_count_positive"),)
 
-    def to_domain(self) -> entities.Service:
+    def to_domain(self, with_join: bool = False) -> entities.Service:
+        consumables = [consumable.to_domain() for consumable in self.consumables] if with_join else []
         service = entities.Service(
             name=Name(self.name),
             description=self.description,
             price=PositiveIntNumber(self.price),
-            consumables=[consumable.to_domain() for consumable in self.consumables],
+            consumables=consumables,
         )
         service.id = self.id
         return service
@@ -120,7 +132,7 @@ class Master(Base):
 
     __table_args__ = (UniqueConstraint("user_id"),)
 
-    def to_domain(self) -> entities.Master:
+    def to_domain(self, with_join: bool = False) -> entities.Master:
         master = entities.Master(
             description=self.description,
             user=self.user.to_domain(),
@@ -161,7 +173,7 @@ class Schedule(Base):
 
     __table_args__ = (UniqueConstraint("day", "master_id", "service_id"),)
 
-    def to_domain(self) -> entities.Schedule:
+    def to_domain(self, with_join: bool = False) -> entities.Schedule:
         schedule = entities.Schedule(
             master=self.master.to_domain(),
             service=self.service.to_domain(),
@@ -184,7 +196,7 @@ class Slot(Base):
 
     __table_args__ = (UniqueConstraint("schedule_id", "time_start"),)
 
-    def to_domain(self) -> entities.Slot:
+    def to_domain(self, with_join: bool = False) -> entities.Slot:
         slot = entities.Slot(
             time_start=SlotTime(str(self.time_start)),
             schedule=self.schedule.to_domain(),

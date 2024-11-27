@@ -35,7 +35,7 @@ class Users(Base[entities.User]):
     )
     points: Mapped[list["UserPoint"]] = relationship(back_populates="user")
 
-    def to_domain(self) -> entities.User:
+    def to_domain(self, with_join: bool = False) -> entities.User:
         user = entities.User(
             email=Email(self.email),
             first_name=HumanName(self.first_name),
@@ -74,7 +74,7 @@ class UserPoint(Base[entities.UserPoint]):
 
     __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
 
-    def to_domain(self) -> entities.UserPoint:
+    def to_domain(self, with_join: bool = False) -> entities.UserPoint:
         user_point = entities.UserPoint(
             count=CountNumber(self.count),
             user=self.user.to_domain(),

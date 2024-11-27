@@ -1,14 +1,94 @@
-from typing import Sequence
+from typing import Sequence, Type
 
-from src.domain.schedules.entities import Service
+from src.domain.base.values import BaseValueObject, CountNumber, Name  # , PositiveIntNumber
+from src.domain.schedules.entities import Inventory, Master, Service
+from src.domain.users.entities import User
+from src.logic.dto.user_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 
+# from src.domain.schedules.values import END_HOUR, SLOT_DELTA, START_HOUR, SlotTime
 
-class ScheduleService:
+
+class ProcedureService:
     def __init__(self, uow: SQLAlchemyScheduleUnitOfWork):
         self.uow = uow
 
     async def get_services(self) -> Sequence[Service]:
         async with self.uow:
-            user_point = await self.uow.services.find_all()
-        return user_point
+            services = await self.uow.services.find_all()
+        return services
+
+    async def get_inventories(self) -> Sequence[Inventory]:
+        async with self.uow:
+            inventories = await self.uow.inventories.find_all()
+        return inventories
+
+    async def add_inventory(self, inventory_data: InventoryAddDTO) -> Inventory:
+        async with self.uow:
+            inventory = Inventory(
+                name=Name(inventory_data.name),
+                stock_count=CountNumber(inventory_data.stock_count),
+                unit=Name(inventory_data.unit),
+            )
+            inventory_from_repo = await self.uow.inventories.add(entity=inventory)
+            await self.uow.commit()
+            return inventory_from_repo
+
+    async def update_inventory(self, inventory_data: InventoryUpdateDTO, inventory_id: int) -> Inventory:
+        async with self.uow:
+            key_mapper: dict[str, Type[BaseValueObject]] = {
+                "name": Name,
+                "unit": CountNumber,
+                "stock_count": Name,
+            }
+            inventory = await self.uow.inventories.find_one_or_none(id=inventory_id)
+            for k, v in inventory_data.model_dump(exclude_none=True).items():
+                setattr(inventory, k, key_mapper.get(k)(value=v))
+            inventory_from_repo = await self.uow.inventories.update(entity=inventory)
+            await self.uow.commit()
+            return inventory_from_repo
+
+    async def delete_inventory(self, inventory_id: int):
+        async with self.uow:
+            await self.uow.inventories.find_one_or_none(id=inventory_id)
+            await self.uow.commit()
+
+
+class MasterService:
+    def __init__(self, uow: SQLAlchemyScheduleUnitOfWork):
+        self.uow = uow
+
+    async def get_all_masters(self) -> Sequence[Master]:
+        async with self.uow:
+            masters = await self.uow.masters.find_all()
+        return masters
+
+    async def get_all_user_to_add_masters(self) -> Sequence[User]:
+        async with self.uow:
+            users = await self.uow.masters.get_users_to_masters()
+        return users
+
+    async def add_master(self, master_data: MasterAddDTO) -> Master:
+        async with self.uow:
+            services = await self.uow.services.get_services_by_ids(master_data.services_id)
+            if not services:
+                raise Exception
+            user = await self.uow.users.find_one_or_none(id=master_data.user_id)
+            if not user:
+                raise Exception
+            master = Master(
+                description=master_data.description,
+                user=user,
+                services=services,
+            )
+            master_from_repo = await self.uow.masters.add(entity=master)
+            await self.uow.commit()
+            return master_from_repo
+
+    async def get_masters_for_service(self, service_pk: int) -> list[Master]:
+        async with self.uow:
+            masters = await self.uow.masters.filter_by_service(service_pk=service_pk)
+        return masters
+
+    async def get_master_report(self):
+        pass

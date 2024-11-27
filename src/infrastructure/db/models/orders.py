@@ -44,7 +44,7 @@ class Promotion(Base):
 
     __table_args__ = (CheckConstraint("sale > 0 AND sale < 100", name="check_sale_percent"),)
 
-    def to_domain(self) -> entities.Promotion:
+    def to_domain(self, with_join: bool = False) -> entities.Promotion:
         promotion = entities.Promotion(
             code=Name(self.code),
             sale=PositiveIntNumber(self.sale),
@@ -79,7 +79,7 @@ class Order(Base):
         CheckConstraint("total_amount >= 0", name="check_total_amount_positive"),
     )
 
-    def to_domain(self) -> entities.Order:
+    def to_domain(self, with_join: bool = False) -> entities.Order:
         order = entities.Order(
             point_uses=CountNumber(self.point_uses),
             promotion_sale=CountNumber(self.promotion_sale),

@@ -22,7 +22,7 @@ class ConsumablesRepository(GenericSQLAlchemyRepository[Consumables, entities.Co
 class ServiceRepository(GenericSQLAlchemyRepository[Service, entities.Service]):
     model = Service
 
-    async def get_services_by_ids(self, ids: list[int]) -> Sequence[entities.Service]:
+    async def get_services_by_ids(self, ids: list[int]) -> list[entities.Service]:
         query = select(self.model).where(self.model.id.in_(ids))
         result = await self.session.execute(query)
         return [el.to_domain() for el in result.scalars().all()]
@@ -74,7 +74,7 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
         scalar = result.scalar_one_or_none()
         return scalar.to_domain() if scalar else None
 
-    async def filter_by_service(self, service_pk: int) -> Sequence[entities.Master]:
+    async def filter_by_service(self, service_pk: int) -> list[entities.Master]:
         query = (
             select(self.model)
             .options(joinedload(self.model.user))

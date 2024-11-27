@@ -2,7 +2,7 @@ import re
 
 from datetime import date
 
-from pydantic import EmailStr
+from pydantic import EmailStr, PositiveInt
 from pydantic.functional_validators import field_validator
 
 from src.logic.dto.base_dto import BaseDTO
@@ -25,9 +25,23 @@ class UserCreateDTO(BaseDTO):
         return password
 
 
-class AllUserDTO(BaseDTO):
+class InventoryAddDTO(BaseDTO):
+    name: str
+    unit: str
+    stock_count: PositiveInt
+
+
+class InventoryUpdateDTO(BaseDTO):
+    name: str | None = None
+    unit: str | None = None
+    stock_count: PositiveInt | None = None
+
+
+class InventoryDTO(InventoryAddDTO):
     id: int
-    email: EmailStr
-    first_name: str
-    last_name: str
-    telephone: str
+
+
+class MasterAddDTO(BaseDTO):
+    description: str
+    user_id: int
+    services_id: list[int]
