@@ -1,5 +1,4 @@
 from datetime import date
-from typing import Sequence
 
 from sqlalchemy import extract, func, select
 from sqlalchemy.orm import joinedload, selectinload
@@ -140,7 +139,7 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         scalar = result.scalar_one_or_none()
         return scalar.to_domain() if scalar else None
 
-    async def get_day_for_master(self, **filter_by) -> Sequence[date]:
+    async def get_day_for_master(self, **filter_by) -> list[date]:
         query = select(self.model.day.distinct()).filter_by(**filter_by)
         execute_result = await self.session.execute(query)
         result = execute_result.scalars().all()

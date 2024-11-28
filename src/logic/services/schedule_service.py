@@ -2,7 +2,8 @@ from datetime import date
 from typing import Sequence, Type
 
 from src.domain.base.values import BaseValueObject, CountNumber, Name
-from src.domain.schedules.entities import Inventory, Master, Schedule, Service
+from src.domain.schedules.entities import Inventory, Master, Schedule, Service, Slot, SlotsForSchedule
+from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
@@ -104,27 +105,36 @@ class ScheduleService:
 
     async def add_schedule(self, schedule_data: ScheduleAddDTO) -> Schedule:
         pass
-        # async with self.uow:
-        #     services = await self.uow.services.get_services_by_ids(master_data.services_id)
-        #     if not services:
-        #         raise Exception
-        #     user = await self.uow.users.find_one_or_none(id=master_data.user_id)
-        #     if not user:
-        #         raise Exception
-        #     master = Master(
-        #         description=master_data.description,
-        #         user=user,
-        #         services=services,
-        #     )
-        #     master_from_repo = await self.uow.masters.add(entity=master)
-        #     await self.uow.commit()
-        #     return master_from_repo
+        async with self.uow:
+            service = await self.uow.services.find_one_or_none(id=schedule_data.service_id)
+            if not service:
+                raise Exception
+            master = await self.uow.masters.find_one_or_none(id=schedule_data.master_id)
+            if not master:
+                raise Exception
+            schedule = Schedule(day=schedule_data.day, service=service, master=master)
+            schedule_from_repo = await self.uow.schedules.add(entity=schedule)
+            await self.uow.commit()
+            return schedule_from_repo
 
-    async def get_day_for_master(self, master_pk: int, service_pk: int):
-        pass
+    async def get_master_days(self, master_id: int) -> list[date]:
+        async with self.uow:
+            days = await self.uow.schedules.get_day_for_master(master_id=master_id)
+        return days
 
-    async def get_slot_for_day(self, schedule_pk: int):
-        pass
+    async def get_day_for_master(self, master_id: int, service_id: int) -> list[date]:
+        async with self.uow:
+            days = await self.uow.schedules.get_day_for_master(master_id=master_id, service_id=service_id)
+        return days
 
-    async def get_current_master_schedule(self, day: date, master: Master):
-        pass
+    async def get_slot_for_day(self, schedule_id: int) -> list[SlotTime]:
+        async with self.uow:
+            schedule = await self.uow.schedules.find_one_or_none(id=schedule_id)
+            occupied_slots = await self.uow.slots.find_all(day=schedule.day)
+        free_slots = SlotsForSchedule().get_free_slots(occupied_slots=occupied_slots)
+        return free_slots
+
+    async def get_current_master_slots(self, day: date, master_id: int) -> list[Slot]:
+        async with self.uow:
+            slots = await self.uow.slots.find_all(day=day, master_id=master_id)
+        return slots
