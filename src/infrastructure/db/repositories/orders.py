@@ -2,7 +2,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
 from src.domain.orders import entities
-from src.infrastructure.db.models.orders import Order
+from src.infrastructure.db.models.orders import Order, Promotion
 from src.infrastructure.db.models.schedules import Master, Schedule, Service, Slot
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyRepository
 
@@ -78,3 +78,7 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         await self.session.commit()
         await self.session.refresh(order)
         return order
+
+
+class PromotionRepository(GenericSQLAlchemyRepository[Order, entities.Promotion]):
+    model = Promotion
