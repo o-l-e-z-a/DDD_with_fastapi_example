@@ -109,6 +109,15 @@ class Service(Base):
         service.id = self.id
         return service
 
+    @classmethod
+    def from_entity(cls, entity: entities.Service) -> Service:
+        return cls(
+            id=getattr(entity, "id", None),
+            name=entity.name.as_generic_type(),
+            description=entity.description,
+            price=entity.price.as_generic_type(),
+        )
+
     def __repr__(self):
         return f"{self.name} - {self.price}"
 
@@ -140,6 +149,14 @@ class Master(Base):
         )
         master.id = self.id
         return master
+
+    @classmethod
+    def from_entity(cls, entity: entities.Master) -> Master:
+        return cls(
+            id=getattr(entity, "id", None),
+            description=entity.description,
+            user_id=entity.user.id
+        )
 
     # def __repr__(self):
     # return f'{self.user.last_name} {self.user.first_name} , {self.user.email}'

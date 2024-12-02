@@ -38,7 +38,7 @@ class UserService:
             )
             user.hashed_password = password_hash
             user_from_repo = await self.uow.users.add(entity=user)
-            user_point = UserPoint(user=user)
+            user_point = UserPoint(user=user_from_repo)
             await self.uow.user_points.add(entity=user_point)
             await self.uow.commit()
             return user_from_repo

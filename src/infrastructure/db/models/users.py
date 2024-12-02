@@ -75,9 +75,18 @@ class UserPoint(Base[entities.UserPoint]):
     __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
 
     def to_domain(self, with_join: bool = False) -> entities.UserPoint:
+        user = self.user.to_domain(with_join=with_join) if with_join else None
         user_point = entities.UserPoint(
             count=CountNumber(self.count),
-            user=self.user.to_domain(),
+            user=user,
         )
         user_point.id = self.id
         return user_point
+
+    @classmethod
+    def from_entity(cls, entity: entities.UserPoint) -> UserPoint:
+        return cls(
+            id=getattr(entity, "id", None),
+            count=entity.count.as_generic_type(),
+            user_id=entity.user.id
+        )

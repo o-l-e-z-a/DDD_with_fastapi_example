@@ -40,6 +40,15 @@ class ServiceRepository(GenericSQLAlchemyRepository[Service, entities.Service]):
 class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
     model = Master
 
+    async def add(self, entity: entities.Master) -> entities.Master:
+        model = self.model.from_entity(entity)
+        services = [Service.from_entity(service) for service in entity.services]
+        model.user = await self.session.merge(Users.from_entity(entity.user))
+        model.services = [await self.session.merge(service) for service in services]
+        self.session.add(model)
+        await self.session.flush()
+        return model.to_domain()
+
     async def get_users_to_masters(self) -> list[entities.User]:
         query = select(Users).where(~Users.master.has())
         result = await self.session.execute(query)
