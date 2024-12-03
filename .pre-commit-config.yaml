@@ -18,7 +18,12 @@ repos:
     rev: v1.11.2
     hooks:
         -   id: mypy
-            exclude: ^tests/
+            exclude: |
+              (?x)(
+                ^tests/|
+                tesT1.py|
+                tesT2.py
+              )
             additional_dependencies: [
               pydantic==2.9.2,
 #              sqlalchemy-ext-mypy-plugin
@@ -26,10 +31,17 @@ repos:
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.9
+    exclude: |
+      (?x)(
+          ^tests/|
+          tesT1.py|
+          tesT2.py
+      )
     hooks:
       - id: ruff
         args: [ --fix ]
       - id: ruff-format
+
 
 
   - repo: https://github.com/hadolint/hadolint
