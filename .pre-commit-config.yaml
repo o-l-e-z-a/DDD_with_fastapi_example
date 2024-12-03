@@ -31,16 +31,22 @@ repos:
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.9
-    exclude: |
-      (?x)(
-          ^tests/|
-          tesT1.py|
-          tesT2.py
-      )
     hooks:
       - id: ruff
         args: [ --fix ]
+        exclude: |
+          (?x)(
+              ^tests/|
+              tesT1.py|
+              tesT2.py
+          )
       - id: ruff-format
+        exclude: |
+          (?x)(
+              ^tests/|
+              tesT1.py|
+              tesT2.py
+          )
 
 
 
