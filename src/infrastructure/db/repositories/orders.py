@@ -31,12 +31,12 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         query = self.get_query_to_find_all(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain() if scalar else None
+        return scalar.to_domain(with_join=True) if scalar else None
 
     async def find_all(self, **filter_by) -> list[entities.Order]:
         query = self.get_query_to_find_all(**filter_by)
         result = await self.session.execute(query)
-        return [el.to_domain() for el in result.scalars().all()]
+        return [el.to_domain(with_join=True) for el in result.scalars().all()]
 
     # def find_order_by_day(self, day):
     #     user_2 = aliased(Users)
@@ -72,12 +72,11 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         )
         return query
 
-    async def update_photo(self, order: Order, photo_after=None, photo_before=None):
-        order.photo_before = photo_before
-        order.photo_after = photo_after
-        await self.session.commit()
-        await self.session.refresh(order)
-        return order
+    # async def update_photo(self, order: Order, photo_after=None, photo_before=None):
+    #     order.photo_before = photo_before
+    #     order.photo_after = photo_after
+    #     await self.session.refresh(order)
+    #     return order
 
 
 class PromotionRepository(GenericSQLAlchemyRepository[Order, entities.Promotion]):

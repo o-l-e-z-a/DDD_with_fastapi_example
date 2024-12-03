@@ -142,10 +142,12 @@ class Master(Base):
     __table_args__ = (UniqueConstraint("user_id"),)
 
     def to_domain(self, with_join: bool = False) -> entities.Master:
+        services = [service.to_domain() for service in self.services] if with_join else []
+        user = self.user.to_domain() if with_join else None
         master = entities.Master(
             description=self.description,
-            user=self.user.to_domain(),
-            services=[service.to_domain() for service in self.services],
+            user=user,
+            services=services,
         )
         master.id = self.id
         return master
@@ -191,13 +193,24 @@ class Schedule(Base):
     __table_args__ = (UniqueConstraint("day", "master_id", "service_id"),)
 
     def to_domain(self, with_join: bool = False) -> entities.Schedule:
+        master = self.master.to_domain() if with_join else None
+        service = self.service.to_domain() if with_join else None
         schedule = entities.Schedule(
-            master=self.master.to_domain(),
-            service=self.service.to_domain(),
+            master=master,
+            service=service,
             day=self.day,
         )
         schedule.id = self.id
         return schedule
+
+    @classmethod
+    def from_entity(cls, entity: entities.Schedule) -> Schedule:
+        return cls(
+            id=getattr(entity, "id", None),
+            day=entity.day,
+            master_id=entity.master.id,
+            service_id=entity.service.id
+        )
 
 
 class Slot(Base):
@@ -214,9 +227,18 @@ class Slot(Base):
     __table_args__ = (UniqueConstraint("schedule_id", "time_start"),)
 
     def to_domain(self, with_join: bool = False) -> entities.Slot:
+        schedule = self.schedule.to_domain() if with_join else None
         slot = entities.Slot(
-            time_start=SlotTime(str(self.time_start)),
-            schedule=self.schedule.to_domain(),
+            time_start=SlotTime(str(self.time_start.strftime("%H:%M"))),
+            schedule=schedule,
         )
         slot.id = self.id
         return slot
+
+    @classmethod
+    def from_entity(cls, entity: entities.Slot) -> Slot:
+        return cls(
+            id=getattr(entity, "id", None),
+            time_start=time.fromisoformat(entity.time_start.as_generic_type()),
+            schedule_id=entity.schedule.id,
+        )

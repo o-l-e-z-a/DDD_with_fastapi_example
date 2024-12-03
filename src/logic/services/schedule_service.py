@@ -50,7 +50,7 @@ class ProcedureService:
 
     async def delete_inventory(self, inventory_id: int):
         async with self.uow:
-            await self.uow.inventories.find_one_or_none(id=inventory_id)
+            await self.uow.inventories.delete(id=inventory_id)
             await self.uow.commit()
 
 
@@ -83,7 +83,8 @@ class MasterService:
             )
             master_from_repo = await self.uow.masters.add(entity=master)
             await self.uow.commit()
-            return master_from_repo
+            return await self.uow.masters.find_one_or_none(id=master_from_repo.id)
+            # return master_from_repo
 
     async def get_masters_for_service(self, service_pk: int) -> list[Master]:
         async with self.uow:
@@ -104,7 +105,6 @@ class ScheduleService:
         return schedules
 
     async def add_schedule(self, schedule_data: ScheduleAddDTO) -> Schedule:
-        pass
         async with self.uow:
             service = await self.uow.services.find_one_or_none(id=schedule_data.service_id)
             if not service:
@@ -115,7 +115,7 @@ class ScheduleService:
             schedule = Schedule(day=schedule_data.day, service=service, master=master)
             schedule_from_repo = await self.uow.schedules.add(entity=schedule)
             await self.uow.commit()
-            return schedule_from_repo
+            return await self.uow.schedules.find_one_or_none(id=schedule_from_repo.id)
 
     async def get_master_days(self, master_id: int) -> list[date]:
         async with self.uow:

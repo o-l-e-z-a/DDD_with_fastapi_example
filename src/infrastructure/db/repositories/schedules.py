@@ -43,7 +43,7 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
     async def add(self, entity: entities.Master) -> entities.Master:
         model = self.model.from_entity(entity)
         services = [Service.from_entity(service) for service in entity.services]
-        model.user = await self.session.merge(Users.from_entity(entity.user))
+        # model.user = await self.session.merge(Users.from_entity(entity.user))
         model.services = [await self.session.merge(service) for service in services]
         self.session.add(model)
         await self.session.flush()
@@ -62,14 +62,7 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
-        return [el.to_domain() for el in result.scalars().all()]
-
-    # async def add(self, description: str, user_id: int, services: Sequence[Service], **data) -> int:
-    #     # async def add(self, **data) -> int:
-    #     master = Master(user_id=user_id, description=description, services=services)
-    #     self.session.add(master)
-    #     await self.session.commit()
-    #     return master.id
+        return [el.to_domain(with_join=True) for el in result.scalars().all()]
 
     async def find_one_or_none(self, **filter_by) -> entities.Master | None:
         query = (
@@ -80,7 +73,7 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
         )
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain() if scalar else None
+        return scalar.to_domain(with_join=True) if scalar else None
 
     async def filter_by_service(self, service_pk: int) -> list[entities.Master]:
         query = (
@@ -90,7 +83,7 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
             .where(Service.id == service_pk)
         )
         result = await self.session.execute(query)
-        return [el.to_domain() for el in result.scalars().all()]
+        return [el.to_domain(with_join=True) for el in result.scalars().all()]
 
     async def get_order_report_by_master(self, month: int | None = None):
         month = month if month else date.today().month
@@ -135,7 +128,7 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
-        return [el.to_domain() for el in result.scalars().all()]
+        return [el.to_domain(with_join=True) for el in result.scalars().all()]
 
     async def find_one_or_none(self, **filter_by) -> entities.Schedule | None:
         query = (
@@ -146,13 +139,13 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         )
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain() if scalar else None
+        return scalar.to_domain(with_join=True) if scalar else None
 
     async def get_day_for_master(self, **filter_by) -> list[date]:
         query = select(self.model.day.distinct()).filter_by(**filter_by)
         execute_result = await self.session.execute(query)
         result = execute_result.scalars().all()
-        return [el.to_domain() for el in result]
+        return [el for el in result]
 
 
 class SlotRepository(GenericSQLAlchemyRepository[Slot, entities.Slot]):

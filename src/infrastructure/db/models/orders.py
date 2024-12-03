@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date
 from typing import TYPE_CHECKING
 
@@ -80,19 +82,26 @@ class Order(Base):
     )
 
     def to_domain(self, with_join: bool = False) -> entities.Order:
+        user = self.user.to_domain() if with_join else None
+        slot = self.slot.to_domain() if with_join else None
         order = entities.Order(
             point_uses=CountNumber(self.point_uses),
             promotion_sale=CountNumber(self.promotion_sale),
             total_amount=PositiveIntNumber(self.total_amount),
-            user=self.user.to_domain(),
-            slot=self.slot.to_domain(),
+            user=user,
+            slot=slot,
             date_add=self.date_add,
         )
         order.id = self.id
         return order
 
-    #
-    # @hybrid_property
-    # def photo_before_path(self):
-    #     if self.photo_before:
-    #         return self.photo_before.get('url', None)
+    @classmethod
+    def from_entity(cls, entity: entities.Order) -> Order:
+        return cls(
+            id=getattr(entity, "id", None),
+            slot_id=entity.slot.id,
+            user_id=entity.user.id,
+            point_uses=entity.point_uses.as_generic_type(),
+            promotion_sale=entity.promotion_sale.as_generic_type(),
+            total_amount=entity.total_amount.as_generic_type()
+        )
