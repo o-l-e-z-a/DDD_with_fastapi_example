@@ -1,5 +1,5 @@
 from sqlalchemy import func, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from src.domain.orders import entities
 from src.infrastructure.db.models.orders import Order, Promotion
@@ -31,12 +31,12 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         query = self.get_query_to_find_all(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain(with_join=True) if scalar else None
+        return scalar.to_domain(with_join=True, child_level=3) if scalar else None
 
     async def find_all(self, **filter_by) -> list[entities.Order]:
         query = self.get_query_to_find_all(**filter_by)
         result = await self.session.execute(query)
-        return [el.to_domain(with_join=True) for el in result.scalars().all()]
+        return [el.to_domain(with_join=True, child_level=4) for el in result.scalars().all()]
 
     # def find_order_by_day(self, day):
     #     user_2 = aliased(Users)
@@ -64,8 +64,12 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
             .options(
                 joinedload(self.model.slot, innerjoin=True)
                 .joinedload(Slot.schedule, innerjoin=True)
-                .options(joinedload(Schedule.service, innerjoin=True))
-                .options(joinedload(Schedule.master, innerjoin=True).joinedload(Master.user, innerjoin=True))
+                .options(joinedload(Schedule.service, innerjoin=True).options(selectinload(Service.consumables)))
+                .options(
+                    joinedload(Schedule.master, innerjoin=True)
+                    .options(joinedload(Master.user, innerjoin=True))
+                    .options(selectinload(Master.services))
+                )
             )
             .options(joinedload(self.model.user, innerjoin=True))
             .filter_by(**filter_by)

@@ -9,7 +9,7 @@ from sqlalchemy_utils import EmailType
 from src.domain.base.values import CountNumber
 from src.domain.users import entities
 from src.domain.users.values import Email, HumanName, Telephone
-from src.infrastructure.db.models.base import Base, created_at, int_pk, updated_at
+from src.infrastructure.db.models.base import Base, created_at, get_child_join_and_level, int_pk, updated_at
 
 # if TYPE_CHECKING:
 from src.infrastructure.db.models.schedules import Master
@@ -35,7 +35,7 @@ class Users(Base[entities.User]):
     )
     points: Mapped[list["UserPoint"]] = relationship(back_populates="user")
 
-    def to_domain(self, with_join: bool = False) -> entities.User:
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.User:
         user = entities.User(
             email=Email(self.email),
             first_name=HumanName(self.first_name),
@@ -74,8 +74,9 @@ class UserPoint(Base[entities.UserPoint]):
 
     __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
 
-    def to_domain(self, with_join: bool = False) -> entities.UserPoint:
-        user = self.user.to_domain(with_join=with_join) if with_join else None
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.UserPoint:
+        with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
+        user = self.user.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
         user_point = entities.UserPoint(
             count=CountNumber(self.count),
             user=user,
@@ -85,8 +86,4 @@ class UserPoint(Base[entities.UserPoint]):
 
     @classmethod
     def from_entity(cls, entity: entities.UserPoint) -> UserPoint:
-        return cls(
-            id=getattr(entity, "id", None),
-            count=entity.count.as_generic_type(),
-            user_id=entity.user.id
-        )
+        return cls(id=getattr(entity, "id", None), count=entity.count.as_generic_type(), user_id=entity.user.id)

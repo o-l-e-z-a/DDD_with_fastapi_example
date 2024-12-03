@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.schedules import entities
 from src.domain.schedules.values import SlotTime
-from src.infrastructure.db.models.base import Base, int_pk, str_255
+from src.infrastructure.db.models.base import Base, get_child_join_and_level, int_pk, str_255
 from src.infrastructure.db.models.orders import Order
 
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ class Inventory(Base[entities.Inventory]):
 
     consumables: Mapped[list["Consumables"]] = relationship(back_populates="inventory")
 
-    def to_domain(self, with_join: bool = False) -> entities.Inventory:
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Inventory:
         inventory = entities.Inventory(
             name=Name(self.name), unit=Name(self.unit), stock_count=CountNumber(self.stock_count)
         )
@@ -43,7 +43,7 @@ class Inventory(Base[entities.Inventory]):
         )
 
 
-class ConsumableToInventory(Base):
+class ConsumableToService(Base):
     __tablename__ = "consumable_to_service"
 
     consumable_id: Mapped[int] = mapped_column(
@@ -67,9 +67,13 @@ class Consumables(Base):
 
     __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
 
-    def to_domain(self, with_join: bool = False) -> entities.Consumable:
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Consumable:
+        with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
+        inventory = (
+            self.inventory.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
+        )
         consumable = entities.Consumable(
-            inventory=self.inventory.to_domain(),
+            inventory=inventory,
             count=PositiveIntNumber(self.count),
         )
         consumable.id = self.id
@@ -98,8 +102,16 @@ class Service(Base):
 
     __table_args__ = (CheckConstraint("price >= 0", name="check_count_positive"),)
 
-    def to_domain(self, with_join: bool = False) -> entities.Service:
-        consumables = [consumable.to_domain() for consumable in self.consumables] if with_join else []
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Service:
+        with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
+        consumables = (
+            [
+                consumable.to_domain(with_join=with_join_to_child, child_level=child_level)
+                for consumable in self.consumables
+            ]
+            if with_join
+            else []
+        )
         service = entities.Service(
             name=Name(self.name),
             description=self.description,
@@ -141,9 +153,14 @@ class Master(Base):
 
     __table_args__ = (UniqueConstraint("user_id"),)
 
-    def to_domain(self, with_join: bool = False) -> entities.Master:
-        services = [service.to_domain() for service in self.services] if with_join else []
-        user = self.user.to_domain() if with_join else None
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Master:
+        with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
+        services = (
+            [service.to_domain(with_join=with_join_to_child, child_level=child_level) for service in self.services]
+            if with_join
+            else []
+        )
+        user = self.user.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
         master = entities.Master(
             description=self.description,
             user=user,
@@ -154,11 +171,7 @@ class Master(Base):
 
     @classmethod
     def from_entity(cls, entity: entities.Master) -> Master:
-        return cls(
-            id=getattr(entity, "id", None),
-            description=entity.description,
-            user_id=entity.user.id
-        )
+        return cls(id=getattr(entity, "id", None), description=entity.description, user_id=entity.user.id)
 
     # def __repr__(self):
     # return f'{self.user.last_name} {self.user.first_name} , {self.user.email}'
@@ -192,9 +205,10 @@ class Schedule(Base):
 
     __table_args__ = (UniqueConstraint("day", "master_id", "service_id"),)
 
-    def to_domain(self, with_join: bool = False) -> entities.Schedule:
-        master = self.master.to_domain() if with_join else None
-        service = self.service.to_domain() if with_join else None
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Schedule:
+        with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
+        master = self.master.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
+        service = self.service.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
         schedule = entities.Schedule(
             master=master,
             service=service,
@@ -206,10 +220,7 @@ class Schedule(Base):
     @classmethod
     def from_entity(cls, entity: entities.Schedule) -> Schedule:
         return cls(
-            id=getattr(entity, "id", None),
-            day=entity.day,
-            master_id=entity.master.id,
-            service_id=entity.service.id
+            id=getattr(entity, "id", None), day=entity.day, master_id=entity.master.id, service_id=entity.service.id
         )
 
 
@@ -226,8 +237,9 @@ class Slot(Base):
 
     __table_args__ = (UniqueConstraint("schedule_id", "time_start"),)
 
-    def to_domain(self, with_join: bool = False) -> entities.Slot:
-        schedule = self.schedule.to_domain() if with_join else None
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Slot:
+        with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
+        schedule = self.schedule.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
         slot = entities.Slot(
             time_start=SlotTime(str(self.time_start.strftime("%H:%M"))),
             schedule=schedule,

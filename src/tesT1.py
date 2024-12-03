@@ -59,7 +59,7 @@ async def get_services():
 async def add_master():
     uow = SQLAlchemyScheduleUnitOfWork()
     u_s = MasterService(uow)
-    dto = MasterAddDTO(description="мастер по окрашиванию", user_id=11, services_id=[1])
+    dto = MasterAddDTO(description="мастер по окрашиванию", user_id=8, services_id=[1, 2])
     inventory = await u_s.add_master(dto)
     print(inventory)
     print(await u_s.get_all_masters())
@@ -71,18 +71,18 @@ async def add_schedule():
     uow = SQLAlchemyScheduleUnitOfWork()
     u_s = ScheduleService(uow)
     service_id = 1
-    master_id = 4
+    master_id = 1
     day = datetime.date(year=2024, month=12, day=25)
     dto = ScheduleAddDTO(
         day=day,
         service_id=service_id,
         master_id=master_id,
     )
-    # inventory = await u_s.add_schedule(dto)
-    # print(inventory)
+    inventory = await u_s.add_schedule(dto)
+    print(inventory)
 
     print(await u_s.get_schedules())
-    print(await u_s.get_slot_for_day(3))
+    print(await u_s.get_slot_for_day(1))
     print(
         await u_s.get_day_for_master(
             service_id=service_id,
@@ -98,11 +98,11 @@ async def add_order():
     u_s = OrderService(uow)
     async with AsyncSessionFactory() as session:
         repo = UserRepository(session)
-        new_user_id = 11
+        new_user_id = 4
         user = await repo.find_one_or_none(id=new_user_id)
     print(user)
     total_amount_dto = TotalAmountDTO(
-        schedule_id=3,
+        schedule_id=1,
         point="0",
     )
     dto = OrderCreateDTO(
@@ -123,5 +123,6 @@ if __name__ == "__main__":
     # asyncio.get_event_loop().run_until_complete(add_user())
     # asyncio.get_event_loop().run_until_complete(add_inventory())
     # asyncio.get_event_loop().run_until_complete(get_services())
+    # asyncio.get_event_loop().run_until_complete(add_master())
     # asyncio.get_event_loop().run_until_complete(add_schedule())
     asyncio.get_event_loop().run_until_complete(add_order())

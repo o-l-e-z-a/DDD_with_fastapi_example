@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders import entities
-from src.infrastructure.db.models.base import Base, int_pk
+from src.infrastructure.db.models.base import Base, get_child_join_and_level, int_pk
 
 if TYPE_CHECKING:
     from src.infrastructure.db.models.schedules import Service, Slot
@@ -46,14 +46,20 @@ class Promotion(Base):
 
     __table_args__ = (CheckConstraint("sale > 0 AND sale < 100", name="check_sale_percent"),)
 
-    def to_domain(self, with_join: bool = False) -> entities.Promotion:
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Promotion:
+        with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
+        services = (
+            [service.to_domain(with_join=with_join_to_child, child_level=child_level) for service in self.services]
+            if with_join
+            else []
+        )
         promotion = entities.Promotion(
             code=Name(self.code),
             sale=PositiveIntNumber(self.sale),
             is_active=self.is_active,
             day_start=self.day_start,
             day_end=self.day_end,
-            services=[service.to_domain() for service in self.services],
+            services=services,
         )
         promotion.id = self.id
         return promotion
@@ -81,9 +87,10 @@ class Order(Base):
         CheckConstraint("total_amount >= 0", name="check_total_amount_positive"),
     )
 
-    def to_domain(self, with_join: bool = False) -> entities.Order:
-        user = self.user.to_domain() if with_join else None
-        slot = self.slot.to_domain() if with_join else None
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Order:
+        with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
+        user = self.user.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
+        slot = self.slot.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
         order = entities.Order(
             point_uses=CountNumber(self.point_uses),
             promotion_sale=CountNumber(self.promotion_sale),
@@ -103,5 +110,5 @@ class Order(Base):
             user_id=entity.user.id,
             point_uses=entity.point_uses.as_generic_type(),
             promotion_sale=entity.promotion_sale.as_generic_type(),
-            total_amount=entity.total_amount.as_generic_type()
+            total_amount=entity.total_amount.as_generic_type(),
         )
