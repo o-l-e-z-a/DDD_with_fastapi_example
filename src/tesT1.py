@@ -5,10 +5,10 @@ from pydantic import PositiveInt
 
 from src.infrastructure.db.config import AsyncSessionFactory
 from src.infrastructure.db.repositories.users import UserRepository
-from src.logic.dto.order_dto import OrderCreateDTO, TotalAmountDTO, OrderUpdateDTO
+from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
 from src.logic.dto.user_dto import UserCreateDTO
-from src.logic.services.order_service import OrderService
+from src.logic.services.order_service import OrderService, PromotionService
 from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService
 from src.logic.services.users_service import UserService
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
@@ -151,6 +151,47 @@ async def delete_order():
     await u_s.delete_order(order_id=17, user=user)
 
 
+async def add_promotion():
+    uow = SQLAlchemyOrderUnitOfWork()
+    u_s = PromotionService(uow)
+    dto = PromotionAddDTO(
+        code="mart30",
+        sale=14,
+        is_active=True,
+        day_start=datetime.date(year=2024, month=11, day=1),
+        day_end=datetime.date(year=2024, month=11, day=1),
+        services_id=[1],
+    )
+    promotion = await u_s.add_promotion(dto)
+    print(promotion)
+
+    print(await u_s.get_promotions())
+
+
+async def update_promotion():
+    uow = SQLAlchemyOrderUnitOfWork()
+    u_s = PromotionService(uow)
+    dto = PromotionUpdateDTO(
+        code="mart34",
+        sale=34,
+        is_active=True,
+        day_start=datetime.date(year=2024, month=11, day=1),
+        day_end=datetime.date(year=2024, month=11, day=1),
+        services_id=[2],
+        promotion_id=2
+    )
+    promotion = await u_s.update_promotion(dto)
+    print(promotion)
+
+    print(await u_s.get_promotions())
+
+
+async def delete_promotion():
+    uow = SQLAlchemyOrderUnitOfWork()
+    u_s = PromotionService(uow)
+
+    await u_s.delete_promotion(promotion_id=2)
+
 if __name__ == "__main__":
     # asyncio.get_event_loop().run_until_complete(add_user())
     # asyncio.get_event_loop().run_until_complete(add_inventory())
@@ -159,4 +200,7 @@ if __name__ == "__main__":
     # asyncio.get_event_loop().run_until_complete(add_schedule())
     # asyncio.get_event_loop().run_until_complete(add_order())
     # asyncio.get_event_loop().run_until_complete(update_order())
-    asyncio.get_event_loop().run_until_complete(delete_order())
+    # asyncio.get_event_loop().run_until_complete(delete_order())
+    # asyncio.get_event_loop().run_until_complete(add_promotion())
+    # asyncio.get_event_loop().run_until_complete(update_promotion())
+    asyncio.get_event_loop().run_until_complete(delete_promotion())

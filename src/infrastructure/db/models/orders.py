@@ -64,6 +64,17 @@ class Promotion(Base):
         promotion.id = self.id
         return promotion
 
+    @classmethod
+    def from_entity(cls, entity: entities.Promotion) -> Promotion:
+        return cls(
+            id=getattr(entity, "id", None),
+            code=entity.code.as_generic_type(),
+            sale=entity.sale.as_generic_type(),
+            is_active=entity.is_active,
+            day_start=entity.day_start,
+            day_end=entity.day_end,
+        )
+
 
 class Order(Base):
     __tablename__ = "order"

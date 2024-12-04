@@ -1,8 +1,8 @@
-from src.domain.base.values import CountNumber
-from src.domain.orders.entities import Order, TotalAmount, TotalAmountResult, OrderingProcess, Promotion
+from src.domain.base.values import CountNumber, Name, PositiveIntNumber
+from src.domain.orders.entities import Order, OrderingProcess, Promotion, TotalAmount, TotalAmountResult
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
-from src.logic.dto.order_dto import TotalAmountDTO, OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateADTO
+from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
 
 
@@ -127,19 +127,46 @@ class PromotionService:
         self.uow = uow
 
     async def get_promotions(self) -> list[Promotion]:
-        pass
+        async with self.uow:
+            inventories = await self.uow.promotions.find_all()
+        return inventories
 
-    async def add_promotion(
-        self,
-        promotion_data: PromotionAddDTO
-    ) -> Promotion:
-        pass
+    async def add_promotion(self, promotion_data: PromotionAddDTO) -> Promotion:
+        async with self.uow:
+            services = await self.uow.services.get_services_by_ids(promotion_data.services_id)
+            if not services:
+                raise Exception
+            promotion = Promotion(
+                code=Name(promotion_data.code),
+                sale=PositiveIntNumber(promotion_data.sale),
+                is_active=promotion_data.is_active,
+                day_start=promotion_data.day_start,
+                day_end=promotion_data.day_end,
+                services=services,
+            )
+            promotion_from_repo = await self.uow.promotions.add(entity=promotion)
+            await self.uow.commit()
+            return await self.uow.promotions.find_one_or_none(id=promotion_from_repo.id)
 
-    async def update_promotion(
-        self,
-        promotion_data: PromotionUpdateADTO
-    ) -> Promotion:
-        pass
+    async def update_promotion(self, promotion_data: PromotionUpdateDTO) -> Promotion:
+        async with self.uow:
+            promotion = await self.uow.promotions.find_one_or_none(id=promotion_data.promotion_id)
+            if not promotion:
+                raise Exception
+            services = await self.uow.services.get_services_by_ids(promotion_data.services_id)
+            if not services:
+                raise Exception
+            promotion.code = Name(promotion_data.code)
+            promotion.sale = PositiveIntNumber(promotion_data.sale)
+            promotion.is_active = promotion_data.is_active
+            promotion.day_start = promotion_data.day_start
+            promotion.day_end = promotion_data.day_end
+            promotion.services = services
+            promotion_from_repo = await self.uow.promotions.update(entity=promotion)
+            await self.uow.commit()
+            return await self.uow.promotions.find_one_or_none(id=promotion_from_repo.id)
 
     async def delete_promotion(self, promotion_id: int):
-        pass
+        async with self.uow:
+            await self.uow.promotions.delete(id=promotion_id)
+            await self.uow.commit()

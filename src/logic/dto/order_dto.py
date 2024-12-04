@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Annotated
 
 from pydantic import Field
@@ -25,9 +26,13 @@ class OrderUpdateDTO(BaseDTO):
 
 
 class PromotionAddDTO(BaseDTO):
-    pass
+    code: str
+    sale: int = Field(..., ge=0, le=100)
+    is_active: bool = True
+    day_start: date
+    day_end: date
+    services_id: list[int]
 
 
-class PromotionUpdateADTO(BaseDTO):
-    pass
-
+class PromotionUpdateDTO(PromotionAddDTO):
+    promotion_id: int
