@@ -86,4 +86,8 @@ class UserPoint(Base[entities.UserPoint]):
 
     @classmethod
     def from_entity(cls, entity: entities.UserPoint) -> UserPoint:
-        return cls(id=getattr(entity, "id", None), count=entity.count.as_generic_type(), user_id=entity.user.id)
+        return cls(
+            id=getattr(entity, "id", None),
+            count=entity.count.as_generic_type(),
+            user_id=entity.user.id
+        )

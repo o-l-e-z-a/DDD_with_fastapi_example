@@ -34,7 +34,7 @@ class ServiceRepository(GenericSQLAlchemyRepository[Service, entities.Service]):
         )
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain() if scalar else None
+        return scalar.to_domain(with_join=True, child_level=2) if scalar else None
 
 
 class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
@@ -134,12 +134,31 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         query = (
             select(self.model)
             .options(joinedload(self.model.master).joinedload(Master.user))
-            .options(joinedload(self.model.service))
+            .options(joinedload(self.model.service).options(selectinload(Service.consumables)))
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
         return scalar.to_domain(with_join=True) if scalar else None
+
+    async def find_one_with_consumables(self, **filter_by):
+        query = (
+            select(self.model)
+            .options(
+                joinedload(self.model.master)
+                .options(selectinload(Master.services).selectinload(Service.consumables))
+                .options(joinedload(Master.user)))
+            .options(
+                joinedload(self.model.service).options(
+                    selectinload(Service.consumables).joinedload(Consumables.inventory)
+                )
+
+            )
+            .filter_by(**filter_by)
+        )
+        result = await self.session.execute(query)
+        scalar = result.scalar_one_or_none()
+        return scalar.to_domain(with_join=True, child_level=3) if scalar else None
 
     async def get_day_for_master(self, **filter_by) -> list[date]:
         query = select(self.model.day.distinct()).filter_by(**filter_by)

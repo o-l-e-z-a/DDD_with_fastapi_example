@@ -77,9 +77,16 @@ class TotalAmount:
 
 
 class OrderingProcess:
-    def reschedule(self, order: Order, schedule: Schedule, time_start: SlotTime):
-        slot = Slot(schedule=schedule, time_start=time_start)
-        order.slot = slot
+    def update_slot_time(
+        self,
+        order: Order,
+        time_start: SlotTime,
+        occupied_slots: list[Slot]
+    ):
+        slot_for_schedule = SlotsForSchedule()
+        if not slot_for_schedule.check_slot_time_is_free(slot_time=time_start, occupied_slots=occupied_slots):
+            raise SlotOccupiedError()
+        order.slot.time_start = time_start
 
     def add(
         self,

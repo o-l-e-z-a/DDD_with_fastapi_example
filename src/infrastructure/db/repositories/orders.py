@@ -31,7 +31,7 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         query = self.get_query_to_find_all(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain(with_join=True, child_level=3) if scalar else None
+        return scalar.to_domain(with_join=True, child_level=4) if scalar else None
 
     async def find_all(self, **filter_by) -> list[entities.Order]:
         query = self.get_query_to_find_all(**filter_by)

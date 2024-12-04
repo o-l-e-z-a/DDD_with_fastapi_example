@@ -5,7 +5,7 @@ from pydantic import PositiveInt
 
 from src.infrastructure.db.config import AsyncSessionFactory
 from src.infrastructure.db.repositories.users import UserRepository
-from src.logic.dto.order_dto import OrderCreateDTO, TotalAmountDTO
+from src.logic.dto.order_dto import OrderCreateDTO, TotalAmountDTO, OrderUpdateDTO
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
 from src.logic.dto.user_dto import UserCreateDTO
 from src.logic.services.order_service import OrderService
@@ -98,25 +98,57 @@ async def add_order():
     u_s = OrderService(uow)
     async with AsyncSessionFactory() as session:
         repo = UserRepository(session)
-        new_user_id = 4
+        new_user_id = 11
         user = await repo.find_one_or_none(id=new_user_id)
     print(user)
     total_amount_dto = TotalAmountDTO(
-        schedule_id=1,
-        point="0",
+        schedule_id=3,
+        point="120",
     )
     dto = OrderCreateDTO(
         total_amount=total_amount_dto,
-        time_start="11:00",
+        time_start="12:00",
     )
     total_amount = await u_s.get_total_amount(total_amount_dto=total_amount_dto, user=user)
     print(total_amount)
 
-    # order = await u_s.add_order(dto, user)
-    # print(order)
+    order = await u_s.add_order(dto, user)
+    print(order)
 
     print(await u_s.get_all_orders())
     print(await u_s.get_client_orders(user))
+
+
+async def update_order():
+    uow = SQLAlchemyOrderUnitOfWork()
+    u_s = OrderService(uow)
+    async with AsyncSessionFactory() as session:
+        repo = UserRepository(session)
+        new_user_id = 11
+        user = await repo.find_one_or_none(id=new_user_id)
+    print(user)
+    dto = OrderUpdateDTO(
+        order_id=2,
+        time_start="13:00"
+    )
+
+    order = await u_s.update_order(dto, user)
+    print(order)
+
+    print(await u_s.get_all_orders())
+    print(await u_s.get_client_orders(user))
+
+
+async def delete_order():
+    uow = SQLAlchemyOrderUnitOfWork()
+    u_s = OrderService(uow)
+    async with AsyncSessionFactory() as session:
+        repo = UserRepository(session)
+        new_user_id = 11
+        user = await repo.find_one_or_none(id=new_user_id)
+    print(user)
+
+    await u_s.delete_order(order_id=17, user=user)
 
 
 if __name__ == "__main__":
@@ -125,4 +157,6 @@ if __name__ == "__main__":
     # asyncio.get_event_loop().run_until_complete(get_services())
     # asyncio.get_event_loop().run_until_complete(add_master())
     # asyncio.get_event_loop().run_until_complete(add_schedule())
-    asyncio.get_event_loop().run_until_complete(add_order())
+    # asyncio.get_event_loop().run_until_complete(add_order())
+    # asyncio.get_event_loop().run_until_complete(update_order())
+    asyncio.get_event_loop().run_until_complete(delete_order())

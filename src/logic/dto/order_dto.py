@@ -17,3 +17,17 @@ class TotalAmountDTO(BaseDTO):
 class OrderCreateDTO(BaseDTO):
     total_amount: TotalAmountDTO
     time_start: slot_type
+
+
+class OrderUpdateDTO(BaseDTO):
+    order_id: int
+    time_start: slot_type
+
+
+class PromotionAddDTO(BaseDTO):
+    pass
+
+
+class PromotionUpdateADTO(BaseDTO):
+    pass
+

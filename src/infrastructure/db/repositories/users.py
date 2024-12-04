@@ -22,4 +22,4 @@ class UserPointRepository(GenericSQLAlchemyRepository[UserPoint, entities.UserPo
         query = select(self.model).options(joinedload(self.model.user)).filter_by(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain() if scalar else None
+        return scalar.to_domain(with_join=True) if scalar else None
