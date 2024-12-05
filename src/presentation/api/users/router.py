@@ -1,30 +1,24 @@
 from fastapi import APIRouter, Response, Depends
 
+from src.logic.dto.user_dto import UserCreateDTO
+from src.logic.services.users_service import UserService
+from src.presentation.api.dependencies import get_user_service
 from src.presentation.api.users.schema import UserCreateSchema
 
 router_auth = APIRouter(prefix="/auth", tags=["auth"])
 router_users = APIRouter(prefix="/users", tags=["Пользователи"])
 
 
-# @router_auth.post("/register/", status_code=201)
-# async def register_user(
-#         user_data: UserCreateSchema,
-#         user_dao: UserDAO = Depends(get_user_dao),
-#         user_point_dao: UserPointDAO = Depends(get_user_point_dao)
-# ):
-#     existing_user = await user_dao.find_duplicate_user(email=user_data.email, telephone=user_data.telephone)
-#     if existing_user:
-#         raise UserAlreadyExistsException
-#     password = get_password_hash(user_data.password)
-#     new_user_id = await user_dao.add(
-#         email=user_data.email,
-#         first_name=user_data.first_name,
-#         last_name=user_data.last_name,
-#         telephone=user_data.telephone,
-#         date_birthday=user_data.date_birthday,
-#         hashed_password=password
-#     )
-#     await user_point_dao.add(user_id=new_user_id)
+@router_auth.post("/register/", status_code=201)
+async def register_user(
+        user_data: UserCreateSchema,
+        user_service: UserService = Depends(get_user_service),
+):
+    user = await user_service.add_user(
+        user_data=UserCreateDTO(
+
+        )
+    )
 
 
 # @router_auth.post("/login/")
