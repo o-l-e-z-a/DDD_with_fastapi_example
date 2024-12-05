@@ -65,30 +65,10 @@ class CannotAddDataToDatabase(BaseException):
     detail = "Не удалось добавить запись"
 
 
-class BaseNotFound(HTTPException):
+class NotFoundHTTPException(HTTPException):
     status_code = status.HTTP_404_NOT_FOUND
-    object_name = ""
+    detail = ""
 
-    def __init__(self):
-        detail = f"Не удалось найти {self.object_name} с данным id"
+    def __init__(self, detail: str | None = None):
+        detail = detail if detail else self.detail
         super().__init__(status_code=self.status_code, detail=detail)
-
-
-class ScheduleNotFound(BaseNotFound):
-    object_name = "расписание"
-
-
-class OrderNotFound(BaseNotFound):
-    object_name = "заказ"
-
-
-class PromotionNotFound(BaseNotFound):
-    object_name = "промокод"
-
-
-class ServiceNotFound(BaseNotFound):
-    object_name = "сервис"
-
-
-class InventoryNotFound(BaseNotFound):
-    object_name = "инвентарь"
