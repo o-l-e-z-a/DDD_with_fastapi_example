@@ -4,7 +4,7 @@ from src.domain.users.entities import User, UserPoint
 from src.domain.users.values import Email, HumanName, Telephone
 from src.logic.dto.user_dto import UserCreateDTO
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
-from src.presentation.api.exceptions import UserAlreadyExistsException
+from src.logic.exceptions.user_exceptions import UserAlreadyExistsException
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -27,7 +27,7 @@ class UserService:
                 email=user_data.email, telephone=user_data.telephone
             )
             if existing_user:
-                raise UserAlreadyExistsException
+                raise UserAlreadyExistsException(email=user_data.email, telephone=user_data.telephone)
             password_hash = get_password_hash(user_data.password)
             user = User(
                 email=Email(user_data.email),

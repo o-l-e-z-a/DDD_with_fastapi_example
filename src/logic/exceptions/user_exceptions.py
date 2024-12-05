@@ -1,6 +1,16 @@
 from dataclasses import dataclass
 
-from src.logic.exceptions.base_exception import NotFoundLogicException
+from src.logic.exceptions.base_exception import NotFoundLogicException, LogicException
+
+
+@dataclass(eq=False)
+class UserAlreadyExistsException(LogicException):
+    email: str
+    telephone: str
+
+    @property
+    def title(self) -> str:
+        return f"Пользователь c email: {self.email} или номером: {self.telephone} существует"
 
 
 @dataclass(eq=False)
