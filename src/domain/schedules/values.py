@@ -3,7 +3,7 @@ import re
 from datetime import time
 
 from src.domain.base.values import BaseValueObject
-from src.domain.schedules.exceptions import SlotInvalidError
+from src.domain.schedules.exceptions import SlotInvalidException
 
 SLOT_TIME_REGEX = re.compile(r"^(?:[01][0-9]|2?[0-3]):[0-5]\d$")
 START_HOUR = 10
@@ -16,7 +16,7 @@ class SlotTime(BaseValueObject[str]):
 
     def validate(self):
         if not SLOT_TIME_REGEX.match(self.value):
-            raise SlotInvalidError()
+            raise SlotInvalidException(self.value)
 
     def __gt__(self, other):
         return time.fromisoformat(self.value) > time.fromisoformat(other.value)

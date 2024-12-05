@@ -1,51 +1,44 @@
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import Any
 
 
 @dataclass(eq=False)
-class AppError(Exception):
-    """Base Error."""
-
-    status: ClassVar[int] = 500
-
+class DomainException(Exception):
     @property
     def title(self) -> str:
-        return "An app error occurred"
+        return "Произошла ошибка в домене"
 
 
-class DomainError(AppError):
-    """Base Domain Error."""
+@dataclass(eq=False)
+class BaseValueObjectException(DomainException, ValueError):
+    value: Any
 
+
+class IntegerException(BaseValueObjectException):
     @property
     def title(self) -> str:
-        return "A domain error occurred"
+        return f'Число {self.value} не целое'
 
 
-class IntegerError(ValueError, DomainError):
+class PositiveNumberException(BaseValueObjectException):
     @property
     def title(self) -> str:
-        return "Число не целое"
+        return f'Число {self.value} меньше или равно нулю'
 
 
-class PositiveNumberError(ValueError, DomainError):
+class CountNumberException(BaseValueObjectException):
     @property
     def title(self) -> str:
-        return "Число меньше или равно нулю"
+        return f'Число {self.value} меньше нуля'
 
 
-class CountNumberError(ValueError, DomainError):
+class EmptyNameException(BaseValueObjectException):
     @property
     def title(self) -> str:
-        return "Число меньше нуля"
+        return f'Имя "{self.value}" слишком короткое'
 
 
-class NameEmptyError(ValueError, DomainError):
+class NameTooLongException(BaseValueObjectException):
     @property
     def title(self) -> str:
-        return "Имя слишком короткое"
-
-
-class NameTooLongError(ValueError, DomainError):
-    @property
-    def title(self) -> str:
-        return "Имя слишком длинное"
+        return f'Имя "{self.value}" слишком длинное'

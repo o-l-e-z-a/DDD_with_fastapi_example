@@ -6,6 +6,9 @@ from src.domain.schedules.entities import Inventory, Master, Schedule, Service, 
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
+from src.logic.exceptions.schedule_exceptions import InventoryNotFoundLogicException, ServiceNotFoundLogicException, \
+    MasterNotFoundLogicException, ScheduleNotFoundLogicException
+from src.logic.exceptions.user_exceptions import UserNotFoundLogicException
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 
 
@@ -34,14 +37,16 @@ class ProcedureService:
             await self.uow.commit()
             return inventory_from_repo
 
-    async def update_inventory(self, inventory_data: InventoryUpdateDTO, inventory_id: int) -> Inventory:
+    async def update_inventory(self, inventory_data: InventoryUpdateDTO) -> Inventory:
         async with self.uow:
+            inventory = await self.uow.inventories.find_one_or_none(id=inventory_data.inventory_id)
+            if not inventory:
+                raise InventoryNotFoundLogicException(inventory_data.inventory_id)
             key_mapper: dict[str, Type[BaseValueObject]] = {
                 "name": Name,
                 "unit": CountNumber,
                 "stock_count": Name,
             }
-            inventory = await self.uow.inventories.find_one_or_none(id=inventory_id)
             for k, v in inventory_data.model_dump(exclude_none=True).items():
                 setattr(inventory, k, key_mapper.get(k)(value=v))
             inventory_from_repo = await self.uow.inventories.update(entity=inventory)
@@ -72,10 +77,10 @@ class MasterService:
         async with self.uow:
             services = await self.uow.services.get_services_by_ids(master_data.services_id)
             if not services:
-                raise Exception
+                raise ServiceNotFoundLogicException(id=master_data.services_id)
             user = await self.uow.users.find_one_or_none(id=master_data.user_id)
             if not user:
-                raise Exception
+                raise UserNotFoundLogicException(id=master_data.user_id)
             master = Master(
                 description=master_data.description,
                 user=user,
@@ -84,7 +89,6 @@ class MasterService:
             master_from_repo = await self.uow.masters.add(entity=master)
             await self.uow.commit()
             return await self.uow.masters.find_one_or_none(id=master_from_repo.id)
-            # return master_from_repo
 
     async def get_masters_for_service(self, service_pk: int) -> list[Master]:
         async with self.uow:
@@ -108,10 +112,10 @@ class ScheduleService:
         async with self.uow:
             service = await self.uow.services.find_one_or_none(id=schedule_data.service_id)
             if not service:
-                raise Exception
+                raise ServiceNotFoundLogicException(id=schedule_data.services_id)
             master = await self.uow.masters.find_one_or_none(id=schedule_data.master_id)
             if not master:
-                raise Exception
+                raise MasterNotFoundLogicException(id=schedule_data.master_id)
             schedule = Schedule(day=schedule_data.day, service=service, master=master)
             schedule_from_repo = await self.uow.schedules.add(entity=schedule)
             await self.uow.commit()
@@ -130,6 +134,8 @@ class ScheduleService:
     async def get_slot_for_day(self, schedule_id: int) -> list[SlotTime]:
         async with self.uow:
             schedule = await self.uow.schedules.find_one_or_none(id=schedule_id)
+            if not schedule:
+                raise ScheduleNotFoundLogicException(id=schedule_id)
             occupied_slots = await self.uow.slots.find_all(day=schedule.day)
         free_slots = SlotsForSchedule().get_free_slots(occupied_slots=occupied_slots)
         return free_slots

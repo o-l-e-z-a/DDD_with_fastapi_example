@@ -12,6 +12,7 @@ class InventoryAddDTO(BaseDTO):
 
 
 class InventoryUpdateDTO(BaseDTO):
+    inventory_id: int
     name: str | None = None
     unit: str | None = None
     stock_count: PositiveInt | None = None

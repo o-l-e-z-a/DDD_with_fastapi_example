@@ -1,13 +1,17 @@
-from src.domain.base.exceptions import DomainError
+from dataclasses import dataclass
+
+from src.domain.base.exceptions import DomainException, BaseValueObjectException
 
 
-class SlotOccupiedError(ValueError, DomainError):
+@dataclass(eq=False)
+class SlotOccupiedException(ValueError, DomainException):
     @property
     def title(self) -> str:
         return "Времянное окно уже занято"
 
 
-class SlotInvalidError(ValueError, DomainError):
+@dataclass(eq=False)
+class SlotInvalidException(BaseValueObjectException):
     @property
     def title(self) -> str:
-        return "Времянное окно уже занято"
+        return f'Времянное окно "{self.value}" имеет неверный формат'

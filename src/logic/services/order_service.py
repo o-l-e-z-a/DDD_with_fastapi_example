@@ -3,6 +3,10 @@ from src.domain.orders.entities import Order, OrderingProcess, Promotion, TotalA
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
 from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
+from src.logic.exceptions.order_exceptions import OrderNotFoundLogicException, PromotionNotFoundLogicException, \
+    NotUserOrderLogicException
+from src.logic.exceptions.schedule_exceptions import ScheduleNotFoundLogicException, ServiceNotFoundLogicException
+from src.logic.exceptions.user_exceptions import UserPointNotFoundLogicException
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
 
 
@@ -21,10 +25,10 @@ class OrderService:
             promotion = await self.uow.promotions.find_one_or_none(code=total_amount_dto.promotion_code)
             user_point = await self.uow.user_points.find_one_or_none(user_id=user_id)
             if not user_point:
-                raise Exception
+                raise UserPointNotFoundLogicException(id=user_id)
             schedule = await self.uow.schedules.find_one_or_none(id=total_amount_dto.schedule_id)
             if not schedule:
-                raise Exception
+                raise ScheduleNotFoundLogicException(id=total_amount_dto.schedule_id)
             amount_result = TotalAmount(
                 promotion=promotion,
                 schedule=schedule,
@@ -40,15 +44,13 @@ class OrderService:
 
     async def add_order(self, order_data: OrderCreateDTO, user: User) -> Order:
         async with self.uow:
-            if not user:
-                raise Exception
             promotion = await self.uow.promotions.find_one_or_none(code=order_data.total_amount.promotion_code)
             user_point = await self.uow.user_points.find_one_or_none(user_id=user.id)
             if not user_point:
-                raise Exception
+                raise UserPointNotFoundLogicException(id=user.id)
             schedule = await self.uow.schedules.find_one_with_consumables(id=order_data.total_amount.schedule_id)
             if not schedule:
-                raise Exception
+                raise ScheduleNotFoundLogicException(id=order_data.total_amount.schedule_id)
             occupied_slots = await self.uow.slots.find_all(day=schedule.day)
             ordering_process = OrderingProcess()
             order_from_aggregate = ordering_process.add(
@@ -79,9 +81,9 @@ class OrderService:
         async with self.uow:
             order = await self.uow.orders.find_one_or_none(id=order_data.order_id)
             if not order:
-                raise Exception
+                raise OrderNotFoundLogicException(id=order_data.order_id)
             elif not order.user == user:
-                raise Exception
+                raise NotUserOrderLogicException()
             occupied_slots = await self.uow.slots.find_all(day=order.slot.schedule.day)
             ordering_process = OrderingProcess()
             ordering_process.update_slot_time(
@@ -93,16 +95,14 @@ class OrderService:
 
     async def delete_order(self, order_id: int, user: User):
         async with self.uow:
-            if not user:
-                raise Exception
-            user_point = await self.uow.user_points.find_one_or_none(user_id=user.id)
-            if not user_point:
-                raise Exception
             order = await self.uow.orders.find_one_or_none(id=order_id)
             if not order:
-                raise Exception
+                raise OrderNotFoundLogicException(id=order_id)
             elif not order.user == user:
-                raise Exception
+                raise NotUserOrderLogicException()
+            user_point = await self.uow.user_points.find_one_or_none(user_id=user.id)
+            if not user_point:
+                raise UserPointNotFoundLogicException(id=user.id)
             schedule = await self.uow.schedules.find_one_with_consumables(id=order.slot.schedule.id)
             order.slot.schedule = schedule
             ordering_process = OrderingProcess()
@@ -135,7 +135,7 @@ class PromotionService:
         async with self.uow:
             services = await self.uow.services.get_services_by_ids(promotion_data.services_id)
             if not services:
-                raise Exception
+                raise ServiceNotFoundLogicException(id=promotion_data.services_id)
             promotion = Promotion(
                 code=Name(promotion_data.code),
                 sale=PositiveIntNumber(promotion_data.sale),
@@ -152,10 +152,10 @@ class PromotionService:
         async with self.uow:
             promotion = await self.uow.promotions.find_one_or_none(id=promotion_data.promotion_id)
             if not promotion:
-                raise Exception
+                raise PromotionNotFoundLogicException(id=promotion_data.promotion_id)
             services = await self.uow.services.get_services_by_ids(promotion_data.services_id)
             if not services:
-                raise Exception
+                raise ServiceNotFoundLogicException(id=promotion_data.services_id)
             promotion.code = Name(promotion_data.code)
             promotion.sale = PositiveIntNumber(promotion_data.sale)
             promotion.is_active = promotion_data.is_active

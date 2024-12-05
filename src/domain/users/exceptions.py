@@ -1,19 +1,19 @@
-from src.domain.base.exceptions import DomainError
+from src.domain.base.exceptions import BaseValueObjectException
 
 
-class PhoneInvalidError(ValueError, DomainError):
+class PhoneInvalidException(BaseValueObjectException):
     @property
     def title(self) -> str:
-        return "Телефон не валидный"
+        return f'Телефон "{self.value}" не валидный'
 
 
-class EmailInvalidError(ValueError, DomainError):
+class EmailInvalidException(BaseValueObjectException):
     @property
     def title(self) -> str:
-        return "Почта не валидная"
+        return f'Почта "{self.value}" не валидная'
 
 
-class NameInvalidError(ValueError, DomainError):
+class NameInvalidException(BaseValueObjectException):
     @property
     def title(self) -> str:
-        return "Имя не валидное"
+        return f'Имя "{self.value}" не валидное'

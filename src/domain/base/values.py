@@ -3,11 +3,11 @@ from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
 from src.domain.base.exceptions import (
-    CountNumberError,
-    IntegerError,
-    NameEmptyError,
-    NameTooLongError,
-    PositiveNumberError,
+    CountNumberException,
+    IntegerException,
+    EmptyNameException,
+    NameTooLongException,
+    PositiveNumberException,
 )
 
 VT = TypeVar("VT", bound=Any)
@@ -34,7 +34,7 @@ class BaseIntValueObject(BaseValueObject[int]):
 
     def validate(self):
         if not isinstance(self.value, int):
-            raise IntegerError()
+            raise IntegerException(value=self.value)
 
     def __eq__(self, other):
         return self.value == other
@@ -75,7 +75,7 @@ class PositiveIntNumber(BaseIntValueObject):
     def validate(self):
         super().validate()
         if self.value <= 0:
-            raise PositiveNumberError()
+            raise PositiveNumberException(self.value)
 
 
 @dataclass(frozen=True)
@@ -83,7 +83,7 @@ class CountNumber(BaseIntValueObject):
     def validate(self):
         super().validate()
         if self.value < 0:
-            raise CountNumberError()
+            raise CountNumberException(self.value)
 
 
 @dataclass(frozen=True)
@@ -92,6 +92,6 @@ class Name(BaseValueObject[str]):
 
     def validate(self):
         if len(self.value) > MAX_NAME_LENGTH:
-            raise NameTooLongError()
+            raise NameTooLongException(self.value)
         if not self.value:
-            raise NameEmptyError()
+            raise EmptyNameException(self.value)

@@ -4,7 +4,7 @@ from src.domain.base.values import CountNumber, PositiveIntNumber
 from src.domain.orders.entities import OrderingProcess, TotalAmount, TotalAmountResult
 from src.domain.orders.values import LESS_POINT_WARNINGS, MINIMUM_BALANCE, MORE_POINT_WARNINGS
 from src.domain.schedules.entities import SlotsForSchedule
-from src.domain.schedules.exceptions import SlotOccupiedError
+from src.domain.schedules.exceptions import SlotOccupiedException
 from src.domain.schedules.values import END_HOUR, START_HOUR, SlotTime
 
 
@@ -144,7 +144,7 @@ class TestOrderProcess:
         input_user_point = CountNumber(150)
         slot_time = SlotTime('12:00')
 
-        with pytest.raises(SlotOccupiedError):
+        with pytest.raises(SlotOccupiedException):
             order_process.add(
                 promotion=promotion_20, input_user_point=input_user_point, user_point=ivanov_user_point,
                 user=ivanov_user_point.user, schedule=henna_staining_today_schedule,

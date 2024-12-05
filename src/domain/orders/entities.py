@@ -5,7 +5,7 @@ from src.domain.base.entities import BaseEntity
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders.values import LESS_POINT_WARNINGS, MINIMUM_BALANCE, MORE_POINT_WARNINGS
 from src.domain.schedules.entities import Schedule, Service, Slot, SlotsForSchedule
-from src.domain.schedules.exceptions import SlotOccupiedError
+from src.domain.schedules.exceptions import SlotOccupiedException
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User, UserPoint
 
@@ -85,7 +85,7 @@ class OrderingProcess:
     ):
         slot_for_schedule = SlotsForSchedule()
         if not slot_for_schedule.check_slot_time_is_free(slot_time=time_start, occupied_slots=occupied_slots):
-            raise SlotOccupiedError()
+            raise SlotOccupiedException()
         order.slot.time_start = time_start
 
     def add(
@@ -100,7 +100,7 @@ class OrderingProcess:
     ) -> Order:
         slot_for_schedule = SlotsForSchedule()
         if not slot_for_schedule.check_slot_time_is_free(slot_time=time_start, occupied_slots=occupied_slots):
-            raise SlotOccupiedError()
+            raise SlotOccupiedException()
 
         slot = Slot(schedule=schedule, time_start=time_start)
         total_amount = TotalAmount(

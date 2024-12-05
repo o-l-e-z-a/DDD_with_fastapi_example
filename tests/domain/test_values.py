@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from src.domain.base.exceptions import IntegerError, PositiveNumberError
+from src.domain.base.exceptions import IntegerException, PositiveNumberException
 from src.domain.base.values import PositiveIntNumber
 from src.domain.users.values import Telephone
 
@@ -18,13 +18,13 @@ def test_positive_int_number_valid(valid_number):
 
 @pytest.mark.parametrize('invalid_number', [0, -1, -100*100, -7])
 def test_positive_int_number_with_pos_int_error(invalid_number):
-    with pytest.raises(PositiveNumberError):
+    with pytest.raises(PositiveNumberException):
         PositiveIntNumber(invalid_number)
 
 
 @pytest.mark.parametrize('invalid_number', [2.4, 0.2, Decimal("2"), 100000000000.0])
 def test_positive_int_number_with_int_error(invalid_number):
-    with pytest.raises(IntegerError):
+    with pytest.raises(IntegerException):
         PositiveIntNumber(invalid_number)
 
 

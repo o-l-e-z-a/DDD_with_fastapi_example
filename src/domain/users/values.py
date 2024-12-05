@@ -2,9 +2,9 @@ import re
 
 from dataclasses import dataclass
 
-from src.domain.base.exceptions import NameEmptyError, NameTooLongError
+from src.domain.base.exceptions import EmptyNameException, NameTooLongException
 from src.domain.base.values import BaseValueObject
-from src.domain.users.exceptions import EmailInvalidError, NameInvalidError, PhoneInvalidError
+from src.domain.users.exceptions import EmailInvalidException, NameInvalidException, PhoneInvalidException
 
 MAX_HUMAN_NAME_LENGTH = 16
 NAME_REGEX = re.compile(r"^[а-яА-Яa-zA-Z]+$")
@@ -21,7 +21,7 @@ class Telephone(BaseValueObject[str]):
 
     def validate(self):
         if not RU_PHONE_NUMBER_REGEX.match(self.value):
-            raise PhoneInvalidError()
+            raise PhoneInvalidException(self.value)
 
 
 @dataclass(frozen=True)
@@ -30,7 +30,7 @@ class Email(BaseValueObject[str]):
 
     def validate(self):
         if not EMAIL_REGEX.match(self.value):
-            raise EmailInvalidError()
+            raise EmailInvalidException(self.value)
 
 
 @dataclass(frozen=True)
@@ -39,8 +39,8 @@ class HumanName(BaseValueObject[str]):
 
     def validate(self):
         if len(self.value) > MAX_HUMAN_NAME_LENGTH:
-            raise NameTooLongError()
+            raise NameTooLongException(self.value)
         if not self.value:
-            raise NameEmptyError()
+            raise EmptyNameException(self.value)
         if not NAME_REGEX.match(self.value):
-            raise NameInvalidError()
+            raise NameInvalidException(self.value)
