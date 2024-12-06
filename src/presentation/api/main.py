@@ -13,12 +13,9 @@ from fastapi import FastAPI
 #     ScheduleAdmin, PromotionAdmin,  ConsumablesAdmin, MasterAdmin,
 #     SlotAdmin, UserPointAdmin, ServiceAdmin, OrderAdmin,
 # )
-#
-# from app.procedure.router import router as procedure_router
-# from app.schedule.router import router as schedule_router
-# from app.promotion.router import router as promotion_router
-# from app.order.router import router as order_router
-# from app.users.router import router_auth, router_users
+
+from src.presentation.api.users.router import router_auth, router_users
+from src.presentation.api.schedules.router import router as schedule_router
 
 # os.makedirs("app/media/photos", 0o777, exist_ok=True)
 # container = LocalStorageDriver("app/media").get_container("photos")
@@ -41,10 +38,10 @@ from fastapi import FastAPI
 # app = FastAPI(lifespan=lifespan)
 app = FastAPI()
 
-# app.include_router(router_auth)
-# app.include_router(router_users)
+app.include_router(router_auth)
+app.include_router(router_users)
 # app.include_router(procedure_router)
-# app.include_router(schedule_router)
+app.include_router(schedule_router)
 # app.include_router(promotion_router)
 # app.include_router(order_router)
 

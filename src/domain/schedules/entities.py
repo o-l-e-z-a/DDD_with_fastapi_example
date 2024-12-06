@@ -13,11 +13,26 @@ class Inventory(BaseEntity):
     unit: Name
     stock_count: CountNumber
 
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'name': self.name.as_generic_type(),
+            'unit': self.unit.as_generic_type(),
+            'stock_count': self.stock_count.as_generic_type(),
+        }
+
 
 @dataclass()
 class Consumable(BaseEntity):
     inventory: Inventory
     count: PositiveIntNumber
+
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'count': self.count.as_generic_type(),
+            'inventory': self.inventory.to_dict()
+        }
 
 
 @dataclass()
@@ -27,12 +42,29 @@ class Service(BaseEntity):
     price: PositiveIntNumber
     consumables: list[Consumable] = field(default_factory=list)
 
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'name': self.name.as_generic_type(),
+            'price': self.price.as_generic_type(),
+            'description': self.description,
+            'consumables': [consumable.to_dict() for consumable in self.consumables]
+        }
+
 
 @dataclass()
 class Master(BaseEntity):
     description: str
     user: User
     services: list[Service] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'description': self.description,
+            'user': self.user.to_dict(),
+            'services': [service.to_dict() for service in self.services]
+        }
 
 
 @dataclass()

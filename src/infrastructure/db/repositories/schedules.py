@@ -75,12 +75,12 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
         scalar = result.scalar_one_or_none()
         return scalar.to_domain(with_join=True) if scalar else None
 
-    async def filter_by_service(self, service_pk: int) -> list[entities.Master]:
+    async def filter_by_service(self, service_id: int) -> list[entities.Master]:
         query = (
             select(self.model)
             .options(joinedload(self.model.user))
             .options(selectinload(self.model.services))
-            .where(Service.id == service_pk)
+            .where(Service.id == service_id)
         )
         result = await self.session.execute(query)
         return [el.to_domain(with_join=True) for el in result.scalars().all()]

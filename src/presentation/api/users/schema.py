@@ -18,7 +18,7 @@ class UserCreateSchema(BaseSchema):
     email: EmailStr
     first_name: str
     last_name: str
-    telephone: PhoneNumber
+    telephone: str
     date_birthday: date | None
     password: str
 

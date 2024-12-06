@@ -6,7 +6,9 @@ from jose import ExpiredSignatureError, JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.users.entities import User
+from src.logic.services.schedule_service import ScheduleService, ProcedureService, MasterService
 from src.logic.services.users_service import UserService
+from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
 from src.presentation.api.exceptions import (
     IncorrectTokenFormatException,
@@ -35,21 +37,42 @@ def get_token_payload(token: str) -> dict:
         )
     except ExpiredSignatureError:
         raise TokenExpiredException
-    except JWTError as e:
+    except JWTError:
         raise IncorrectTokenFormatException
     return payload
 
 
-def get_sql_user_uow() -> SQLAlchemyUsersUnitOfWork:
+def get_sqla_user_uow() -> SQLAlchemyUsersUnitOfWork:
     uow = SQLAlchemyUsersUnitOfWork()
     return uow
 
 
-def get_user_service(sql_user_uow: SQLAlchemyUsersUnitOfWork = Depends(get_sql_user_uow)) -> UserService:
+def get_sqla_schedule_uow() -> SQLAlchemyScheduleUnitOfWork:
+    uow = SQLAlchemyScheduleUnitOfWork()
+    return uow
+
+
+def get_user_service(sql_user_uow: SQLAlchemyUsersUnitOfWork = Depends(get_sqla_user_uow)) -> UserService:
     return UserService(sql_user_uow)
 
 
-async def get_user_from_payload(payload: dict, user_service: UserService = Depends(get_user_service)) -> User:
+def get_schedule_service(
+    sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow)
+) -> ScheduleService:
+    return ScheduleService(sql_user_uow)
+
+
+def get_procedure_service(
+    sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow)
+) -> ProcedureService:
+    return ProcedureService(sql_user_uow)
+
+
+def get_master_service(sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow)) -> MasterService:
+    return MasterService(sql_user_uow)
+
+
+async def get_user_from_payload(payload: dict, user_service: UserService) -> User:
     user_id: str = payload.get("sub")
     if not user_id:
         raise UserIsNotPresentException
@@ -61,17 +84,22 @@ async def get_user_from_payload(payload: dict, user_service: UserService = Depen
     return user
 
 
-async def get_current_user(token: str = Depends(get_token)) -> User:
+async def get_current_user(
+    token: str = Depends(get_token), user_service: UserService = Depends(get_user_service)
+) -> User:
     payload = get_token_payload(token)
     if validate_token_type(payload, ACCESS_TOKEN_TYPE):
-        return await get_user_from_payload(payload)
+        return await get_user_from_payload(payload=payload, user_service=user_service)
 
 
-async def get_current_user_for_refresh(credentials: HTTPAuthorizationCredentials = Depends(http_bearer)) -> User:
+async def get_current_user_for_refresh(
+    credentials: HTTPAuthorizationCredentials = Depends(http_bearer),
+    user_service: UserService = Depends(get_user_service)
+) -> User:
     token = credentials.credentials
     payload = get_token_payload(token)
     if validate_token_type(payload, REFRESH_TOKEN_TYPE):
-        return await get_user_from_payload(payload)
+        return await get_user_from_payload(payload=payload, user_service=user_service)
 
 
 def validate_token_type(payload: dict, token_type: str):

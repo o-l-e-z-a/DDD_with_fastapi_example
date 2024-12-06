@@ -1,6 +1,6 @@
 import pytest
 
-from src.presentation.api.exceptions import UserAlreadyExistsException
+from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException
 
 
 class TestUserService:
@@ -13,7 +13,7 @@ class TestUserService:
         assert user_service_with_data.uow.committed
 
     async def test_add_user_already_exists_exception(self, user_service_with_data, user_ivanov_dto):
-        with pytest.raises(UserAlreadyExistsException):
+        with pytest.raises(UserAlreadyExistsLogicException):
             await user_service_with_data.add_user(user_ivanov_dto)
 
         assert not user_service_with_data.uow.committed

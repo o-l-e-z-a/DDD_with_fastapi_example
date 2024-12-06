@@ -23,3 +23,8 @@ class UserCreateDTO(BaseDTO):
         if not re.search(pattern, password):
             raise ValueError("Password need upper and simple letter, 1 digit and 1 symbol with summary length 8")
         return password
+
+
+class UserLoginDTO(BaseDTO):
+    email: EmailStr
+    password: str

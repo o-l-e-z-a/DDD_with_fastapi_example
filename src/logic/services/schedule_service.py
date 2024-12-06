@@ -44,10 +44,10 @@ class ProcedureService:
                 raise InventoryNotFoundLogicException(inventory_data.inventory_id)
             key_mapper: dict[str, Type[BaseValueObject]] = {
                 "name": Name,
-                "unit": CountNumber,
-                "stock_count": Name,
+                "unit": Name,
+                "stock_count": CountNumber,
             }
-            for k, v in inventory_data.model_dump(exclude_none=True).items():
+            for k, v in inventory_data.model_dump(exclude_none=True, exclude={'inventory_id'}).items():
                 setattr(inventory, k, key_mapper.get(k)(value=v))
             inventory_from_repo = await self.uow.inventories.update(entity=inventory)
             await self.uow.commit()
@@ -90,9 +90,9 @@ class MasterService:
             await self.uow.commit()
             return await self.uow.masters.find_one_or_none(id=master_from_repo.id)
 
-    async def get_masters_for_service(self, service_pk: int) -> list[Master]:
+    async def get_masters_for_service(self, service_int: int) -> list[Master]:
         async with self.uow:
-            masters = await self.uow.masters.filter_by_service(service_pk=service_pk)
+            masters = await self.uow.masters.filter_by_service(service_id=service_int)
         return masters
 
     async def get_master_report(self):

@@ -2,9 +2,9 @@ from passlib.context import CryptContext
 
 from src.domain.users.entities import User, UserPoint
 from src.domain.users.values import Email, HumanName, Telephone
-from src.logic.dto.user_dto import UserCreateDTO
+from src.logic.dto.user_dto import UserCreateDTO, UserLoginDTO
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
-from src.logic.exceptions.user_exceptions import UserAlreadyExistsException
+from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException, IncorrectEmailOrPasswordException
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -27,7 +27,7 @@ class UserService:
                 email=user_data.email, telephone=user_data.telephone
             )
             if existing_user:
-                raise UserAlreadyExistsException(email=user_data.email, telephone=user_data.telephone)
+                raise UserAlreadyExistsLogicException(email=user_data.email, telephone=user_data.telephone)
             password_hash = get_password_hash(user_data.password)
             user = User(
                 email=Email(user_data.email),
@@ -42,6 +42,13 @@ class UserService:
             await self.uow.user_points.add(entity=user_point)
             await self.uow.commit()
             return user_from_repo
+
+    async def check_login_and_verify_password(self, user_login_data: UserLoginDTO):
+        async with self.uow:
+            user = await self.uow.users.find_one_or_none(email=user_login_data.email)
+            if not (user and verify_password(user_login_data.password, user.hashed_password)):
+                raise IncorrectEmailOrPasswordException()
+            return user
 
     async def get_user_point(self, user: User) -> UserPoint | None:
         async with self.uow:

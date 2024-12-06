@@ -4,7 +4,7 @@ from src.logic.exceptions.base_exception import NotFoundLogicException, LogicExc
 
 
 @dataclass(eq=False)
-class UserAlreadyExistsException(LogicException):
+class UserAlreadyExistsLogicException(LogicException):
     email: str
     telephone: str
 
@@ -21,3 +21,11 @@ class UserNotFoundLogicException(NotFoundLogicException):
 @dataclass(eq=False)
 class UserPointNotFoundLogicException(NotFoundLogicException):
     model: str = 'Баллы пользователя'
+
+
+@dataclass(eq=False)
+class IncorrectEmailOrPasswordException(LogicException):
+
+    @property
+    def title(self) -> str:
+        return f"Некорретный логин или пароль"

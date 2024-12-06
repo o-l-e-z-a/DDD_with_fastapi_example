@@ -1,0 +1,17 @@
+alembic init migrations  # создание папки и конфигурационного файла для миграций
+alembic revision --autogenerate -m "init"  # создание миграций
+alembic upgrade head  # обновить базу данных до последней миграции
+
+fastapi dev main.py
+@REM uvicorn app.main:app --reload
+uvicorn src.presentation.api.main:app --reload
+
+docker run -it --rm --name -p 6379:6379 redis
+docker exec -it redis redis-cli
+
+celery -A app.infrastructure.celery_config:celery worker --loglevel=INFO --pool=solo
+celery -A app.infrastructure.celery_config:celery flower
+
+watchmedo auto-restart --directory=./ --pattern=*.py --recursive -- celery -A app.infrastructure.celery_config:celery worker --loglevel=INFO --pool=solo
+
+pytest -v -l -s --tb=short -reF .
