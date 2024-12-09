@@ -1,13 +1,15 @@
-from dataclasses import asdict
+from datetime import date
 
 from fastapi import APIRouter, status, Depends
 from fastapi_cache.decorator import cache
 
-from src.logic.services.schedule_service import ProcedureService, MasterService
-from src.presentation.api.dependencies import get_procedure_service, get_master_service, get_schedule_service
+from src.logic.services.schedule_service import ProcedureService, MasterService, ScheduleService
+from src.presentation.api.dependencies import get_procedure_service, get_master_service, get_schedule_service, \
+    CurrentMaster
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
 from src.presentation.api.schedules.schema import ServiceSchema, InventorySchema, InventoryAddSchema, \
-    InventoryUpdateSchema, MasterAddSchema, MasterReportSchema, MasterWithoutServiceSchema, MasterSchema
+    InventoryUpdateSchema, MasterAddSchema, MasterReportSchema, MasterWithoutServiceSchema, MasterSchema, \
+    ScheduleSchema, MasterDaysSchema, SlotsTimeSchema, SlotSchema, ScheduleAddSchema
 from src.presentation.api.users.schema import AllUserSchema
 
 router = APIRouter(
@@ -106,3 +108,63 @@ async def get_master_report(master_service: MasterService = Depends(get_master_s
     results = await master_service.get_master_report()
     master_schemas = [MasterReportSchema.model_validate(master.to_dict()) for master in results]
     return master_schemas
+
+
+@router.get("/schedules/")
+# @cache(expire=60)
+async def get_schedules(schedule_service: ScheduleService = Depends(get_schedule_service)) -> list[ScheduleSchema]:
+    results = await schedule_service.get_schedules()
+    schedule_schemas = [ScheduleSchema.model_validate(schedule.to_dict()) for schedule in results]
+    return schedule_schemas
+
+
+@router.post("/schedule/add/", status_code=status.HTTP_201_CREATED)
+async def add_schedule(
+    schedule_data: ScheduleAddSchema,
+    schedule_service: ScheduleService = Depends(get_schedule_service)
+) -> ScheduleSchema:
+    schedule = await schedule_service.add_schedule(ScheduleAddDTO(**schedule_data.model_dump(exclude_unset=True)))
+    schedule_schema = ScheduleSchema.model_validate(schedule.to_dict())
+    return schedule_schema
+
+
+@router.get("/master_days/")
+# @cache(expire=60)
+async def get_master_days(
+        master: CurrentMaster,
+        schedule_service: ScheduleService = Depends(get_schedule_service)
+) -> MasterDaysSchema:
+    days = await schedule_service.get_master_days(master_id=master.id)
+    return MasterDaysSchema(days=days)
+
+
+@router.get("/master/{master_pk}/service/{service_pk}/schedules/", description='day_for_master')
+async def get_day_for_master(
+        master_pk: int,
+        service_pk: int,
+        schedule_service: ScheduleService = Depends(get_schedule_service)
+) -> MasterDaysSchema:
+    days = await schedule_service.get_day_for_master(master_id=master_pk, service_id=service_pk)
+    return MasterDaysSchema(days=days)
+
+
+@cache(expire=60)
+@router.get("/slots/{schedule_pk}/", description='slot_for_day')
+async def get_slot_for_day(
+        schedule_pk: int,
+        schedule_service: ScheduleService = Depends(get_schedule_service)
+) -> SlotsTimeSchema:
+    all_day_slots = await schedule_service.get_slot_for_day(schedule_id=schedule_pk)
+    print(all_day_slots)
+    return SlotsTimeSchema(slots=[slot_time.as_generic_type() for slot_time in all_day_slots])
+
+
+@router.get("/master_schedule/{day}/", description='current_master_schedule')
+async def get_current_master_schedule(
+        day: date,
+        master: CurrentMaster,
+        schedule_service: ScheduleService = Depends(get_schedule_service)
+) -> list[SlotSchema]:
+    slots = await schedule_service.get_current_master_slots(day=day, master_id=master.id)
+    slot_schemas = [SlotSchema.model_validate(slot.to_dict()) for slot in slots]
+    return slot_schemas

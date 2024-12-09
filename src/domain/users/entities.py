@@ -34,3 +34,10 @@ class User(BaseEntity):
 class UserPoint(BaseEntity):
     user: User
     count: CountNumber = CountNumber(0)
+
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'count': self.count.as_generic_type(),
+            'user': self.user.to_dict(),
+        }

@@ -2,8 +2,11 @@ import asyncio
 import datetime
 
 from pydantic import PositiveInt
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload, contains_eager
 
 from src.infrastructure.db.config import AsyncSessionFactory
+from src.infrastructure.db.models.schedules import Slot, Schedule
 from src.infrastructure.db.repositories.users import UserRepository
 from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
@@ -192,6 +195,25 @@ async def delete_promotion():
 
     await u_s.delete_promotion(promotion_id=2)
 
+
+async def test_slot_querty():
+    async with AsyncSessionFactory() as session:
+        # query = select(Slot, Schedule).join(Schedule).filter_by(day=datetime.date(year=2024, month=12, day=25))
+        # result = await session.execute(query)
+        # result = result.scalars()
+        query = (
+            select(Slot).join(Schedule)
+            .options(
+                # joinedload(Slot.schedule)
+                contains_eager(Slot.schedule)
+            ).filter_by(day=datetime.date(year=2024, month=12, day=25)))
+        result = await session.execute(query)
+        result = result.scalars()
+    for r in result:
+        print(r)
+        print(r.schedule)
+
+
 if __name__ == "__main__":
     # asyncio.get_event_loop().run_until_complete(add_user())
     # asyncio.get_event_loop().run_until_complete(add_inventory())
@@ -203,4 +225,5 @@ if __name__ == "__main__":
     # asyncio.get_event_loop().run_until_complete(delete_order())
     # asyncio.get_event_loop().run_until_complete(add_promotion())
     # asyncio.get_event_loop().run_until_complete(update_promotion())
-    asyncio.get_event_loop().run_until_complete(delete_promotion())
+    # asyncio.get_event_loop().run_until_complete(delete_promotion())
+    asyncio.get_event_loop().run_until_complete(test_slot_querty())

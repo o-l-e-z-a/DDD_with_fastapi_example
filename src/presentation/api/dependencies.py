@@ -5,6 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import ExpiredSignatureError, JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.domain.schedules.entities import Master
 from src.domain.users.entities import User
 from src.logic.services.schedule_service import ScheduleService, ProcedureService, MasterService
 from src.logic.services.users_service import UserService
@@ -111,3 +112,11 @@ def validate_token_type(payload: dict, token_type: str):
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
+
+async def get_current_master(user: CurrentUser, master_service: MasterService = Depends(get_master_service)) -> Master:
+    master = await master_service.get_master_by_user(user=user)
+    if master:
+        return master
+    raise UserIsNotMasterException
+
+CurrentMaster = Annotated[Master, Depends(get_current_master)]

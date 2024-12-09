@@ -28,10 +28,11 @@ class Consumable(BaseEntity):
     count: PositiveIntNumber
 
     def to_dict(self) -> dict:
+        inventory = self.inventory.to_dict() if self.inventory else None
         return {
             'id': self.id,
             'count': self.count.as_generic_type(),
-            'inventory': self.inventory.to_dict()
+            'inventory': inventory
         }
 
 
@@ -59,10 +60,11 @@ class Master(BaseEntity):
     services: list[Service] = field(default_factory=list)
 
     def to_dict(self) -> dict:
+        user = self.user.to_dict() if self.user else None
         return {
             'id': self.id,
             'description': self.description,
-            'user': self.user.to_dict(),
+            'user': user,
             'services': [service.to_dict() for service in self.services]
         }
 
@@ -72,6 +74,16 @@ class Schedule(BaseEntity):
     day: date
     master: Master
     service: Service
+
+    def to_dict(self) -> dict:
+        master = self.master.to_dict() if self.master else None
+        service = self.service.to_dict() if self.service else None
+        return {
+            'id': self.id,
+            'day': self.day,
+            'master': master,
+            'service': service
+        }
 
 
 @dataclass()
@@ -91,6 +103,14 @@ class Slot(BaseEntity):
             if self.time_start > other.time_start:
                 return True
             return False
+
+    def to_dict(self) -> dict:
+        schedule = self.schedule.to_dict() if self.schedule else None
+        return {
+            'id': self.id,
+            'time_start': self.time_start.as_generic_type(),
+            'schedule': schedule
+        }
 
 
 class SlotsForSchedule:

@@ -1,7 +1,7 @@
 from datetime import date
 
 from sqlalchemy import extract, func, select
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import joinedload, selectinload, contains_eager
 
 from src.domain.schedules import entities
 from src.infrastructure.db.models.orders import Order
@@ -123,23 +123,31 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
     async def find_all(self, **filter_by) -> list[entities.Schedule]:
         query = (
             select(self.model)
-            .options(joinedload(self.model.master).joinedload(Master.user))
-            .options(joinedload(self.model.service))
+            .options(
+                joinedload(self.model.master)
+                .options(selectinload(Master.services))
+                .options(joinedload(Master.user))
+            )
+            .options(joinedload(self.model.service).options(selectinload(Service.consumables)))
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
-        return [el.to_domain(with_join=True) for el in result.scalars().all()]
+        return [el.to_domain(with_join=True, child_level=2) for el in result.scalars().all()]
 
     async def find_one_or_none(self, **filter_by) -> entities.Schedule | None:
         query = (
             select(self.model)
-            .options(joinedload(self.model.master).joinedload(Master.user))
+            .options(
+                joinedload(self.model.master)
+                .options(selectinload(Master.services))
+                .options(joinedload(Master.user))
+            )
             .options(joinedload(self.model.service).options(selectinload(Service.consumables)))
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain(with_join=True) if scalar else None
+        return scalar.to_domain(with_join=True, child_level=2) if scalar else None
 
     async def find_one_with_consumables(self, **filter_by):
         query = (
@@ -174,9 +182,11 @@ class SlotRepository(GenericSQLAlchemyRepository[Slot, entities.Slot]):
         query = select(self.model).join(Schedule).filter_by(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain() if scalar else None
+        return scalar.to_domain(with_join=True) if scalar else None
 
     async def find_all(self, **filter_by) -> list[entities.Slot]:
-        query = select(self.model).join(Schedule).filter_by(**filter_by)
+        # query = select(self.model).options(joinedload(Slot.schedule)).filter_by(**filter_by)
+        # query = select(self.model).join(Slot.schedule).filter_by(**filter_by)
+        query = select(self.model).join(Slot.schedule).options(contains_eager(Slot.schedule)).filter_by(**filter_by)
         result = await self.session.execute(query)
-        return [el.to_domain() for el in result.scalars().all()]
+        return [el.to_domain(with_join=True) for el in result.scalars().all()]

@@ -63,6 +63,11 @@ class MasterService:
     def __init__(self, uow: SQLAlchemyScheduleUnitOfWork):
         self.uow = uow
 
+    async def get_master_by_user(self, user: User) -> Master | None:
+        async with self.uow:
+            master = await self.uow.masters.find_one_or_none(user_id=user.id)
+        return master
+
     async def get_all_masters(self) -> Sequence[Master]:
         async with self.uow:
             masters = await self.uow.masters.find_all()
@@ -70,8 +75,8 @@ class MasterService:
 
     async def get_all_user_to_add_masters(self) -> Sequence[User]:
         async with self.uow:
-            users = await self.uow.masters.get_users_to_masters()
-        return users
+            masters = await self.uow.masters.get_users_to_masters()
+        return masters
 
     async def add_master(self, master_data: MasterAddDTO) -> Master:
         async with self.uow:
@@ -142,5 +147,6 @@ class ScheduleService:
 
     async def get_current_master_slots(self, day: date, master_id: int) -> list[Slot]:
         async with self.uow:
+            # slots = await self.uow.slots.find_all(schedule_day=day, master_id=master_id)
             slots = await self.uow.slots.find_all(day=day, master_id=master_id)
         return slots

@@ -238,6 +238,7 @@ class Slot(Base):
     __table_args__ = (UniqueConstraint("schedule_id", "time_start"),)
 
     def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Slot:
+        print(f'Slot to_domain: {self.schedule}')
         with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
         schedule = self.schedule.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
         slot = entities.Slot(

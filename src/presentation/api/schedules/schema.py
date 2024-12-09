@@ -81,10 +81,14 @@ class SlotsTimeSchema(BaseSchema):
     slots: list[slot_type]
 
 
+class ScheduleDay(BaseSchema):
+    day: date
+
+
 class SlotSchema(BaseSchema):
     id: int
     time_start: time
-    schedule: ScheduleSchema
+    schedule: ScheduleDay
 
 
 class SlotCreateSchema(BaseSchema):
