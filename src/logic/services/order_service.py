@@ -89,9 +89,9 @@ class OrderService:
             ordering_process.update_slot_time(
                 order, time_start=SlotTime(order_data.time_start), occupied_slots=occupied_slots
             )
-            order_from_repo = await self.uow.slots.update(order.slot)
+            await self.uow.slots.update(order.slot)
             await self.uow.commit()
-            return await self.uow.orders.find_one_or_none(id=order_from_repo.id)
+            return await self.uow.orders.find_one_or_none(id=order.id)
 
     async def delete_order(self, order_id: int, user: User):
         async with self.uow:

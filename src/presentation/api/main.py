@@ -16,6 +16,7 @@ from fastapi import FastAPI
 
 from src.presentation.api.users.router import router_auth, router_users
 from src.presentation.api.schedules.router import router as schedule_router
+from src.presentation.api.orders.router import router as order_router
 
 # os.makedirs("app/media/photos", 0o777, exist_ok=True)
 # container = LocalStorageDriver("app/media").get_container("photos")
@@ -40,10 +41,8 @@ app = FastAPI()
 
 app.include_router(router_auth)
 app.include_router(router_users)
-# app.include_router(procedure_router)
 app.include_router(schedule_router)
-# app.include_router(promotion_router)
-# app.include_router(order_router)
+app.include_router(order_router)
 
 # app.mount('/app/media', StaticFiles(directory='app/media'), name='media')
 # app.mount('/media', StaticFiles(directory='media'), name='media')

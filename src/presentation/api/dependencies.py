@@ -3,12 +3,13 @@ from typing import Annotated
 from fastapi import Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import ExpiredSignatureError, JWTError, jwt
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.schedules.entities import Master
 from src.domain.users.entities import User
+from src.logic.services.order_service import OrderService
 from src.logic.services.schedule_service import ScheduleService, ProcedureService, MasterService
 from src.logic.services.users_service import UserService
+from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
 from src.presentation.api.exceptions import (
@@ -53,6 +54,11 @@ def get_sqla_schedule_uow() -> SQLAlchemyScheduleUnitOfWork:
     return uow
 
 
+def get_sqla_order_uow() -> SQLAlchemyOrderUnitOfWork:
+    uow = SQLAlchemyOrderUnitOfWork()
+    return uow
+
+
 def get_user_service(sql_user_uow: SQLAlchemyUsersUnitOfWork = Depends(get_sqla_user_uow)) -> UserService:
     return UserService(sql_user_uow)
 
@@ -67,6 +73,12 @@ def get_procedure_service(
     sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow)
 ) -> ProcedureService:
     return ProcedureService(sql_user_uow)
+
+
+def get_order_service(
+    sql_user_uow: SQLAlchemyOrderUnitOfWork = Depends(get_sqla_order_uow)
+) -> OrderService:
+    return OrderService(sql_user_uow)
 
 
 def get_master_service(sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow)) -> MasterService:

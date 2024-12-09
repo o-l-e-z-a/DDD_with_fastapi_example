@@ -19,6 +19,17 @@ class Promotion(BaseEntity):
     day_end: date
     services: list[Service] = field(default_factory=list)
 
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'code': self.code.as_generic_type(),
+            'sale': self.sale.as_generic_type(),
+            'is_active': self.is_active,
+            'day_start': self.day_start,
+            'day_end': self.day_end,
+            'services': [service.to_dict() for service in self.services]
+        }
+
 
 @dataclass()
 class Order(BaseEntity):
@@ -29,9 +40,22 @@ class Order(BaseEntity):
     total_amount: PositiveIntNumber
     date_add: date = datetime.today()
 
+    def to_dict(self) -> dict:
+        user = self.user.to_dict() if self.user else None
+        slot = self.slot.to_dict() if self.slot else None
+        return {
+            'id': self.id,
+            'point_uses': self.point_uses.as_generic_type(),
+            'promotion_sale': self.promotion_sale.as_generic_type(),
+            'total_amount': self.total_amount.as_generic_type(),
+            'date_add': self.date_add,
+            'user': user,
+            'slot': slot
+        }
+
 
 @dataclass()
-class TotalAmountResult(BaseEntity):
+class TotalAmountResult:
     total_amount: int
     point_uses: int
     promotion_sale: int
