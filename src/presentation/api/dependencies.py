@@ -6,7 +6,7 @@ from jose import ExpiredSignatureError, JWTError, jwt
 
 from src.domain.schedules.entities import Master
 from src.domain.users.entities import User
-from src.logic.services.order_service import OrderService
+from src.logic.services.order_service import OrderService, PromotionService
 from src.logic.services.schedule_service import ScheduleService, ProcedureService, MasterService
 from src.logic.services.users_service import UserService
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
@@ -79,6 +79,12 @@ def get_order_service(
     sql_user_uow: SQLAlchemyOrderUnitOfWork = Depends(get_sqla_order_uow)
 ) -> OrderService:
     return OrderService(sql_user_uow)
+
+
+def get_promotion_service(
+    sql_user_uow: SQLAlchemyOrderUnitOfWork = Depends(get_sqla_order_uow)
+) -> PromotionService:
+    return PromotionService(sql_user_uow)
 
 
 def get_master_service(sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow)) -> MasterService:

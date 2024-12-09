@@ -3,11 +3,11 @@ from dataclasses import asdict
 from fastapi import APIRouter, status, Depends
 from fastapi_cache.decorator import cache
 
-from src.logic.dto.order_dto import OrderCreateDTO, TotalAmountDTO, OrderUpdateDTO
-from src.logic.services.order_service import OrderService
-from src.presentation.api.dependencies import get_order_service, CurrentUser
+from src.logic.dto.order_dto import OrderCreateDTO, TotalAmountDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO
+from src.logic.services.order_service import OrderService, PromotionService
+from src.presentation.api.dependencies import get_order_service, CurrentUser, get_promotion_service
 from src.presentation.api.orders.schema import AllOrderSchema, OrderSchema, OrderCreateSchema, TotalAmountCreateSchema, \
-    TotalAmountSchema
+    TotalAmountSchema, PromotionSchema, PromotionAddSchema
 from src.presentation.api.schedules.schema import SlotUpdateSchema
 
 router = APIRouter(
@@ -100,10 +100,10 @@ async def update_order(
 
 
 @router.delete("/order/{order_id}/delete/", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_promotion(
-        order_id: int,
-        user: CurrentUser,
-        order_service: OrderService = Depends(get_order_service),
+async def delete_order(
+    order_id: int,
+    user: CurrentUser,
+    order_service: OrderService = Depends(get_order_service),
 ):
     await order_service.delete_order(order_id=order_id, user=user)
 
@@ -113,3 +113,39 @@ async def delete_promotion(
 #     report_results = await order_service.g()
 #     order_schema = [OrderReportSchema.model_validate(report) for report in report_results]
 #     return order_schema
+
+
+@router.get("/promotions/")
+async def get_promotions(promotion_service: PromotionService = Depends(get_promotion_service)) -> list[PromotionSchema]:
+    results = await promotion_service.get_promotions()
+    promotion_schemas = [PromotionSchema.model_validate(promotion.to_dict()) for promotion in results]
+    return promotion_schemas
+
+
+@router.post("/promotion/add/", status_code=status.HTTP_201_CREATED)
+async def add_promotion(
+    promotion_data: PromotionAddSchema,
+    promotion_service: PromotionService = Depends(get_promotion_service)
+) -> PromotionSchema:
+    promotion = await promotion_service.add_promotion(promotion_data=PromotionAddDTO(**promotion_data.model_dump()))
+    print(promotion)
+    promotion_schema = PromotionSchema.model_validate(promotion.to_dict())
+    return promotion_schema
+
+
+@router.patch("/promotion/{promotion_id}/update/")
+async def patch_promotion(
+    promotion_id: int,
+    promotion_data: PromotionAddSchema,
+    promotion_service: PromotionService = Depends(get_promotion_service)
+) -> PromotionSchema:
+    promotion = await promotion_service.update_promotion(
+        promotion_data=PromotionUpdateDTO(**promotion_data.model_dump(), promotion_id=promotion_id)
+    )
+    promotion_schema = PromotionSchema.model_validate(promotion.to_dict())
+    return promotion_schema
+
+
+@router.delete("/promotion/{promotion_id}/delete/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_promotion(promotion_id: int, promotion_service: PromotionService = Depends(get_promotion_service)):
+    await promotion_service.delete_promotion(promotion_id=promotion_id)

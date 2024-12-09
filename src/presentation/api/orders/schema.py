@@ -57,14 +57,19 @@ class OrderReportSchema(BaseSchema):
 
 
 class PromotionAddSchema(BaseSchema):
-    code: str
-    sale: int = Field(..., ge=0, le=100)
+    code: str = Field(..., max_length=15)
+    sale: int = Field(..., ge=0, lt=100)
     is_active: bool = True
     day_start: date
     day_end: date
-    services: list[int]
+    services_id: list[int]
 
 
-class PromotionSchema(PromotionAddSchema):
+class PromotionSchema(BaseSchema):
     id: int
+    code: str = Field(..., max_length=15)
+    sale: int = Field(..., ge=0, lt=100)
+    is_active: bool = True
+    day_start: date
+    day_end: date
     services: list[ServiceSchema]
