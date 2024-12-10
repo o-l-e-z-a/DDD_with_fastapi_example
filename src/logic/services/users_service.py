@@ -4,7 +4,7 @@ from src.domain.users.entities import User, UserPoint
 from src.domain.users.values import Email, HumanName, Telephone
 from src.logic.dto.user_dto import UserCreateDTO, UserLoginDTO
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
-from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException, IncorrectEmailOrPasswordException
+from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException, IncorrectEmailOrPasswordLogicException
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -47,7 +47,7 @@ class UserService:
         async with self.uow:
             user = await self.uow.users.find_one_or_none(email=user_login_data.email)
             if not (user and verify_password(user_login_data.password, user.hashed_password)):
-                raise IncorrectEmailOrPasswordException()
+                raise IncorrectEmailOrPasswordLogicException()
             return user
 
     async def get_user_point(self, user: User) -> UserPoint | None:

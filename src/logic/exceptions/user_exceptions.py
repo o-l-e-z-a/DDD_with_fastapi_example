@@ -24,8 +24,8 @@ class UserPointNotFoundLogicException(NotFoundLogicException):
 
 
 @dataclass(eq=False)
-class IncorrectEmailOrPasswordException(LogicException):
+class IncorrectEmailOrPasswordLogicException(LogicException):
 
     @property
     def title(self) -> str:
-        return f"Некорретный логин или пароль"
+        return f"Неверная почта или пароль"
