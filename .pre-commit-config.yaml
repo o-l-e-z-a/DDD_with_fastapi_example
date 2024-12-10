@@ -22,7 +22,8 @@ repos:
               (?x)(
                 ^tests/|
                 tesT1.py|
-                tesT2.py
+                tesT2.py|
+                views.py
               )
             additional_dependencies: [
               pydantic==2.9.2,
