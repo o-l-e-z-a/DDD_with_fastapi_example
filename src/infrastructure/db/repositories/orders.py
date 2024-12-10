@@ -76,11 +76,13 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         )
         return query
 
-    # async def update_photo(self, order: Order, photo_after=None, photo_before=None):
-    #     order.photo_before = photo_before
-    #     order.photo_after = photo_after
-    #     await self.session.refresh(order)
-    #     return order
+    async def update_photo(self, entity: entities.Order, photo_after=None, photo_before=None):
+        model = self.model.from_entity(entity)
+        model.photo_before = photo_before
+        model.photo_after = photo_after
+        await self.session.merge(model)
+        await self.session.flush()
+        return model.to_domain()
 
 
 class PromotionRepository(GenericSQLAlchemyRepository[Order, entities.Promotion]):

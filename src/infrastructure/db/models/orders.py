@@ -3,10 +3,11 @@ from __future__ import annotations
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, String
+from sqlalchemy import CheckConstraint, ForeignKey, String, Column
 
 # from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy_file import ImageField
 
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders import entities
@@ -86,7 +87,8 @@ class Order(Base):
     promotion_sale: Mapped[int] = mapped_column(default=0)
     total_amount: Mapped[int] = mapped_column(default=0)
     date_add: Mapped[date] = mapped_column(default=date.today())
-    # photo_before = Column(ImageField)
+    photo_before = Column(ImageField)
+    photo_after = Column(ImageField)
     # photo_after = models.ImageField('Фото после', upload_to='photo_after/', blank=True, null=True)
 
     slot: Mapped["Slot"] = relationship(back_populates="order")

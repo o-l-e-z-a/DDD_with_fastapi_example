@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, UploadFile
 from fastapi_cache.decorator import cache
 
 from src.logic.dto.order_dto import OrderCreateDTO, TotalAmountDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO
@@ -44,7 +44,9 @@ async def get_total_amount(
 
 @router.get("/orders/", description='все заказы клиента')
 @cache(expire=60)
-async def get_client_orders(user: CurrentUser, order_service: OrderService = Depends(get_order_service)) -> list[OrderSchema]:
+async def get_client_orders(
+    user: CurrentUser, order_service: OrderService = Depends(get_order_service)
+) -> list[OrderSchema]:
     results = await order_service.get_client_orders(user=user)
     order_schemas = [OrderSchema.model_validate(order.to_dict()) for order in results]
     return order_schemas
@@ -94,23 +96,16 @@ async def update_order(
     return order_schema
 
 
-# @router.patch("/order/{order_id}/update_photo/")
-# async def update_photo(
-#         order_id: int,
-#         photo_before: UploadFile,
-#         photo_after: UploadFile,
-#         order_service: OrderService = Depends(get_order_service)
-# ) -> OrderSchema:
-#     order = await order_dao.find_one_or_none(id=order_id)
-#     if not order:
-#         raise OrderNotFound()
-#     order = await order_dao.update_photo(
-#         order=order,
-#         photo_before=photo_before,
-#         photo_after=photo_after,
-#     )
-#     order_schema = OrderSchema.model_validate(order)
-#     return order_schema
+@router.patch("/order/{order_id}/update_photo/")
+async def update_photo(
+        order_id: int,
+        photo_before: UploadFile,
+        photo_after: UploadFile,
+        order_service: OrderService = Depends(get_order_service)
+) -> OrderSchema:
+    order = order_service.update_order_photos(order_id=order_id, photo_before=photo_before, photo_after=photo_after)
+    order_schema = OrderSchema.model_validate(order)
+    return order_schema
 
 
 @router.delete("/order/{order_id}/delete/", status_code=status.HTTP_204_NO_CONTENT)

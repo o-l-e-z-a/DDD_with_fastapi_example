@@ -93,6 +93,19 @@ class OrderService:
             await self.uow.commit()
             return await self.uow.orders.find_one_or_none(id=order.id)
 
+    async def update_order_photos(self, order_id: int, photo_before, photo_after):
+        async with self.uow:
+            order = await self.uow.orders.find_one_or_none(id=order_id)
+            if not order:
+                raise OrderNotFoundLogicException(id=order_id)
+            order = await self.uow.orders.update_photo(
+                order=order,
+                photo_before=photo_before,
+                photo_after=photo_after,
+            )
+            await self.uow.commit()
+            return await self.uow.orders.find_one_or_none(id=order.id)
+
     async def delete_order(self, order_id: int, user: User):
         async with self.uow:
             order = await self.uow.orders.find_one_or_none(id=order_id)
