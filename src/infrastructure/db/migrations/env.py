@@ -7,7 +7,7 @@ from src.infrastructure.db.models.base import Base
 from src.infrastructure.db.models.users import Users, UserPoint
 from src.infrastructure.db.models.schedules import (
     Inventory,
-    ConsumableToInventory,
+    ConsumableToService,
     Consumables,
     Service,
     Master,
@@ -63,7 +63,12 @@ def run_migrations_offline() -> None:
 def render_item(type_, obj, autogen_context):
     """Apply custom rendering for selected items."""
 
-    if type_ == "type" and obj.__class__.__module__.startswith("sqlalchemy_utils."):
+    if (
+            type_ == "type"
+            and (
+                    obj.__class__.__module__.startswith("sqlalchemy_utils.")
+                    or obj.__class__.__module__.startswith("sqlalchemy_file."))
+    ):
         autogen_context.imports.add(f"import {obj.__class__.__module__}")
         if hasattr(obj, "choices"):
             return f"{obj.__class__.__module__}.{obj.__class__.__name__}(choices={obj.choices})"

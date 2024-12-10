@@ -3,9 +3,8 @@ from __future__ import annotations
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, Column
-
-# from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import CheckConstraint, Column, ForeignKey, String
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy_file import ImageField
 
@@ -100,6 +99,16 @@ class Order(Base):
         CheckConstraint("total_amount >= 0", name="check_total_amount_positive"),
     )
 
+    @hybrid_property
+    def photo_before_path(self):
+        if self.photo_before:
+            return self.photo_before.get("url", None)
+
+    @hybrid_property
+    def photo_after_path(self):
+        if self.photo_after:
+            return self.photo_after.get("url", None)
+
     def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Order:
         with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
         user = self.user.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
@@ -108,6 +117,8 @@ class Order(Base):
             point_uses=CountNumber(self.point_uses),
             promotion_sale=CountNumber(self.promotion_sale),
             total_amount=PositiveIntNumber(self.total_amount),
+            photo_before_path=self.photo_before_path,
+            photo_after_path=self.photo_after_path,
             user=user,
             slot=slot,
             date_add=self.date_add,
@@ -124,4 +135,6 @@ class Order(Base):
             point_uses=entity.point_uses.as_generic_type(),
             promotion_sale=entity.promotion_sale.as_generic_type(),
             total_amount=entity.total_amount.as_generic_type(),
+            photo_before=entity.photo_before_path,
+            photo_after=entity.photo_after_path,
         )

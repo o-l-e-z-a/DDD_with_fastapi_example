@@ -7,12 +7,12 @@ from src.presentation.api.base.base_schema import BaseSchema
 from src.presentation.api.schedules.schema import ServiceSchema, SlotCreateSchema, SlotSchema
 from src.presentation.api.users.schema import AllUserSchema
 
-int_ge_0 = Annotated[int,  Field(ge=0)]
+int_ge_0 = Annotated[int, Field(ge=0)]
 
 
 class OrderCreateSchema(BaseSchema):
     point: int_ge_0 | None = 0
-    promotion_code: str | None = '0'
+    promotion_code: str | None = "0"
     slot: SlotCreateSchema
 
 
@@ -28,7 +28,8 @@ class OrderSchema(BaseSchema):
     promotion_sale: int_ge_0
     total_amount: int_ge_0
     slot: SlotSchema
-    # photo_before_path: str | None
+    photo_before_path: str | None
+    photo_after_path: str | None
 
 
 class AllOrderSchema(OrderSchema):
@@ -44,7 +45,7 @@ class TotalAmountSchema(BaseSchema):
 
 class TotalAmountCreateSchema(BaseSchema):
     point: int_ge_0 | None = 0
-    promotion_code: str | None = '0'
+    promotion_code: str | None = "0"
     schedule_id: int
 
 

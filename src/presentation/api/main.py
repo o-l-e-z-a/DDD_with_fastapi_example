@@ -1,27 +1,35 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
+from libcloud.storage.drivers.local import LocalStorageDriver
 from sqladmin import Admin
-
-# from libcloud.storage.drivers.local import LocalStorageDriver
-# from sqlalchemy_file.storage import StorageManager
-# from starlette.staticfiles import StaticFiles
+from sqlalchemy_file.storage import StorageManager
 
 from src.infrastructure.db.config import engine
 from src.infrastructure.redis_adapter.redis_connector import RedisConnectorFactory
 from src.presentation.api.admin.auth import authentication_backend
 from src.presentation.api.admin.views import (
-    UsersAdmin, InventoryAdmin,
-    ScheduleAdmin, PromotionAdmin,  ConsumablesAdmin, MasterAdmin,
-    SlotAdmin, UserPointAdmin, ServiceAdmin, OrderAdmin,
+    ConsumablesAdmin,
+    InventoryAdmin,
+    MasterAdmin,
+    OrderAdmin,
+    PromotionAdmin,
+    ScheduleAdmin,
+    ServiceAdmin,
+    SlotAdmin,
+    UserPointAdmin,
+    UsersAdmin,
 )
-
-from src.presentation.api.users.router import router_auth, router_users
-from src.presentation.api.schedules.router import router as schedule_router
 from src.presentation.api.orders.router import router as order_router
+from src.presentation.api.schedules.router import router as schedule_router
+from src.presentation.api.users.router import router_auth, router_users
+
+# from starlette.staticfiles import StaticFiles
+
 
 # os.makedirs("app/media/photos", 0o777, exist_ok=True)
 # container = LocalStorageDriver("app/media").get_container("photos")
@@ -34,6 +42,12 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # os.makedirs("./media/photos", 0o777, exist_ok=True)
     # container = LocalStorageDriver("media").get_container("photos")
     # StorageManager.add_storage("default", container)
+
+    media_dir = Path("src/presentation/api/media")
+    photo_dir = media_dir / Path("photos")
+    photo_dir.mkdir(parents=True, exist_ok=True, mode=0o777)
+    container = LocalStorageDriver(str(media_dir)).get_container("photos")
+    StorageManager.add_storage("default", container)
 
     redis_connector = RedisConnectorFactory.create()
     redis_connection = await redis_connector.get_async_connection()

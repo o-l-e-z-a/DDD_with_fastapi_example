@@ -3,8 +3,11 @@ from src.domain.orders.entities import Order, OrderingProcess, Promotion, TotalA
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
 from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
-from src.logic.exceptions.order_exceptions import OrderNotFoundLogicException, PromotionNotFoundLogicException, \
-    NotUserOrderLogicException
+from src.logic.exceptions.order_exceptions import (
+    NotUserOrderLogicException,
+    OrderNotFoundLogicException,
+    PromotionNotFoundLogicException,
+)
 from src.logic.exceptions.schedule_exceptions import ScheduleNotFoundLogicException, ServiceNotFoundLogicException
 from src.logic.exceptions.user_exceptions import UserPointNotFoundLogicException
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
@@ -99,12 +102,12 @@ class OrderService:
             if not order:
                 raise OrderNotFoundLogicException(id=order_id)
             order = await self.uow.orders.update_photo(
-                order=order,
+                entity=order,
                 photo_before=photo_before,
                 photo_after=photo_after,
             )
             await self.uow.commit()
-            return await self.uow.orders.find_one_or_none(id=order.id)
+            return await self.uow.orders.find_one_or_none(id=order_id)
 
     async def delete_order(self, order_id: int, user: User):
         async with self.uow:

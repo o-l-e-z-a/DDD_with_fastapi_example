@@ -21,13 +21,13 @@ class Promotion(BaseEntity):
 
     def to_dict(self) -> dict:
         return {
-            'id': self.id,
-            'code': self.code.as_generic_type(),
-            'sale': self.sale.as_generic_type(),
-            'is_active': self.is_active,
-            'day_start': self.day_start,
-            'day_end': self.day_end,
-            'services': [service.to_dict() for service in self.services]
+            "id": self.id,
+            "code": self.code.as_generic_type(),
+            "sale": self.sale.as_generic_type(),
+            "is_active": self.is_active,
+            "day_start": self.day_start,
+            "day_end": self.day_end,
+            "services": [service.to_dict() for service in self.services],
         }
 
 
@@ -38,19 +38,23 @@ class Order(BaseEntity):
     point_uses: CountNumber
     promotion_sale: CountNumber
     total_amount: PositiveIntNumber
+    photo_before_path: str | None = None
+    photo_after_path: str | None = None
     date_add: date = datetime.today()
 
     def to_dict(self) -> dict:
         user = self.user.to_dict() if self.user else None
         slot = self.slot.to_dict() if self.slot else None
         return {
-            'id': self.id,
-            'point_uses': self.point_uses.as_generic_type(),
-            'promotion_sale': self.promotion_sale.as_generic_type(),
-            'total_amount': self.total_amount.as_generic_type(),
-            'date_add': self.date_add,
-            'user': user,
-            'slot': slot
+            "id": self.id,
+            "point_uses": self.point_uses.as_generic_type(),
+            "promotion_sale": self.promotion_sale.as_generic_type(),
+            "total_amount": self.total_amount.as_generic_type(),
+            "date_add": self.date_add,
+            "photo_before_path": self.photo_before_path,
+            "photo_after_path": self.photo_after_path,
+            "user": user,
+            "slot": slot,
         }
 
 
@@ -101,12 +105,7 @@ class TotalAmount:
 
 
 class OrderingProcess:
-    def update_slot_time(
-        self,
-        order: Order,
-        time_start: SlotTime,
-        occupied_slots: list[Slot]
-    ):
+    def update_slot_time(self, order: Order, time_start: SlotTime, occupied_slots: list[Slot]):
         slot_for_schedule = SlotsForSchedule()
         if not slot_for_schedule.check_slot_time_is_free(slot_time=time_start, occupied_slots=occupied_slots):
             raise SlotOccupiedException()

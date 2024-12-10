@@ -31,6 +31,7 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         query = self.get_query_to_find_all(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
+        # return scalar
         return scalar.to_domain(with_join=True, child_level=4) if scalar else None
 
     async def find_all(self, **filter_by) -> list[entities.Order]:
@@ -78,6 +79,7 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
 
     async def update_photo(self, entity: entities.Order, photo_after=None, photo_before=None):
         model = self.model.from_entity(entity)
+        # model = entity
         model.photo_before = photo_before
         model.photo_after = photo_after
         await self.session.merge(model)

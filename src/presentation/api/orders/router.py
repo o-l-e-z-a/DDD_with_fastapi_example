@@ -1,25 +1,30 @@
 from dataclasses import asdict
 
-from fastapi import APIRouter, status, Depends, UploadFile
+from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi_cache.decorator import cache
 
-from src.logic.dto.order_dto import OrderCreateDTO, TotalAmountDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO
+from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.exceptions.order_exceptions import NotUserOrderLogicException
 from src.logic.services.order_service import OrderService, PromotionService
-from src.presentation.api.dependencies import get_order_service, CurrentUser, get_promotion_service
+from src.presentation.api.dependencies import CurrentUser, get_order_service, get_promotion_service
 from src.presentation.api.exceptions import NotFoundHTTPException, NotUserOrderException
-from src.presentation.api.orders.schema import AllOrderSchema, OrderSchema, OrderCreateSchema, TotalAmountCreateSchema, \
-    TotalAmountSchema, PromotionSchema, PromotionAddSchema, OrderReportSchema
+from src.presentation.api.orders.schema import (
+    AllOrderSchema,
+    OrderCreateSchema,
+    OrderReportSchema,
+    OrderSchema,
+    PromotionAddSchema,
+    PromotionSchema,
+    TotalAmountCreateSchema,
+    TotalAmountSchema,
+)
 from src.presentation.api.schedules.schema import SlotUpdateSchema
 
-router = APIRouter(
-    prefix='/api',
-    tags=['order']
-)
+router = APIRouter(prefix="/api", tags=["order"])
 
 
-@router.get("/all_orders/", description='все заказы для просмотра мастером')
+@router.get("/all_orders/", description="все заказы для просмотра мастером")
 @cache(expire=60)
 async def get_all_orders(order_service: OrderService = Depends(get_order_service)) -> list[AllOrderSchema]:
     results = await order_service.get_all_orders()
@@ -29,9 +34,9 @@ async def get_all_orders(order_service: OrderService = Depends(get_order_service
 
 @router.post("/total_amount/")
 async def get_total_amount(
-        total_amount_data: TotalAmountCreateSchema,
-        user: CurrentUser,
-        order_service: OrderService = Depends(get_order_service)
+    total_amount_data: TotalAmountCreateSchema,
+    user: CurrentUser,
+    order_service: OrderService = Depends(get_order_service),
 ) -> TotalAmountSchema:
     try:
         total_amount = await order_service.get_total_amount(
@@ -42,7 +47,7 @@ async def get_total_amount(
     return TotalAmountSchema(**asdict(total_amount))
 
 
-@router.get("/orders/", description='все заказы клиента')
+@router.get("/orders/", description="все заказы клиента")
 @cache(expire=60)
 async def get_client_orders(
     user: CurrentUser, order_service: OrderService = Depends(get_order_service)
@@ -54,9 +59,9 @@ async def get_client_orders(
 
 @router.post("/order/add/", status_code=status.HTTP_201_CREATED)
 async def add_order(
-        order_data: OrderCreateSchema,
-        user: CurrentUser,
-        order_service: OrderService = Depends(get_order_service),
+    order_data: OrderCreateSchema,
+    user: CurrentUser,
+    order_service: OrderService = Depends(get_order_service),
 ) -> OrderSchema:
     try:
         order = await order_service.add_order(
@@ -66,9 +71,9 @@ async def add_order(
                     point=order_data.point,
                     promotion_code=order_data.promotion_code,
                 ),
-                time_start=order_data.slot.time_start
+                time_start=order_data.slot.time_start,
             ),
-            user=user
+            user=user,
         )
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
@@ -79,10 +84,10 @@ async def add_order(
 
 @router.put("/order/{order_id}/update/")
 async def update_order(
-        order_id: int,
-        slot_data: SlotUpdateSchema,
-        user: CurrentUser,
-        order_service: OrderService = Depends(get_order_service)
+    order_id: int,
+    slot_data: SlotUpdateSchema,
+    user: CurrentUser,
+    order_service: OrderService = Depends(get_order_service),
 ) -> OrderSchema:
     try:
         order = await order_service.update_order(
@@ -98,12 +103,14 @@ async def update_order(
 
 @router.patch("/order/{order_id}/update_photo/")
 async def update_photo(
-        order_id: int,
-        photo_before: UploadFile,
-        photo_after: UploadFile,
-        order_service: OrderService = Depends(get_order_service)
+    order_id: int,
+    photo_before: UploadFile,
+    photo_after: UploadFile,
+    order_service: OrderService = Depends(get_order_service),
 ) -> OrderSchema:
-    order = order_service.update_order_photos(order_id=order_id, photo_before=photo_before, photo_after=photo_after)
+    order = await order_service.update_order_photos(
+        order_id=order_id, photo_before=photo_before, photo_after=photo_after
+    )
     order_schema = OrderSchema.model_validate(order)
     return order_schema
 
@@ -138,8 +145,7 @@ async def get_promotions(promotion_service: PromotionService = Depends(get_promo
 
 @router.post("/promotion/add/", status_code=status.HTTP_201_CREATED)
 async def add_promotion(
-    promotion_data: PromotionAddSchema,
-    promotion_service: PromotionService = Depends(get_promotion_service)
+    promotion_data: PromotionAddSchema, promotion_service: PromotionService = Depends(get_promotion_service)
 ) -> PromotionSchema:
     promotion = await promotion_service.add_promotion(promotion_data=PromotionAddDTO(**promotion_data.model_dump()))
     promotion_schema = PromotionSchema.model_validate(promotion.to_dict())
@@ -150,7 +156,7 @@ async def add_promotion(
 async def patch_promotion(
     promotion_id: int,
     promotion_data: PromotionAddSchema,
-    promotion_service: PromotionService = Depends(get_promotion_service)
+    promotion_service: PromotionService = Depends(get_promotion_service),
 ) -> PromotionSchema:
     try:
         promotion = await promotion_service.update_promotion(

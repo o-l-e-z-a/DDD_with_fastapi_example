@@ -1,13 +1,12 @@
 from typing import Literal
 
-import redis.exceptions
+import redis.exceptions  # type: ignore[import-untyped]
 
 from redis import Redis
-from redis.asyncio import Redis as AsyncRedis
+from redis.asyncio import Redis as AsyncRedis  # type: ignore[import-untyped]
 
 from src.infrastructure.logger_adapter.logger import init_logger
 from src.presentation.api.settings import settings
-
 
 logger = init_logger(__name__)
 
@@ -15,9 +14,9 @@ logger = init_logger(__name__)
 class RedisConnector:
     def __init__(
         self,
-        host: str | None = settings.REDIS_HOST,
-        port: int | None = settings.REDIS_PORT,
-        db: int | None = settings.REDIS_DB,
+        host: str = settings.REDIS_HOST,
+        port: int = settings.REDIS_PORT,
+        db: int = settings.REDIS_DB,
         decode_responses: Literal[False, True] = True,
     ):
         self.host = host
