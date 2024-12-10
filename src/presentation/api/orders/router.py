@@ -7,7 +7,7 @@ from src.logic.dto.order_dto import OrderCreateDTO, TotalAmountDTO, OrderUpdateD
 from src.logic.services.order_service import OrderService, PromotionService
 from src.presentation.api.dependencies import get_order_service, CurrentUser, get_promotion_service
 from src.presentation.api.orders.schema import AllOrderSchema, OrderSchema, OrderCreateSchema, TotalAmountCreateSchema, \
-    TotalAmountSchema, PromotionSchema, PromotionAddSchema
+    TotalAmountSchema, PromotionSchema, PromotionAddSchema, OrderReportSchema
 from src.presentation.api.schedules.schema import SlotUpdateSchema
 
 router = APIRouter(
@@ -108,11 +108,11 @@ async def delete_order(
     await order_service.delete_order(order_id=order_id, user=user)
 
 
-# @router.post("/service_report/")
-# async def get_service_report(order_service: OrderService = Depends(get_order_service)) -> list[OrderReportSchema]:
-#     report_results = await order_service.g()
-#     order_schema = [OrderReportSchema.model_validate(report) for report in report_results]
-#     return order_schema
+@router.post("/service_report/")
+async def get_service_report(order_service: OrderService = Depends(get_order_service)) -> list[OrderReportSchema]:
+    report_results = await order_service.get_service_report()
+    order_schema = [OrderReportSchema.model_validate(report) for report in report_results]
+    return order_schema
 
 
 @router.get("/promotions/")
@@ -128,7 +128,6 @@ async def add_promotion(
     promotion_service: PromotionService = Depends(get_promotion_service)
 ) -> PromotionSchema:
     promotion = await promotion_service.add_promotion(promotion_data=PromotionAddDTO(**promotion_data.model_dump()))
-    print(promotion)
     promotion_schema = PromotionSchema.model_validate(promotion.to_dict())
     return promotion_schema
 

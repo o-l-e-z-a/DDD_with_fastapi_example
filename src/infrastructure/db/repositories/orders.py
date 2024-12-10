@@ -10,7 +10,7 @@ from src.infrastructure.db.repositories.base import GenericSQLAlchemyRepository
 class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
     model = Order
 
-    async def get_order_report_by_service(self):
+    async def get_order_report_by_service(self) -> dict[str, int | str]:
         query = (
             select(
                 Service.id,

@@ -118,8 +118,10 @@ class OrderService:
             await self.uow.slots.delete(id=order.slot.id)
             await self.uow.commit()
 
-    async def get_service_report(self):
-        pass
+    async def get_service_report(self) -> dict[str, int | str]:
+        async with self.uow:
+            orders = await self.uow.orders.get_order_report_by_service()
+        return orders
 
 
 class PromotionService:

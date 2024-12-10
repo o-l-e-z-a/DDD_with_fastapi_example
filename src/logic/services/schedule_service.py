@@ -100,8 +100,10 @@ class MasterService:
             masters = await self.uow.masters.filter_by_service(service_id=service_int)
         return masters
 
-    async def get_master_report(self):
-        pass
+    async def get_master_report(self) -> dict[str, int | str]:
+        async with self.uow:
+            masters = await self.uow.masters.get_order_report_by_master()
+        return masters
 
 
 class ScheduleService:

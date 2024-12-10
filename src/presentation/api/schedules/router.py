@@ -44,7 +44,6 @@ async def patch_inventory(
         inventory_data: InventoryUpdateSchema,
         procedure_service: ProcedureService = Depends(get_procedure_service)
 ) -> InventorySchema:
-    print(f'inventory_data; {inventory_data}')
     inventory = await procedure_service.update_inventory(
          InventoryUpdateDTO(**inventory_data.model_dump(exclude_unset=True), inventory_id=inventory_id)
     )
@@ -106,7 +105,7 @@ async def get_masters_for_service(
 # @cache(expire=60)
 async def get_master_report(master_service: MasterService = Depends(get_master_service)) -> list[MasterReportSchema]:
     results = await master_service.get_master_report()
-    master_schemas = [MasterReportSchema.model_validate(master.to_dict()) for master in results]
+    master_schemas = [MasterReportSchema.model_validate(master) for master in results]
     return master_schemas
 
 
@@ -148,14 +147,13 @@ async def get_day_for_master(
     return MasterDaysSchema(days=days)
 
 
-@cache(expire=60)
 @router.get("/slots/{schedule_pk}/", description='slot_for_day')
+# @cache(expire=60)
 async def get_slot_for_day(
         schedule_pk: int,
         schedule_service: ScheduleService = Depends(get_schedule_service)
 ) -> SlotsTimeSchema:
     all_day_slots = await schedule_service.get_slot_for_day(schedule_id=schedule_pk)
-    print(all_day_slots)
     return SlotsTimeSchema(slots=[slot_time.as_generic_type() for slot_time in all_day_slots])
 
 
