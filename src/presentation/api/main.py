@@ -11,14 +11,16 @@ from fastapi import FastAPI
 
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
+from sqladmin import Admin
 
+from src.infrastructure.db.config import engine
 from src.infrastructure.redis_adapter.redis_connector import RedisConnectorFactory
-# from app.admin.auth import authentication_backend
-# from app.admin.views import (
-#     UsersAdmin, InventoryAdmin,
-#     ScheduleAdmin, PromotionAdmin,  ConsumablesAdmin, MasterAdmin,
-#     SlotAdmin, UserPointAdmin, ServiceAdmin, OrderAdmin,
-# )
+from src.presentation.api.admin.auth import authentication_backend
+from src.presentation.api.admin.views import (
+    UsersAdmin, InventoryAdmin,
+    ScheduleAdmin, PromotionAdmin,  ConsumablesAdmin, MasterAdmin,
+    SlotAdmin, UserPointAdmin, ServiceAdmin, OrderAdmin,
+)
 
 from src.presentation.api.users.router import router_auth, router_users
 from src.presentation.api.schedules.router import router as schedule_router
@@ -45,7 +47,6 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(lifespan=lifespan)
-# app = FastAPI()
 
 app.include_router(router_auth)
 app.include_router(router_users)
@@ -60,17 +61,14 @@ app.include_router(order_router)
 # StorageManager.add_storage("default", container)
 
 
-# admin = Admin(
-#     app, engine,
-#     authentication_backend=authentication_backend
-# )
-# admin.add_view(UsersAdmin)
-# admin.add_view(InventoryAdmin)
-# admin.add_view(ScheduleAdmin)
-# admin.add_view(ServiceAdmin)
-# admin.add_view(PromotionAdmin)
-# admin.add_view(ConsumablesAdmin)
-# admin.add_view(MasterAdmin)
-# admin.add_view(SlotAdmin)
-# admin.add_view(UserPointAdmin)
-# admin.add_view(OrderAdmin)
+admin = Admin(app, engine, authentication_backend=authentication_backend)
+admin.add_view(UsersAdmin)
+admin.add_view(InventoryAdmin)
+admin.add_view(ScheduleAdmin)
+admin.add_view(ServiceAdmin)
+admin.add_view(PromotionAdmin)
+admin.add_view(ConsumablesAdmin)
+admin.add_view(MasterAdmin)
+admin.add_view(SlotAdmin)
+admin.add_view(UserPointAdmin)
+admin.add_view(OrderAdmin)
