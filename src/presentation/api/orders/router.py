@@ -17,7 +17,7 @@ router = APIRouter(
 
 
 @router.get("/all_orders/", description='все заказы для просмотра мастером')
-# @cache(expire=60)
+@cache(expire=60)
 async def get_all_orders(order_service: OrderService = Depends(get_order_service)) -> list[AllOrderSchema]:
     results = await order_service.get_all_orders()
     order_schemas = [AllOrderSchema.model_validate(order.to_dict()) for order in results]
@@ -37,7 +37,7 @@ async def get_total_amount(
 
 
 @router.get("/orders/", description='все заказы клиента')
-# @cache(expire=60)
+@cache(expire=60)
 async def get_client_orders(user: CurrentUser, order_service: OrderService = Depends(get_order_service)) -> list[OrderSchema]:
     results = await order_service.get_client_orders(user=user)
     order_schemas = [OrderSchema.model_validate(order.to_dict()) for order in results]

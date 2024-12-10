@@ -26,7 +26,7 @@ async def get_services(procedure_service: ProcedureService = Depends(get_procedu
 
 
 @router.get("/inventories/", tags=['inventory'])
-# @cache(expire=60)
+@cache(expire=60)
 async def get_inventories(procedure_service: ProcedureService = Depends(get_procedure_service)) -> list[InventorySchema]:
     results = await procedure_service.get_inventories()
     inventory_schemas = [InventorySchema.model_validate(inventory.to_dict()) for inventory in results]
@@ -62,7 +62,7 @@ async def add_inventory(
 
 
 @router.get("/all_masters/")
-# @cache(expire=60)
+@cache(expire=60)
 async def get_all_masters(master_service: MasterService = Depends(get_master_service)) -> list[MasterSchema]:
     results = await master_service.get_all_masters()
     master_schemas = [MasterSchema.model_validate(master.to_dict()) for master in results]
@@ -102,7 +102,7 @@ async def get_masters_for_service(
 
 
 @router.get("/master_report/")
-# @cache(expire=60)
+@cache(expire=60)
 async def get_master_report(master_service: MasterService = Depends(get_master_service)) -> list[MasterReportSchema]:
     results = await master_service.get_master_report()
     master_schemas = [MasterReportSchema.model_validate(master) for master in results]
@@ -110,7 +110,7 @@ async def get_master_report(master_service: MasterService = Depends(get_master_s
 
 
 @router.get("/schedules/")
-# @cache(expire=60)
+@cache(expire=60)
 async def get_schedules(schedule_service: ScheduleService = Depends(get_schedule_service)) -> list[ScheduleSchema]:
     results = await schedule_service.get_schedules()
     schedule_schemas = [ScheduleSchema.model_validate(schedule.to_dict()) for schedule in results]
@@ -128,7 +128,7 @@ async def add_schedule(
 
 
 @router.get("/master_days/")
-# @cache(expire=60)
+@cache(expire=60)
 async def get_master_days(
         master: CurrentMaster,
         schedule_service: ScheduleService = Depends(get_schedule_service)
@@ -148,7 +148,7 @@ async def get_day_for_master(
 
 
 @router.get("/slots/{schedule_pk}/", description='slot_for_day')
-# @cache(expire=60)
+@cache(expire=60)
 async def get_slot_for_day(
         schedule_pk: int,
         schedule_service: ScheduleService = Depends(get_schedule_service)

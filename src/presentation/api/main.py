@@ -1,3 +1,6 @@
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
+
 from fastapi import FastAPI
 
 # from libcloud.storage.drivers.local import LocalStorageDriver
@@ -6,7 +9,10 @@ from fastapi import FastAPI
 # from sqlalchemy_file.storage import StorageManager
 # from starlette.staticfiles import StaticFiles
 
-# from app.infrastructure.redis_config import get_redis_connection
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+
+from src.infrastructure.redis_adapter.redis_connector import RedisConnectorFactory
 # from app.admin.auth import authentication_backend
 # from app.admin.views import (
 #     UsersAdmin, InventoryAdmin,
@@ -23,21 +29,23 @@ from src.presentation.api.orders.router import router as order_router
 # StorageManager.add_storage("default", container)
 
 
-# @asynccontextmanager
-# async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-# os.makedirs("app/media/photos", 0o777, exist_ok=True)
-# os.makedirs("./media/photos", 0o777, exist_ok=True)
-# container = LocalStorageDriver("media").get_container("photos")
-# StorageManager.add_storage("default", container)
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # os.makedirs("app/media/photos", 0o777, exist_ok=True)
+    # os.makedirs("./media/photos", 0o777, exist_ok=True)
+    # container = LocalStorageDriver("media").get_container("photos")
+    # StorageManager.add_storage("default", container)
 
-# redis_connection = get_redis_connection(decode_responses=False)
-# FastAPICache.init(RedisBackend(redis_connection), prefix="cache")
-# yield
-#
-# await redis_connection.close()
+    redis_connector = RedisConnectorFactory.create()
+    redis_connection = await redis_connector.get_async_connection()
+    FastAPICache.init(RedisBackend(redis_connection), prefix="cache")
+    yield
+    if redis_connection:
+        await redis_connection.close()
 
-# app = FastAPI(lifespan=lifespan)
-app = FastAPI()
+
+app = FastAPI(lifespan=lifespan)
+# app = FastAPI()
 
 app.include_router(router_auth)
 app.include_router(router_users)
