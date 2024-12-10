@@ -60,15 +60,16 @@ class UserIsNotMasterException(BaseException):
     detail = "Пользователь не является мастером"
 
 
+class NotUserOrderException(BaseException):
+    status_code = status.HTTP_403_FORBIDDEN
+    detail = "Пользователь не может редактировать чужой заказ"
+
+
 class CannotAddDataToDatabase(BaseException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     detail = "Не удалось добавить запись"
 
 
-class NotFoundHTTPException(HTTPException):
+class NotFoundHTTPException(BaseException):
     status_code = status.HTTP_404_NOT_FOUND
-    detail = ""
-
-    def __init__(self, detail: str | None = None):
-        detail = detail if detail else self.detail
-        super().__init__(status_code=self.status_code, detail=detail)
+    detail = 'Запись не найдена'

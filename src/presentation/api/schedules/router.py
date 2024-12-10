@@ -3,10 +3,12 @@ from datetime import date
 from fastapi import APIRouter, status, Depends
 from fastapi_cache.decorator import cache
 
+from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.services.schedule_service import ProcedureService, MasterService, ScheduleService
 from src.presentation.api.dependencies import get_procedure_service, get_master_service, get_schedule_service, \
-    CurrentMaster
+    CurrentMaster, CurrentAdmin
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
+from src.presentation.api.exceptions import NotFoundHTTPException
 from src.presentation.api.schedules.schema import ServiceSchema, InventorySchema, InventoryAddSchema, \
     InventoryUpdateSchema, MasterAddSchema, MasterReportSchema, MasterWithoutServiceSchema, MasterSchema, \
     ScheduleSchema, MasterDaysSchema, SlotsTimeSchema, SlotSchema, ScheduleAddSchema
@@ -27,34 +29,49 @@ async def get_services(procedure_service: ProcedureService = Depends(get_procedu
 
 @router.get("/inventories/", tags=['inventory'])
 @cache(expire=60)
-async def get_inventories(procedure_service: ProcedureService = Depends(get_procedure_service)) -> list[InventorySchema]:
+async def get_inventories(
+    # admin: CurrentAdmin,
+    procedure_service: ProcedureService = Depends(get_procedure_service)
+) -> list[InventorySchema]:
     results = await procedure_service.get_inventories()
     inventory_schemas = [InventorySchema.model_validate(inventory.to_dict()) for inventory in results]
     return inventory_schemas
 
 
 @router.delete("/inventory/{inventory_id}/delete/", tags=['inventory'], status_code=status.HTTP_204_NO_CONTENT)
-async def delete_inventory(inventory_id: int, procedure_service: ProcedureService = Depends(get_procedure_service)):
-    await procedure_service.delete_inventory(inventory_id=inventory_id)
+async def delete_inventory(
+    # admin: CurrentAdmin,
+    inventory_id: int,
+    procedure_service: ProcedureService = Depends(get_procedure_service)
+):
+    try:
+        await procedure_service.delete_inventory(inventory_id=inventory_id)
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
 
 
 @router.patch("/inventory/{inventory_id}/update/", tags=['inventory'])
 async def patch_inventory(
-        inventory_id: int,
-        inventory_data: InventoryUpdateSchema,
-        procedure_service: ProcedureService = Depends(get_procedure_service)
+    # admin: CurrentAdmin,
+    inventory_id: int,
+    inventory_data: InventoryUpdateSchema,
+    procedure_service: ProcedureService = Depends(get_procedure_service)
 ) -> InventorySchema:
-    inventory = await procedure_service.update_inventory(
-         InventoryUpdateDTO(**inventory_data.model_dump(exclude_unset=True), inventory_id=inventory_id)
-    )
+    try:
+        inventory = await procedure_service.update_inventory(
+             InventoryUpdateDTO(**inventory_data.model_dump(exclude_unset=True), inventory_id=inventory_id)
+        )
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
     inventory_schema = InventorySchema.model_validate(inventory.to_dict())
     return inventory_schema
 
 
 @router.post("/inventory/add/", tags=['inventory'], status_code=status.HTTP_201_CREATED)
 async def add_inventory(
-        inventory_data: InventoryAddSchema,
-        procedure_service: ProcedureService = Depends(get_procedure_service)
+    # admin: CurrentAdmin,
+    inventory_data: InventoryAddSchema,
+    procedure_service: ProcedureService = Depends(get_procedure_service)
 ) -> InventorySchema:
     inventory = await procedure_service.add_inventory(InventoryAddDTO(**inventory_data.model_dump()))
     inventory_schema = InventorySchema.model_validate(inventory.to_dict())
@@ -70,7 +87,10 @@ async def get_all_masters(master_service: MasterService = Depends(get_master_ser
 
 
 @router.get("/all_user_to_add_masters/")
-async def get_all_user_to_add_masters(master_service: MasterService = Depends(get_master_service)) -> list[AllUserSchema]:
+async def get_all_user_to_add_masters(
+    # admin: CurrentAdmin,
+    master_service: MasterService = Depends(get_master_service)
+) -> list[AllUserSchema]:
     results = await master_service.get_all_user_to_add_masters()
     user_schemas = [AllUserSchema.model_validate(user.to_dict()) for user in results]
     return user_schemas
@@ -78,15 +98,19 @@ async def get_all_user_to_add_masters(master_service: MasterService = Depends(ge
 
 @router.post("/master/add/", status_code=status.HTTP_201_CREATED)
 async def add_master(
-        master_data: MasterAddSchema,
-        master_service: MasterService = Depends(get_master_service)
+    # admin: CurrentAdmin,
+    master_data: MasterAddSchema,
+    master_service: MasterService = Depends(get_master_service)
 ) -> MasterSchema:
     services_ids = list(map(int, master_data.services.split(',')))
-    master = await master_service.add_master(MasterAddDTO(
-        description=master_data.description,
-        user_id=master_data.user_id,
-        services=services_ids
-    ))
+    try:
+        master = await master_service.add_master(MasterAddDTO(
+            description=master_data.description,
+            user_id=master_data.user_id,
+            services=services_ids
+        ))
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
     master_schema = MasterSchema.model_validate(master.to_dict())
     return master_schema
 
@@ -103,7 +127,10 @@ async def get_masters_for_service(
 
 @router.get("/master_report/")
 @cache(expire=60)
-async def get_master_report(master_service: MasterService = Depends(get_master_service)) -> list[MasterReportSchema]:
+async def get_master_report(
+    # admin: CurrentAdmin,
+    master_service: MasterService = Depends(get_master_service)
+) -> list[MasterReportSchema]:
     results = await master_service.get_master_report()
     master_schemas = [MasterReportSchema.model_validate(master) for master in results]
     return master_schemas
@@ -119,10 +146,14 @@ async def get_schedules(schedule_service: ScheduleService = Depends(get_schedule
 
 @router.post("/schedule/add/", status_code=status.HTTP_201_CREATED)
 async def add_schedule(
+    # admin: CurrentAdmin,
     schedule_data: ScheduleAddSchema,
     schedule_service: ScheduleService = Depends(get_schedule_service)
 ) -> ScheduleSchema:
-    schedule = await schedule_service.add_schedule(ScheduleAddDTO(**schedule_data.model_dump(exclude_unset=True)))
+    try:
+        schedule = await schedule_service.add_schedule(ScheduleAddDTO(**schedule_data.model_dump(exclude_unset=True)))
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
     schedule_schema = ScheduleSchema.model_validate(schedule.to_dict())
     return schedule_schema
 

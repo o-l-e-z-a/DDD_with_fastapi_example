@@ -42,6 +42,7 @@ class Users(Base[entities.User]):
             last_name=HumanName(self.last_name),
             telephone=Telephone(self.telephone),
             date_birthday=self.date_birthday,
+            is_admin=self.is_superuser
         )
         user.hashed_password = self.hashed_password
         user.id = self.id
@@ -57,6 +58,7 @@ class Users(Base[entities.User]):
             last_name=entity.last_name.as_generic_type(),
             telephone=entity.telephone.as_generic_type(),
             date_birthday=entity.date_birthday,
+            is_superuser=entity.is_admin,
         )
 
     def __repr__(self):

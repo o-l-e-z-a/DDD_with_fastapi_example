@@ -138,3 +138,12 @@ async def get_current_master(user: CurrentUser, master_service: MasterService = 
     raise UserIsNotMasterException
 
 CurrentMaster = Annotated[Master, Depends(get_current_master)]
+
+
+async def get_current_admin(user: CurrentUser) -> User:
+    if user.is_admin:
+        return user
+    raise UserIsNotAdminException
+
+
+CurrentAdmin = Annotated[User, Depends(get_current_admin)]

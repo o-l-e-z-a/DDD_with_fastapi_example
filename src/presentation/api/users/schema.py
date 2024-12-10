@@ -36,6 +36,7 @@ class AllUserSchema(BaseSchema):
     first_name: str
     last_name: str
     telephone: str
+    is_admin: bool
 
     # @computed_field
     # @property

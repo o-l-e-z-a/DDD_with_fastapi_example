@@ -14,8 +14,9 @@ class User(BaseEntity):
     last_name: HumanName
     telephone: Telephone
     date_birthday: date | None = None
+
     # is_active: bool = True
-    # is_superuser: bool = False
+    is_admin: bool = False
     # created_at: datetime = field(init=False)
     # updated_at: datetime = field(init=False)
 
@@ -27,6 +28,7 @@ class User(BaseEntity):
             'last_name': self.last_name.as_generic_type(),
             'telephone': self.telephone.as_generic_type(),
             'date_birthday': self.date_birthday,
+            'is_admin': self.is_admin,
         }
 
 

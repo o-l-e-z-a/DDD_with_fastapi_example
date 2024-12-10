@@ -55,6 +55,9 @@ class ProcedureService:
 
     async def delete_inventory(self, inventory_id: int):
         async with self.uow:
+            inventory = await self.uow.inventories.find_one_or_none(id=inventory_id)
+            if not inventory:
+                raise InventoryNotFoundLogicException(inventory_id)
             await self.uow.inventories.delete(id=inventory_id)
             await self.uow.commit()
 

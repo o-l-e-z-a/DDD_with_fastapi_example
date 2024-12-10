@@ -4,8 +4,11 @@ from fastapi import APIRouter, status, Depends
 from fastapi_cache.decorator import cache
 
 from src.logic.dto.order_dto import OrderCreateDTO, TotalAmountDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO
+from src.logic.exceptions.base_exception import NotFoundLogicException
+from src.logic.exceptions.order_exceptions import NotUserOrderLogicException
 from src.logic.services.order_service import OrderService, PromotionService
 from src.presentation.api.dependencies import get_order_service, CurrentUser, get_promotion_service
+from src.presentation.api.exceptions import NotFoundHTTPException, NotUserOrderException
 from src.presentation.api.orders.schema import AllOrderSchema, OrderSchema, OrderCreateSchema, TotalAmountCreateSchema, \
     TotalAmountSchema, PromotionSchema, PromotionAddSchema, OrderReportSchema
 from src.presentation.api.schedules.schema import SlotUpdateSchema
@@ -30,9 +33,12 @@ async def get_total_amount(
         user: CurrentUser,
         order_service: OrderService = Depends(get_order_service)
 ) -> TotalAmountSchema:
-    total_amount = await order_service.get_total_amount(
-        total_amount_dto=TotalAmountDTO(**total_amount_data.model_dump()), user=user
-    )
+    try:
+        total_amount = await order_service.get_total_amount(
+            total_amount_dto=TotalAmountDTO(**total_amount_data.model_dump()), user=user
+        )
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
     return TotalAmountSchema(**asdict(total_amount))
 
 
@@ -50,17 +56,20 @@ async def add_order(
         user: CurrentUser,
         order_service: OrderService = Depends(get_order_service),
 ) -> OrderSchema:
-    order = await order_service.add_order(
-        order_data=OrderCreateDTO(
-            total_amount=TotalAmountDTO(
-                schedule_id=order_data.slot.schedule_id,
-                point=order_data.point,
-                promotion_code=order_data.promotion_code,
+    try:
+        order = await order_service.add_order(
+            order_data=OrderCreateDTO(
+                total_amount=TotalAmountDTO(
+                    schedule_id=order_data.slot.schedule_id,
+                    point=order_data.point,
+                    promotion_code=order_data.promotion_code,
+                ),
+                time_start=order_data.slot.time_start
             ),
-            time_start=order_data.slot.time_start
-        ),
-        user=user
-    )
+            user=user
+        )
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
     order_schema = OrderSchema.model_validate(order.to_dict())
     # order_create_send_mail_task.delay(order_dict)
     return order_schema
@@ -73,9 +82,14 @@ async def update_order(
         user: CurrentUser,
         order_service: OrderService = Depends(get_order_service)
 ) -> OrderSchema:
-    order = await order_service.update_order(
-        order_data=OrderUpdateDTO(**slot_data.model_dump(), order_id=order_id), user=user
-    )
+    try:
+        order = await order_service.update_order(
+            order_data=OrderUpdateDTO(**slot_data.model_dump(), order_id=order_id), user=user
+        )
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    except NotUserOrderLogicException as err:
+        raise NotUserOrderException(detail=err.title)
     order_schema = OrderSchema.model_validate(order.to_dict())
     return order_schema
 
@@ -105,7 +119,12 @@ async def delete_order(
     user: CurrentUser,
     order_service: OrderService = Depends(get_order_service),
 ):
-    await order_service.delete_order(order_id=order_id, user=user)
+    try:
+        await order_service.delete_order(order_id=order_id, user=user)
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    except NotUserOrderLogicException as err:
+        raise NotUserOrderException(detail=err.title)
 
 
 @router.post("/service_report/")
@@ -138,13 +157,19 @@ async def patch_promotion(
     promotion_data: PromotionAddSchema,
     promotion_service: PromotionService = Depends(get_promotion_service)
 ) -> PromotionSchema:
-    promotion = await promotion_service.update_promotion(
-        promotion_data=PromotionUpdateDTO(**promotion_data.model_dump(), promotion_id=promotion_id)
-    )
+    try:
+        promotion = await promotion_service.update_promotion(
+            promotion_data=PromotionUpdateDTO(**promotion_data.model_dump(), promotion_id=promotion_id)
+        )
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
     promotion_schema = PromotionSchema.model_validate(promotion.to_dict())
     return promotion_schema
 
 
 @router.delete("/promotion/{promotion_id}/delete/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_promotion(promotion_id: int, promotion_service: PromotionService = Depends(get_promotion_service)):
-    await promotion_service.delete_promotion(promotion_id=promotion_id)
+    try:
+        await promotion_service.delete_promotion(promotion_id=promotion_id)
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)

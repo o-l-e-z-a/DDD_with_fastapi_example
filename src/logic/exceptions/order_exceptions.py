@@ -7,7 +7,7 @@ from src.logic.exceptions.base_exception import NotFoundLogicException, LogicExc
 class NotUserOrderLogicException(LogicException):
     @property
     def title(self) -> str:
-        return "Ошибка логики работы приложения"
+        return "Пользователь не может редактировать чужой заказ"
 
 
 @dataclass(eq=False)

@@ -2,16 +2,13 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
-
-# from libcloud.storage.drivers.local import LocalStorageDriver
-
-
-# from sqlalchemy_file.storage import StorageManager
-# from starlette.staticfiles import StaticFiles
-
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from sqladmin import Admin
+
+# from libcloud.storage.drivers.local import LocalStorageDriver
+# from sqlalchemy_file.storage import StorageManager
+# from starlette.staticfiles import StaticFiles
 
 from src.infrastructure.db.config import engine
 from src.infrastructure.redis_adapter.redis_connector import RedisConnectorFactory

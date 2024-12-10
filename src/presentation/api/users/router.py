@@ -4,7 +4,7 @@ from src.domain.users.entities import User
 from src.logic.dto.user_dto import UserCreateDTO, UserLoginDTO
 from src.logic.services.users_service import UserService
 from src.presentation.api.dependencies import CurrentUser, get_current_user_for_refresh, get_user_service
-from src.presentation.api.users.schema import UserCreateSchema, UserLoginSchema, UserPointSchema
+from src.presentation.api.users.schema import UserCreateSchema, UserLoginSchema, UserPointSchema, AllUserSchema
 from src.presentation.api.users.utils import ACCESS_TOKEN_COOKIE_FIELD, create_access_token, create_refresh_token
 
 router_auth = APIRouter(prefix="/auth", tags=["auth"])
@@ -48,8 +48,8 @@ async def logout_user(response: Response):
 
 
 @router_users.get("/me/")
-async def read_users_me(current_user: CurrentUser):
-    return current_user
+async def read_users_me(current_user: CurrentUser) -> AllUserSchema:
+    return AllUserSchema.model_validate(current_user.to_dict())
 
 
 @router_users.get("/user_point/")

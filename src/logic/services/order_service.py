@@ -170,5 +170,8 @@ class PromotionService:
 
     async def delete_promotion(self, promotion_id: int):
         async with self.uow:
+            promotion = await self.uow.promotions.find_one_or_none(id=promotion_id)
+            if not promotion:
+                raise PromotionNotFoundLogicException(id=promotion_id)
             await self.uow.promotions.delete(id=promotion_id)
             await self.uow.commit()
