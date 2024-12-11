@@ -5,19 +5,19 @@ from src.logic.exceptions.base_exception import NotFoundLogicException
 
 @dataclass(eq=False)
 class InventoryNotFoundLogicException(NotFoundLogicException):
-    model: str = 'Инвентарь'
+    model: str = "Инвентарь"
 
 
 @dataclass(eq=False)
 class ServiceNotFoundLogicException(NotFoundLogicException):
-    model: str = 'Инвентарь'
+    model: str = "Сервис"
 
 
 @dataclass(eq=False)
 class MasterNotFoundLogicException(NotFoundLogicException):
-    model: str = 'Мастер'
+    model: str = "Мастер"
 
 
 @dataclass(eq=False)
 class ScheduleNotFoundLogicException(NotFoundLogicException):
-    model: str = 'Расписание'
+    model: str = "Расписание"

@@ -22,7 +22,8 @@ def fake_user_point_repo_with_data(ivanov_user_point, petrov_user_point):
 @pytest.fixture()
 def user_service_with_data(fake_user_repo_with_data, fake_user_point_repo_with_data):
     fake_uow = FakeUsersUnitOfWork(
-        fake_user_repo=fake_user_repo_with_data, fake_users_statistics=fake_user_point_repo_with_data
+        fake_user_repo=fake_user_repo_with_data,
+        fake_users_statistics=fake_user_point_repo_with_data
     )
     return UserService(uow=fake_uow)
 

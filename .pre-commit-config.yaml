@@ -15,10 +15,10 @@ repos:
         args: ["--profile", "black", "--filter-files"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
+    rev: v1.12.0
     hooks:
         -   id: mypy
-            exclude: (^tests/)|(tesT1.py)|(tesT2.py)|(views.py)
+            exclude: (tests\/)|(tesT.*.py)
             additional_dependencies: [
               pydantic==2.9.2,
               types-redis
@@ -30,9 +30,9 @@ repos:
     hooks:
       - id: ruff
         args: [ --fix ]
-        exclude: (?x)(^tests/|tesT1.py|tesT2.py)
+        exclude: (^tests/|tesT1.py|tesT2.py)
       - id: ruff-format
-        exclude: (?x)(^tests/|tesT1.py|tesT2.py)
+        exclude: (^tests/|tesT1.py|tesT2.py)
 
   - repo: https://github.com/hadolint/hadolint
     rev: v2.12.0

@@ -1,8 +1,12 @@
-from sqlalchemy import func, select
+from typing import Sequence
+
+from sqlalchemy import RowMapping, func, select
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy_file import File
+from sqlalchemy_file.exceptions import ContentTypeValidationError
 
 from src.domain.orders import entities
+from src.infrastructure.db.exceptions import UpdateException
 from src.infrastructure.db.models.orders import Order, Promotion
 from src.infrastructure.db.models.schedules import Master, Schedule, Service, Slot
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyRepository
@@ -12,7 +16,7 @@ from src.logic.dto.order_dto import PhotoDTO
 class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
     model = Order
 
-    async def get_order_report_by_service(self) -> dict[str, int | str]:
+    async def get_order_report_by_service(self) -> Sequence[RowMapping]:
         query = (
             select(
                 Service.id,
@@ -80,18 +84,22 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
 
     async def update_photo(self, entity: entities.Order, photo_after: PhotoDTO, photo_before: PhotoDTO):
         model = self.model.from_entity(entity)
-        model.photo_before = File(
+        model.photo_before = File(  # type: ignore[assignment]
             content=photo_before, content_type=photo_before.content_type, filename=photo_before.filename
         )
-        model.photo_after = File(
+        model.photo_after = File(  # type: ignore[assignment]
             content=photo_after, content_type=photo_after.content_type, filename=photo_after.filename
         )
-        await self.session.merge(model)
-        await self.session.flush()
+        try:
+            await self.session.merge(model)
+            await self.session.flush()
+        except ContentTypeValidationError as err:
+            # print(err.msg)
+            raise UpdateException(detail=err.msg, entity=entity)
         return model.to_domain()
 
 
-class PromotionRepository(GenericSQLAlchemyRepository[Order, entities.Promotion]):
+class PromotionRepository(GenericSQLAlchemyRepository[Promotion, entities.Promotion]):
     model = Promotion
 
     async def add(self, entity: entities.Promotion) -> entities.Promotion:

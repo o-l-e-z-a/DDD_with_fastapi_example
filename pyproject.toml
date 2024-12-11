@@ -72,6 +72,7 @@ skip = [
 
 
 [tool.mypy]
+exclude = "(?x)(tests/|tesT.*py|views.py)"
 python_version = "3.12"
 ignore_missing_imports = true
 no_strict_optional = true
@@ -82,5 +83,6 @@ explicit_package_bases = true
 check_untyped_defs = true
 plugins = [
     "pydantic.mypy",
+#    "redis"
 #    "sqlalchemy.ext.mypy.plugin"
 ]

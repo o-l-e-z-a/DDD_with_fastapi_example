@@ -24,9 +24,11 @@ class UserCreateSchema(BaseSchema):
     @field_validator("password")
     @classmethod
     def name_must_contain_space(cls, password: str) -> str:
-        pattern = r"(?=\D*\d)(?=[^A-Z]*[A-Z])(?=[^a-z]*[a-z])[A-Za-z0-9!@#$%^&*()]{8,}$"
+        pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^\w\s]).{8,}"
         if not re.search(pattern, password):
-            raise ValueError("Password need upper and simple letter, 1 digit and 1 symbol with summary length 8")
+            raise ValueError(
+                "Password need upper and simple letter, 1 digit and 1 symbol with minimal summary length 8"
+            )
         return password
 
 

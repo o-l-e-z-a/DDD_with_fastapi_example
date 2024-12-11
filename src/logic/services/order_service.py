@@ -1,3 +1,7 @@
+from typing import Sequence
+
+from sqlalchemy import RowMapping
+
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders.entities import Order, OrderingProcess, Promotion, TotalAmount, TotalAmountResult
 from src.domain.schedules.values import SlotTime
@@ -141,7 +145,7 @@ class OrderService:
             await self.uow.slots.delete(id=order.slot.id)
             await self.uow.commit()
 
-    async def get_service_report(self) -> dict[str, int | str]:
+    async def get_service_report(self) -> Sequence[RowMapping]:
         async with self.uow:
             orders = await self.uow.orders.get_order_report_by_service()
         return orders

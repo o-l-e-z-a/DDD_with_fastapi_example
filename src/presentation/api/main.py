@@ -8,6 +8,7 @@ from fastapi_cache.backends.redis import RedisBackend
 from libcloud.storage.drivers.local import LocalStorageDriver
 from sqladmin import Admin
 from sqlalchemy_file.storage import StorageManager
+from starlette.staticfiles import StaticFiles
 
 from src.infrastructure.db.config import engine
 from src.infrastructure.redis_adapter.redis_connector import RedisConnectorFactory
@@ -28,26 +29,15 @@ from src.presentation.api.orders.router import router as order_router
 from src.presentation.api.schedules.router import router as schedule_router
 from src.presentation.api.users.router import router_auth, router_users
 
-# from starlette.staticfiles import StaticFiles
-
-
-# os.makedirs("app/media/photos", 0o777, exist_ok=True)
-# container = LocalStorageDriver("app/media").get_container("photos")
-# StorageManager.add_storage("default", container)
+media_dir = Path("src/presentation/api/media")
+photo_dir = media_dir / Path("photos")
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    # os.makedirs("app/media/photos", 0o777, exist_ok=True)
-    # os.makedirs("./media/photos", 0o777, exist_ok=True)
-    # container = LocalStorageDriver("media").get_container("photos")
-    # StorageManager.add_storage("default", container)
-
-    media_dir = Path("src/presentation/api/media")
-    photo_dir = media_dir / Path("photos")
     photo_dir.mkdir(parents=True, exist_ok=True, mode=0o777)
     container = LocalStorageDriver(str(media_dir)).get_container("photos")
-    StorageManager.add_storage("default", container)
+    StorageManager.add_storage("photos", container)
 
     redis_connector = RedisConnectorFactory.create()
     redis_connection = await redis_connector.get_async_connection()
@@ -64,13 +54,7 @@ app.include_router(router_users)
 app.include_router(schedule_router)
 app.include_router(order_router)
 
-# app.mount('/app/media', StaticFiles(directory='app/media'), name='media')
-# app.mount('/media', StaticFiles(directory='media'), name='media')
-
-# os.makedirs("./upload_dir/attachment", 0o777, exist_ok=True)
-# container = LocalStorageDriver("./upload_dir").get_container("attachment")
-# StorageManager.add_storage("default", container)
-
+app.mount("/media", StaticFiles(directory=media_dir), name="media")
 
 admin = Admin(app, engine, authentication_backend=authentication_backend)
 admin.add_view(UsersAdmin)

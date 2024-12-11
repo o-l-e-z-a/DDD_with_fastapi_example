@@ -201,7 +201,6 @@ async def test_slot_querty():
         # query = select(Slot, Schedule).join(Schedule).filter_by(day=datetime.date(year=2024, month=12, day=25))
         # result = await session.execute(query)
         # result = result.scalars()
-        #
         query = (
             select(Slot).join(Schedule)
             .options(

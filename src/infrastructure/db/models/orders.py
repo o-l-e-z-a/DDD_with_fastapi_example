@@ -101,12 +101,12 @@ class Order(Base):
     @hybrid_property
     def photo_before_path(self):
         if self.photo_before:
-            return self.photo_before.get("url", None)
+            return "media/" + self.photo_before.get("path", "")
 
     @hybrid_property
     def photo_after_path(self):
         if self.photo_after:
-            return self.photo_after.get("url", None)
+            return "media/" + self.photo_after.get("path", "")
 
     def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Order:
         with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)

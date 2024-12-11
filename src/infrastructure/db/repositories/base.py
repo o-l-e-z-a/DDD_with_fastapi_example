@@ -2,8 +2,10 @@ from abc import ABC
 from typing import Generic, Sequence, Type
 
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.infrastructure.db.exceptions import InsertException, UpdateException
 from src.infrastructure.db.models.base import E, T
 
 
@@ -30,20 +32,21 @@ class GenericSQLAlchemyRepository(Generic[T, E], AbstractRepository):
     async def add(self, entity: E) -> E:
         model = self.model.from_entity(entity)
         self.session.add(model)
-        await self.session.flush()
+        try:
+            await self.session.flush()
+        except IntegrityError as err:
+            raise InsertException(entity=entity, detail=str(err.args))
         return model.to_domain()
 
     async def update(self, entity: E) -> E:
         model = self.model.from_entity(entity)
         await self.session.merge(model)
-        await self.session.flush()
+        try:
+            await self.session.flush()
+        except IntegrityError as err:
+            raise UpdateException(entity=entity, detail=str(err.args))
         return model.to_domain()
 
     async def delete(self, **filter_by) -> None:
         query = delete(self.model).filter_by(**filter_by)
         await self.session.execute(query)
-
-    # async def add_bulk(self, data: Sequence[BaseEntity]) -> None:
-    #     query = insert(self.model).values(*data).returning(self.model.id)
-    #     result = await self.session.execute(query)
-    #     return result.scalars().first()

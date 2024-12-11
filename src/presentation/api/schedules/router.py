@@ -3,6 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, status
 from fastapi_cache.decorator import cache
 
+from src.infrastructure.db.exceptions import InsertException
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService
@@ -12,7 +13,7 @@ from src.presentation.api.dependencies import (
     get_procedure_service,
     get_schedule_service,
 )
-from src.presentation.api.exceptions import NotFoundHTTPException
+from src.presentation.api.exceptions import NotCorrectDataHTTPException, NotFoundHTTPException
 from src.presentation.api.schedules.schema import (
     InventoryAddSchema,
     InventorySchema,
@@ -164,6 +165,8 @@ async def add_schedule(
         schedule = await schedule_service.add_schedule(ScheduleAddDTO(**schedule_data.model_dump(exclude_unset=True)))
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
+    except InsertException as err:
+        raise NotCorrectDataHTTPException(detail=err.title)
     schedule_schema = ScheduleSchema.model_validate(schedule.to_dict())
     return schedule_schema
 

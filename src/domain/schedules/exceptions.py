@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 
-from src.domain.base.exceptions import DomainException, BaseValueObjectException
+from src.domain.base.exceptions import BaseValueObjectException, DomainException
 
 
 @dataclass(eq=False)
 class SlotOccupiedException(ValueError, DomainException):
     @property
     def title(self) -> str:
-        return "Времянное окно уже занято"
+        return "Времянное окно некорректно или уже занято"
 
 
 @dataclass(eq=False)
