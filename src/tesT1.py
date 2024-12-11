@@ -3,10 +3,10 @@ import datetime
 
 from pydantic import PositiveInt
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload, contains_eager
+from sqlalchemy.orm import contains_eager, joinedload
 
 from src.infrastructure.db.config import AsyncSessionFactory
-from src.infrastructure.db.models.schedules import Slot, Schedule
+from src.infrastructure.db.models.schedules import Schedule, Slot
 from src.infrastructure.db.repositories.users import UserRepository
 from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
@@ -201,6 +201,7 @@ async def test_slot_querty():
         # query = select(Slot, Schedule).join(Schedule).filter_by(day=datetime.date(year=2024, month=12, day=25))
         # result = await session.execute(query)
         # result = result.scalars()
+        #
         query = (
             select(Slot).join(Schedule)
             .options(
