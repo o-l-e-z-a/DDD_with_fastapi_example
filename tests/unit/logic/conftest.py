@@ -1,8 +1,6 @@
-import pytest
-
 from src.logic.dto.user_dto import UserCreateDTO
-from src.logic.services.users_service import UserService, get_password_hash
-from tests.domain.conftest import *
+from src.logic.services.users_service import UserService
+from tests.unit.domain.conftest import *
 
 from .mocs import FakeUserPointRepository, FakeUserRepository, FakeUsersUnitOfWork
 
