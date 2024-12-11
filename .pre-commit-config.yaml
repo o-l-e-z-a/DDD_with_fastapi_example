@@ -30,9 +30,9 @@ repos:
     hooks:
       - id: ruff
         args: [ --fix ]
-        exclude: (^tests/|tesT1.py|tesT2.py)
+        exclude: (tests\/)|(tesT.*.py)
       - id: ruff-format
-        exclude: (^tests/|tesT1.py|tesT2.py)
+        exclude: (tests\/)|(tesT.*.py)
 
   - repo: https://github.com/hadolint/hadolint
     rev: v2.12.0
