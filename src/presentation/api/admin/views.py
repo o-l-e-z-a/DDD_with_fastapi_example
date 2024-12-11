@@ -5,7 +5,7 @@ from src.infrastructure.db.models.schedules import Consumables, Inventory, Maste
 from src.infrastructure.db.models.users import UserPoint, Users
 
 
-class UsersAdmin(ModelView, model=Users):  # type: ignore[call-arg]
+class UsersAdmin(ModelView, model=Users):
     column_exclude_list = [Users.hashed_password]
     column_details_exclude_list = [Users.hashed_password]
     name = "Пользователь"
@@ -13,37 +13,37 @@ class UsersAdmin(ModelView, model=Users):  # type: ignore[call-arg]
     icon = "fa-solid  fa-user"
 
 
-class InventoryAdmin(ModelView, model=Inventory):  # type: ignore[call-arg]
+class InventoryAdmin(ModelView, model=Inventory):
     column_list = "__all__"
 
 
-class ConsumablesAdmin(ModelView, model=Consumables):  # type: ignore[call-arg]
+class ConsumablesAdmin(ModelView, model=Consumables):
     column_list = "__all__"
 
 
-class ServiceAdmin(ModelView, model=Service):  # type: ignore[call-arg]
+class ServiceAdmin(ModelView, model=Service):
     column_list = "__all__"
 
 
-class MasterAdmin(ModelView, model=Master):  # type: ignore[call-arg]
+class MasterAdmin(ModelView, model=Master):
     column_list = "__all__"
 
 
-class SlotAdmin(ModelView, model=Slot):  # type: ignore[call-arg]
+class SlotAdmin(ModelView, model=Slot):
     column_list = "__all__"
 
 
-class ScheduleAdmin(ModelView, model=Schedule):  # type: ignore[call-arg]
+class ScheduleAdmin(ModelView, model=Schedule):
     column_list = "__all__"
 
 
-class UserPointAdmin(ModelView, model=UserPoint):  # type: ignore[call-arg]
+class UserPointAdmin(ModelView, model=UserPoint):
     column_list = "__all__"
 
 
-class PromotionAdmin(ModelView, model=Promotion):  # type: ignore[call-arg]
+class PromotionAdmin(ModelView, model=Promotion):
     column_list = "__all__"
 
 
-class OrderAdmin(ModelView, model=Order):  # type: ignore[call-arg]
+class OrderAdmin(ModelView, model=Order):
     column_list = "__all__"

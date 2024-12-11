@@ -18,15 +18,10 @@ repos:
     rev: v1.11.2
     hooks:
         -   id: mypy
-            exclude: |
-              (?x)(
-                ^tests/|
-                tesT1.py|
-                tesT2.py|
-                views.py
-              )
+            exclude: views.py
             additional_dependencies: [
               pydantic==2.9.2,
+              types-redis
 #              sqlalchemy-ext-mypy-plugin
             ]
 

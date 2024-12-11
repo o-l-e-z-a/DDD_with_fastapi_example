@@ -1,5 +1,6 @@
 from datetime import date
-from typing import Annotated
+from tempfile import SpooledTemporaryFile
+from typing import Annotated, BinaryIO
 
 from pydantic import Field
 
@@ -23,6 +24,15 @@ class OrderCreateDTO(BaseDTO):
 class OrderUpdateDTO(BaseDTO):
     order_id: int
     time_start: slot_type
+
+
+class PhotoDTO(BaseDTO):
+    file: BinaryIO | SpooledTemporaryFile
+    filename: str
+    content_type: str
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class PromotionAddDTO(BaseDTO):

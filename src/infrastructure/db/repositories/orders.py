@@ -1,10 +1,12 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy_file import File
 
 from src.domain.orders import entities
 from src.infrastructure.db.models.orders import Order, Promotion
 from src.infrastructure.db.models.schedules import Master, Schedule, Service, Slot
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyRepository
+from src.logic.dto.order_dto import PhotoDTO
 
 
 class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
@@ -31,7 +33,6 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         query = self.get_query_to_find_all(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        # return scalar
         return scalar.to_domain(with_join=True, child_level=4) if scalar else None
 
     async def find_all(self, **filter_by) -> list[entities.Order]:
@@ -77,11 +78,14 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         )
         return query
 
-    async def update_photo(self, entity: entities.Order, photo_after=None, photo_before=None):
+    async def update_photo(self, entity: entities.Order, photo_after: PhotoDTO, photo_before: PhotoDTO):
         model = self.model.from_entity(entity)
-        # model = entity
-        model.photo_before = photo_before
-        model.photo_after = photo_after
+        model.photo_before = File(
+            content=photo_before, content_type=photo_before.content_type, filename=photo_before.filename
+        )
+        model.photo_after = File(
+            content=photo_after, content_type=photo_after.content_type, filename=photo_after.filename
+        )
         await self.session.merge(model)
         await self.session.flush()
         return model.to_domain()

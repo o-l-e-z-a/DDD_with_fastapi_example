@@ -2,7 +2,14 @@ from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders.entities import Order, OrderingProcess, Promotion, TotalAmount, TotalAmountResult
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
-from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
+from src.logic.dto.order_dto import (
+    OrderCreateDTO,
+    OrderUpdateDTO,
+    PhotoDTO,
+    PromotionAddDTO,
+    PromotionUpdateDTO,
+    TotalAmountDTO,
+)
 from src.logic.exceptions.order_exceptions import (
     NotUserOrderLogicException,
     OrderNotFoundLogicException,
@@ -96,18 +103,18 @@ class OrderService:
             await self.uow.commit()
             return await self.uow.orders.find_one_or_none(id=order.id)
 
-    async def update_order_photos(self, order_id: int, photo_before, photo_after):
+    async def update_order_photos(self, order_id: int, photo_before: PhotoDTO, photo_after: PhotoDTO):
         async with self.uow:
             order = await self.uow.orders.find_one_or_none(id=order_id)
             if not order:
                 raise OrderNotFoundLogicException(id=order_id)
-            order = await self.uow.orders.update_photo(
+            order_from_repo = await self.uow.orders.update_photo(
                 entity=order,
                 photo_before=photo_before,
                 photo_after=photo_after,
             )
             await self.uow.commit()
-            return await self.uow.orders.find_one_or_none(id=order_id)
+            return await self.uow.orders.find_one_or_none(id=order_from_repo.id)
 
     async def delete_order(self, order_id: int, user: User):
         async with self.uow:

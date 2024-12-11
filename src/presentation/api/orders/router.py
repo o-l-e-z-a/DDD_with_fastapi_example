@@ -3,7 +3,14 @@ from dataclasses import asdict
 from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi_cache.decorator import cache
 
-from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
+from src.logic.dto.order_dto import (
+    OrderCreateDTO,
+    OrderUpdateDTO,
+    PhotoDTO,
+    PromotionAddDTO,
+    PromotionUpdateDTO,
+    TotalAmountDTO,
+)
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.exceptions.order_exceptions import NotUserOrderLogicException
 from src.logic.services.order_service import OrderService, PromotionService
@@ -108,10 +115,16 @@ async def update_photo(
     photo_after: UploadFile,
     order_service: OrderService = Depends(get_order_service),
 ) -> OrderSchema:
-    order = await order_service.update_order_photos(
-        order_id=order_id, photo_before=photo_before, photo_after=photo_after
+    photo_before_dto = PhotoDTO(
+        file=photo_before.file, filename=photo_before.filename, content_type=photo_before.content_type
     )
-    order_schema = OrderSchema.model_validate(order)
+    photo_after_dto = PhotoDTO(
+        file=photo_after.file, filename=photo_after.filename, content_type=photo_after.content_type
+    )
+    order = await order_service.update_order_photos(
+        order_id=order_id, photo_before=photo_before_dto, photo_after=photo_after_dto
+    )
+    order_schema = OrderSchema.model_validate(order.to_dict())
     return order_schema
 
 

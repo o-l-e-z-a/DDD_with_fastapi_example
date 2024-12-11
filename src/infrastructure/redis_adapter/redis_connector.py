@@ -1,9 +1,9 @@
 from typing import Literal
 
-import redis.exceptions  # type: ignore[import-untyped]
+import redis.exceptions
 
 from redis import Redis
-from redis.asyncio import Redis as AsyncRedis  # type: ignore[import-untyped]
+from redis.asyncio import Redis as AsyncRedis
 
 from src.infrastructure.logger_adapter.logger import init_logger
 from src.presentation.api.settings import settings
