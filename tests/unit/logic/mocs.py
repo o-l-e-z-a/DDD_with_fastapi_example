@@ -1,8 +1,17 @@
+from datetime import date
 from typing import Any, Self, Sequence
 
 from src.domain.base.values import BaseValueObject
 from src.domain.users import entities
 from src.infrastructure.db.models.base import E, T
+from src.infrastructure.db.repositories.schedules import (
+    ConsumablesRepository,
+    InventoryRepository,
+    MasterRepository,
+    ScheduleRepository,
+    ServiceRepository,
+    SlotRepository,
+)
 from src.infrastructure.db.repositories.users import UserPointRepository, UserRepository
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
 
@@ -38,6 +47,7 @@ class FakeGenericSQLAlchemyRepository:
         return results
 
     async def add(self, entity: E) -> None:
+        entity.id = len(self.models) + 1
         self.models.append(entity)
         return entity
 
@@ -69,7 +79,7 @@ class FakeUserRepository(FakeGenericSQLAlchemyRepository, UserRepository):
         return results
 
 
-class FakeUserPointRepository(FakeGenericSQLAlchemyRepository, UserRepository):
+class FakeUserPointRepository(FakeGenericSQLAlchemyRepository, UserPointRepository):
 
     def check_by_user_id(self, model, **filter_by):
         user_id = filter_by.get('user_id', None)
@@ -93,12 +103,39 @@ class FakeUserPointRepository(FakeGenericSQLAlchemyRepository, UserRepository):
             return results[0]
 
 
-class FakeUsersUnitOfWork(SQLAlchemyUsersUnitOfWork):
+class FakeScheduleRepository(FakeGenericSQLAlchemyRepository, ScheduleRepository):
+    async def get_day_for_master(self, **filter_by) -> list[date]:
+        filtered_models = await self.find_all(**filter_by)
+        day_set = set()
+        for model in filtered_models:
+            day_set.add(model.day)
+        return sorted(list(day_set))
 
-    def __init__(self, fake_user_repo, fake_users_statistics) -> None:
+
+class FakeInventoryRepository(FakeGenericSQLAlchemyRepository, InventoryRepository):
+    pass
+
+
+class FakeMasterRepository(FakeGenericSQLAlchemyRepository, MasterRepository):
+    pass
+
+
+class FakeServiceRepository(FakeGenericSQLAlchemyRepository, ServiceRepository):
+    pass
+
+
+class FakeSlotRepository(FakeGenericSQLAlchemyRepository, SlotRepository):
+    pass
+
+
+class FakeConsumablesRepository(FakeGenericSQLAlchemyRepository, ConsumablesRepository):
+    pass
+
+
+class FakeGenericUnitOfWork(SQLAlchemyUsersUnitOfWork):
+
+    def __init__(self) -> None:
         self.committed: bool = False
-        self.users = fake_user_repo
-        self.user_points = fake_users_statistics
 
     async def commit(self) -> None:
         self.committed = True
@@ -111,3 +148,33 @@ class FakeUsersUnitOfWork(SQLAlchemyUsersUnitOfWork):
 
     async def rollback(self) -> None:
         pass
+
+
+class FakeUsersUnitOfWork(FakeGenericUnitOfWork):
+
+    def __init__(self, fake_user_repo, fake_user_point_repo) -> None:
+        self.users = fake_user_repo
+        self.user_points = fake_user_point_repo
+        super().__init__()
+
+
+class FakeScheduleUnitOfWork(FakeGenericUnitOfWork):
+
+    def __init__(
+        self,
+        fake_schedules_repo,
+        fake_slots_repo,
+        fake_consumables_repo,
+        fake_masters_repo,
+        fake_service_repo,
+        fake_inventories_repo,
+        fake_users_repo,
+    ) -> None:
+        self.schedules = fake_schedules_repo
+        self.slots = fake_slots_repo
+        self.consumables = fake_consumables_repo
+        self.masters = fake_masters_repo
+        self.services = fake_service_repo
+        self.inventories = fake_inventories_repo
+        self.users = fake_users_repo
+        super().__init__()

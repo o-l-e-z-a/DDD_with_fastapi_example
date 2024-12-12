@@ -1,27 +1,40 @@
+from src.logic.dto.schedule_dto import ScheduleAddDTO
 from src.logic.dto.user_dto import UserCreateDTO
+from src.logic.services.schedule_service import ScheduleService
 from src.logic.services.users_service import UserService
 from tests.unit.domain.conftest import *
 
-from .mocs import FakeUserPointRepository, FakeUserRepository, FakeUsersUnitOfWork
+from .mocs import (
+    FakeConsumablesRepository,
+    FakeInventoryRepository,
+    FakeMasterRepository,
+    FakeScheduleRepository,
+    FakeScheduleUnitOfWork,
+    FakeServiceRepository,
+    FakeSlotRepository,
+    FakeUserPointRepository,
+    FakeUserRepository,
+    FakeUsersUnitOfWork,
+)
 
 
 @pytest.fixture()
 def fake_user_repo_with_data(user_ivanov, user_petrov):
-    user_repo = FakeUserRepository(models=[user_ivanov, user_petrov])
-    return user_repo
+    fake_user_repo = FakeUserRepository(models=[user_ivanov, user_petrov])
+    return fake_user_repo
 
 
 @pytest.fixture()
 def fake_user_point_repo_with_data(ivanov_user_point, petrov_user_point):
-    user_point_repo = FakeUserPointRepository(models=[ivanov_user_point, petrov_user_point])
-    return user_point_repo
+    fake_user_point_repo = FakeUserPointRepository(models=[ivanov_user_point, petrov_user_point])
+    return fake_user_point_repo
 
 
 @pytest.fixture()
 def user_service_with_data(fake_user_repo_with_data, fake_user_point_repo_with_data):
     fake_uow = FakeUsersUnitOfWork(
         fake_user_repo=fake_user_repo_with_data,
-        fake_users_statistics=fake_user_point_repo_with_data
+        fake_user_point_repo=fake_user_point_repo_with_data
     )
     return UserService(uow=fake_uow)
 
@@ -67,3 +80,82 @@ def new_user_point_model(new_user_model):
 def fake_user_repo_with_new_user(fake_user_repo_with_data, new_user_model):
     fake_user_repo_with_data.models.append(new_user_model)
     return fake_user_repo_with_data
+
+
+@pytest.fixture()
+def fake_schedules_repo_with_data(henna_staining_today_schedule, shampooing_tomorrow_schedule):
+    fake_schedules_repo = FakeScheduleRepository(models=[henna_staining_today_schedule, shampooing_tomorrow_schedule])
+    return fake_schedules_repo
+
+
+@pytest.fixture()
+def fake_slots_repo_with_data(henna_staining_today_12_slot, henna_staining_today_14_slot):
+    fake_slots_repo = FakeSlotRepository(models=[henna_staining_today_12_slot, henna_staining_today_14_slot])
+    return fake_slots_repo
+
+
+@pytest.fixture()
+def fake_consumables_repo_with_data(henna_consumable, shampoo_consumable):
+    fake_consumables_repo = FakeConsumablesRepository(models=[henna_consumable, shampoo_consumable])
+    return fake_consumables_repo
+
+
+@pytest.fixture()
+def fake_masters_repo_with_data(henna_master):
+    fake_masters_repo = FakeMasterRepository(models=[henna_master])
+    return fake_masters_repo
+
+
+@pytest.fixture()
+def fake_service_repo_with_data(henna_staining_service, shampooing_service):
+    fake_service_repo = FakeServiceRepository(models=[henna_staining_service, shampooing_service])
+    return fake_service_repo
+
+
+@pytest.fixture()
+def fake_inventories_repo_with_data(henna_inventory, shampoo_inventory):
+    fake_inventories_repo = FakeInventoryRepository(models=[henna_inventory, shampoo_inventory])
+    return fake_inventories_repo
+
+
+@pytest.fixture()
+def schedule_service_with_data(
+    fake_user_repo_with_data, fake_schedules_repo_with_data, fake_slots_repo_with_data,
+    fake_consumables_repo_with_data, fake_masters_repo_with_data, fake_service_repo_with_data,
+    fake_inventories_repo_with_data
+):
+    fake_uow = FakeScheduleUnitOfWork(
+        fake_users_repo=fake_user_repo_with_data,
+        fake_schedules_repo=fake_schedules_repo_with_data,
+        fake_slots_repo=fake_slots_repo_with_data,
+        fake_consumables_repo=fake_consumables_repo_with_data,
+        fake_masters_repo=fake_masters_repo_with_data,
+        fake_service_repo=fake_service_repo_with_data,
+        fake_inventories_repo=fake_inventories_repo_with_data,
+    )
+    return ScheduleService(uow=fake_uow)
+
+
+@pytest.fixture()
+def new_schedule_dto(henna_master, shampooing_service):
+    return ScheduleAddDTO(
+        day=TOMORROW,
+        service_id=shampooing_service.id,
+        master_id=henna_master.id,
+    )
+
+
+@pytest.fixture()
+def new_schedule_model(new_user_dto, new_schedule_dto, henna_master, shampooing_service):
+    u = Schedule(
+        day=new_schedule_dto.day,
+        master=henna_master,
+        service=shampooing_service,
+    )
+    u.id = 3
+    return u
+
+
+@pytest.fixture()
+def henna_master_days():
+    return [TODAY, TOMORROW]

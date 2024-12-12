@@ -1,7 +1,7 @@
 from datetime import date
 
 from sqlalchemy import extract, func, select
-from sqlalchemy.orm import joinedload, selectinload, contains_eager
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from src.domain.schedules import entities
 from src.infrastructure.db.models.orders import Order
@@ -124,9 +124,7 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         query = (
             select(self.model)
             .options(
-                joinedload(self.model.master)
-                .options(selectinload(Master.services))
-                .options(joinedload(Master.user))
+                joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
             )
             .options(joinedload(self.model.service).options(selectinload(Service.consumables)))
             .filter_by(**filter_by)
@@ -138,9 +136,7 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         query = (
             select(self.model)
             .options(
-                joinedload(self.model.master)
-                .options(selectinload(Master.services))
-                .options(joinedload(Master.user))
+                joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
             )
             .options(joinedload(self.model.service).options(selectinload(Service.consumables)))
             .filter_by(**filter_by)
@@ -155,12 +151,12 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
             .options(
                 joinedload(self.model.master)
                 .options(selectinload(Master.services).selectinload(Service.consumables))
-                .options(joinedload(Master.user)))
+                .options(joinedload(Master.user))
+            )
             .options(
                 joinedload(self.model.service).options(
                     selectinload(Service.consumables).joinedload(Consumables.inventory)
                 )
-
             )
             .filter_by(**filter_by)
         )
@@ -169,10 +165,10 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         return scalar.to_domain(with_join=True, child_level=3) if scalar else None
 
     async def get_day_for_master(self, **filter_by) -> list[date]:
-        query = select(self.model.day.distinct()).filter_by(**filter_by)
+        query = select(self.model.day.distinct()).filter_by(**filter_by).order_by(self.model.day)
         execute_result = await self.session.execute(query)
         result = execute_result.scalars().all()
-        return [el for el in result]
+        return list(result)
 
 
 class SlotRepository(GenericSQLAlchemyRepository[Slot, entities.Slot]):

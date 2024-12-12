@@ -6,8 +6,12 @@ from src.domain.schedules.entities import Inventory, Master, Schedule, Service, 
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
-from src.logic.exceptions.schedule_exceptions import InventoryNotFoundLogicException, ServiceNotFoundLogicException, \
-    MasterNotFoundLogicException, ScheduleNotFoundLogicException
+from src.logic.exceptions.schedule_exceptions import (
+    InventoryNotFoundLogicException,
+    MasterNotFoundLogicException,
+    ScheduleNotFoundLogicException,
+    ServiceNotFoundLogicException,
+)
 from src.logic.exceptions.user_exceptions import UserNotFoundLogicException
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 
@@ -47,7 +51,7 @@ class ProcedureService:
                 "unit": Name,
                 "stock_count": CountNumber,
             }
-            for k, v in inventory_data.model_dump(exclude_none=True, exclude={'inventory_id'}).items():
+            for k, v in inventory_data.model_dump(exclude_none=True, exclude={"inventory_id"}).items():
                 setattr(inventory, k, key_mapper.get(k)(value=v))
             inventory_from_repo = await self.uow.inventories.update(entity=inventory)
             await self.uow.commit()
@@ -122,7 +126,7 @@ class ScheduleService:
         async with self.uow:
             service = await self.uow.services.find_one_or_none(id=schedule_data.service_id)
             if not service:
-                raise ServiceNotFoundLogicException(id=schedule_data.services_id)
+                raise ServiceNotFoundLogicException(id=schedule_data.service_id)
             master = await self.uow.masters.find_one_or_none(id=schedule_data.master_id)
             if not master:
                 raise MasterNotFoundLogicException(id=schedule_data.master_id)
@@ -152,6 +156,5 @@ class ScheduleService:
 
     async def get_current_master_slots(self, day: date, master_id: int) -> list[Slot]:
         async with self.uow:
-            # slots = await self.uow.slots.find_all(schedule_day=day, master_id=master_id)
             slots = await self.uow.slots.find_all(day=day, master_id=master_id)
         return slots

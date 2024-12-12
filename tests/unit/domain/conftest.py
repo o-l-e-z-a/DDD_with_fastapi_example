@@ -10,6 +10,7 @@ from src.domain.users.entities import User, UserPoint
 from src.domain.users.values import Email, HumanName, Telephone
 
 TODAY = date(year=2024, month=7, day=8)
+TOMORROW = date(year=2024, month=7, day=9)
 
 
 @pytest.fixture()
@@ -94,8 +95,20 @@ def henna_staining_service(henna_consumable, shampoo_consumable):
 
 
 @pytest.fixture()
+def shampooing_service(shampoo_consumable):
+    service = Service(
+        consumables=[shampoo_consumable], name=Name('shampooing'),
+        description='includes shampooing', price=PositiveIntNumber(500)
+    )
+    service.id = 2
+    return service
+
+
+@pytest.fixture()
 def henna_master(user_petrov, henna_staining_service):
-    master = Master(user=user_petrov, services=[henna_staining_service], description='master of henna staining')
+    master = Master(
+        user=user_petrov, services=[henna_staining_service, shampooing_service], description='master of henna staining'
+    )
     master.id = 1
     return master
 
@@ -106,6 +119,15 @@ def henna_staining_today_schedule(henna_staining_service, henna_master):
         service=henna_staining_service, master=henna_master, day=TODAY
     )
     schedule.id = 1
+    return schedule
+
+
+@pytest.fixture()
+def shampooing_tomorrow_schedule(shampooing_service, henna_master):
+    schedule = Schedule(
+        service=shampooing_service, master=henna_master, day=TOMORROW
+    )
+    schedule.id = 2
     return schedule
 
 
