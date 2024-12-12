@@ -4,6 +4,7 @@ from typing import Any, Self, Sequence
 from src.domain.base.values import BaseValueObject
 from src.domain.users import entities
 from src.infrastructure.db.models.base import E, T
+from src.infrastructure.db.repositories.orders import OrderRepository, PromotionRepository
 from src.infrastructure.db.repositories.schedules import (
     ConsumablesRepository,
     InventoryRepository,
@@ -111,6 +112,9 @@ class FakeScheduleRepository(FakeGenericSQLAlchemyRepository, ScheduleRepository
             day_set.add(model.day)
         return sorted(list(day_set))
 
+    async def find_one_with_consumables(self, **filter_by):
+        return await self.find_one_or_none(**filter_by)
+
 
 class FakeInventoryRepository(FakeGenericSQLAlchemyRepository, InventoryRepository):
     pass
@@ -129,6 +133,14 @@ class FakeSlotRepository(FakeGenericSQLAlchemyRepository, SlotRepository):
 
 
 class FakeConsumablesRepository(FakeGenericSQLAlchemyRepository, ConsumablesRepository):
+    pass
+
+
+class FakePromotionRepository(FakeGenericSQLAlchemyRepository, PromotionRepository):
+    pass
+
+
+class FakeOrderRepository(FakeGenericSQLAlchemyRepository, OrderRepository):
     pass
 
 
@@ -177,4 +189,30 @@ class FakeScheduleUnitOfWork(FakeGenericUnitOfWork):
         self.services = fake_service_repo
         self.inventories = fake_inventories_repo
         self.users = fake_users_repo
+        super().__init__()
+
+
+class FakeOrderUnitOfWork(FakeGenericUnitOfWork):
+
+    def __init__(
+        self,
+        fake_schedules_repo,
+        fake_slots_repo,
+        fake_consumables_repo,
+        fake_service_repo,
+        fake_inventories_repo,
+        fake_users_repo,
+        fake_promotions_repo,
+        fake_orders_repo,
+        fake_user_point_repo
+    ) -> None:
+        self.schedules = fake_schedules_repo
+        self.slots = fake_slots_repo
+        self.consumables = fake_consumables_repo
+        self.inventories = fake_inventories_repo
+        self.services = fake_service_repo
+        self.users = fake_users_repo
+        self.user_points = fake_user_point_repo
+        self.promotions = fake_promotions_repo
+        self.orders = fake_orders_repo
         super().__init__()

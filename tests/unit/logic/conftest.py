@@ -1,5 +1,8 @@
+from src.domain.orders.entities import Order
+from src.logic.dto.order_dto import OrderCreateDTO, TotalAmountDTO
 from src.logic.dto.schedule_dto import ScheduleAddDTO
 from src.logic.dto.user_dto import UserCreateDTO
+from src.logic.services.order_service import OrderService
 from src.logic.services.schedule_service import ScheduleService
 from src.logic.services.users_service import UserService
 from tests.unit.domain.conftest import *
@@ -8,6 +11,9 @@ from .mocs import (
     FakeConsumablesRepository,
     FakeInventoryRepository,
     FakeMasterRepository,
+    FakeOrderRepository,
+    FakeOrderUnitOfWork,
+    FakePromotionRepository,
     FakeScheduleRepository,
     FakeScheduleUnitOfWork,
     FakeServiceRepository,
@@ -119,6 +125,18 @@ def fake_inventories_repo_with_data(henna_inventory, shampoo_inventory):
 
 
 @pytest.fixture()
+def fake_orders_repo_with_data(henna_staining_today_12_order):
+    fake_inventories_repo = FakeOrderRepository(models=[henna_staining_today_12_order])
+    return fake_inventories_repo
+
+
+@pytest.fixture()
+def fake_promotions_repo_with_data(promotion_20):
+    fake_inventories_repo = FakePromotionRepository(models=[promotion_20])
+    return fake_inventories_repo
+
+
+@pytest.fixture()
 def schedule_service_with_data(
     fake_user_repo_with_data, fake_schedules_repo_with_data, fake_slots_repo_with_data,
     fake_consumables_repo_with_data, fake_masters_repo_with_data, fake_service_repo_with_data,
@@ -159,3 +177,50 @@ def new_schedule_model(new_user_dto, new_schedule_dto, henna_master, shampooing_
 @pytest.fixture()
 def henna_master_days():
     return [TODAY, TOMORROW]
+
+
+@pytest.fixture()
+def order_service_with_data(
+    fake_user_repo_with_data, fake_schedules_repo_with_data, fake_slots_repo_with_data,
+    fake_consumables_repo_with_data, fake_service_repo_with_data, fake_inventories_repo_with_data,
+    fake_promotions_repo_with_data, fake_orders_repo_with_data, fake_user_point_repo_with_data
+):
+    fake_uow = FakeOrderUnitOfWork(
+        fake_users_repo=fake_user_repo_with_data,
+        fake_schedules_repo=fake_schedules_repo_with_data,
+        fake_slots_repo=fake_slots_repo_with_data,
+        fake_consumables_repo=fake_consumables_repo_with_data,
+        fake_service_repo=fake_service_repo_with_data,
+        fake_inventories_repo=fake_inventories_repo_with_data,
+        fake_promotions_repo=fake_promotions_repo_with_data,
+        fake_orders_repo=fake_orders_repo_with_data,
+        fake_user_point_repo=fake_user_point_repo_with_data,
+    )
+    return OrderService(uow=fake_uow)
+
+
+@pytest.fixture()
+def new_order_dto(henna_master, shampooing_service):
+    total_amount_dto = TotalAmountDTO(
+        schedule_id=1,
+        point="120",
+        promotion_code='sale_20'
+    )
+    dto = OrderCreateDTO(
+        total_amount=total_amount_dto,
+        time_start="15:00",
+    )
+    return dto
+
+
+@pytest.fixture()
+def new_order_model(user_ivanov, henna_staining_today_15_slot):
+    u = Order(
+        user=user_ivanov,
+        slot=henna_staining_today_15_slot,
+        point_uses=CountNumber(120),
+        promotion_sale=CountNumber(300),
+        total_amount=PositiveIntNumber(1080),
+    )
+    u.id = 3
+    return u

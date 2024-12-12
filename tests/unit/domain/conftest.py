@@ -3,7 +3,7 @@ from datetime import date, timedelta
 import pytest
 
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
-from src.domain.orders.entities import Promotion
+from src.domain.orders.entities import Order, Promotion
 from src.domain.schedules.entities import Consumable, Inventory, Master, Schedule, Service, Slot
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User, UserPoint
@@ -143,3 +143,36 @@ def henna_staining_today_14_slot(henna_staining_today_schedule):
     slot = Slot(schedule=henna_staining_today_schedule, time_start=SlotTime("14:00"))
     slot.id = 2
     return slot
+
+
+@pytest.fixture()
+def henna_staining_today_15_slot(henna_staining_today_schedule):
+    slot = Slot(schedule=henna_staining_today_schedule, time_start=SlotTime("15:00"))
+    slot.id = 3
+    return slot
+
+
+@pytest.fixture()
+def henna_staining_today_14_order(henna_staining_today_14_slot, user_ivanov):
+    order = Order(
+        user=user_ivanov,
+        slot=henna_staining_today_14_slot,
+        point_uses=CountNumber(100),
+        promotion_sale=CountNumber(0),
+        total_amount=PositiveIntNumber(1400),
+    )
+    order.id = 1
+    return order
+
+
+@pytest.fixture()
+def henna_staining_today_12_order(henna_staining_today_12_slot, user_petrov):
+    order = Order(
+        user=user_petrov,
+        slot=henna_staining_today_12_slot,
+        point_uses=CountNumber(0),
+        promotion_sale=CountNumber(0),
+        total_amount=PositiveIntNumber(500),
+    )
+    order.id = 2
+    return order
