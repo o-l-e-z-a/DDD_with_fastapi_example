@@ -62,5 +62,7 @@ class TestOrderService:
     ):
         await order_service_with_data.delete_order(henna_staining_today_14_order.id, user_ivanov)
 
-        for i, consumable in enumerate(sorted(henna_staining_today_14_order.slot.schedule.service.consumables, key=lambda el: el.id)):
+        for i, consumable in enumerate(
+            sorted(henna_staining_today_14_order.slot.schedule.service.consumables, key=lambda el: el.id)
+        ):
             assert consumable.inventory.stock_count.as_generic_type() == stock_count_after_delete_order[i]
