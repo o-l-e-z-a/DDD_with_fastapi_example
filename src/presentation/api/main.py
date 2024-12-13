@@ -32,13 +32,13 @@ from src.presentation.api.users.router import router_auth, router_users
 media_dir = Path("src/presentation/api/media")
 photo_dir = media_dir / Path("photos")
 
+photo_dir.mkdir(parents=True, exist_ok=True, mode=0o777)
+container = LocalStorageDriver(str(media_dir)).get_container("photos")
+StorageManager.add_storage("photos", container)
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    photo_dir.mkdir(parents=True, exist_ok=True, mode=0o777)
-    container = LocalStorageDriver(str(media_dir)).get_container("photos")
-    StorageManager.add_storage("photos", container)
-
     redis_connector = RedisConnectorFactory.create()
     redis_connection = await redis_connector.get_async_connection()
     FastAPICache.init(RedisBackend(redis_connection), prefix="cache")
