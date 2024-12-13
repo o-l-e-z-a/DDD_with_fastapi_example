@@ -1,5 +1,5 @@
 from src.domain.orders.entities import Order
-from src.logic.dto.order_dto import OrderCreateDTO, TotalAmountDTO
+from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, TotalAmountDTO
 from src.logic.dto.schedule_dto import ScheduleAddDTO
 from src.logic.dto.user_dto import UserCreateDTO
 from src.logic.services.order_service import OrderService
@@ -125,8 +125,8 @@ def fake_inventories_repo_with_data(henna_inventory, shampoo_inventory):
 
 
 @pytest.fixture()
-def fake_orders_repo_with_data(henna_staining_today_12_order):
-    fake_inventories_repo = FakeOrderRepository(models=[henna_staining_today_12_order])
+def fake_orders_repo_with_data(henna_staining_today_12_order, henna_staining_today_14_order):
+    fake_inventories_repo = FakeOrderRepository(models=[henna_staining_today_12_order, henna_staining_today_14_order])
     return fake_inventories_repo
 
 
@@ -224,3 +224,26 @@ def new_order_model(user_ivanov, henna_staining_today_15_slot):
     )
     u.id = 3
     return u
+
+
+@pytest.fixture()
+def stock_count_after_order():
+    return [995, 990]
+
+
+@pytest.fixture()
+def stock_count_after_delete_order():
+    return [1005, 1010]
+
+
+@pytest.fixture()
+def user_point_ivanov_after_order():
+    return 580
+
+
+@pytest.fixture()
+def order_update_dto(henna_staining_today_14_order):
+    return OrderUpdateDTO(
+        order_id=henna_staining_today_14_order.id,
+        time_start='18:00'
+    )

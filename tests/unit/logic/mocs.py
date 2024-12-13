@@ -31,7 +31,10 @@ class FakeGenericSQLAlchemyRepository:
     async def find_one_or_none(self, **filter_by) -> E | None:
         results = []
         for model in self.models:
-            if all(getattr(model, k, None) == v for k, v in filter_by.items()):
+            condition_list = list(
+                map(lambda el: to_generic_type(getattr(model, el[0], None)) == el[1], filter_by.items())
+            )
+            if all(condition_list):
                 result = model
                 if results:
                     raise IndexError
@@ -63,16 +66,16 @@ class FakeGenericSQLAlchemyRepository:
         return entity
 
     async def delete(self, **filter_by) -> None:
-        results = []
         for model in self.models:
-            if all(lambda el: to_generic_type(getattr(model, k, None)) == v for k, v in filter_by.items()):
-                results.remove(model)
-        if results:
-            return results[0]
+            condition_list = list(
+                map(lambda el: to_generic_type(getattr(model, el[0], None)) == el[1], filter_by.items())
+            )
+            if all(condition_list):
+                self.models.remove(model)
 
 
 class FakeUserRepository(FakeGenericSQLAlchemyRepository, UserRepository):
-    async def find_duplicate_user(self, email: str, telephone: str) -> list[entities.User]:
+    async def find_duplicate_user(self, email: str, telephone: str):
         results = []
         for model in self.models:
             if to_generic_type(model.email) == email or to_generic_type(model.telephone) == telephone:
@@ -89,7 +92,7 @@ class FakeUserPointRepository(FakeGenericSQLAlchemyRepository, UserPointReposito
                 return False
         return True
 
-    async def find_one_or_none(self, **filter_by) -> entities.UserPoint | None:
+    async def find_one_or_none(self, **filter_by):
         results = []
         for model in self.models:
             if (
@@ -125,7 +128,8 @@ class FakeMasterRepository(FakeGenericSQLAlchemyRepository, MasterRepository):
 
 
 class FakeServiceRepository(FakeGenericSQLAlchemyRepository, ServiceRepository):
-    pass
+    async def get_service_with_consumable(self, service_id: int):
+        return await self.find_one_or_none(id=service_id)
 
 
 class FakeSlotRepository(FakeGenericSQLAlchemyRepository, SlotRepository):
