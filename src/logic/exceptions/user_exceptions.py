@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from src.logic.exceptions.base_exception import NotFoundLogicException, LogicException
+from src.logic.exceptions.base_exception import LogicException, NotFoundLogicException
 
 
 @dataclass(eq=False)
@@ -10,22 +10,21 @@ class UserAlreadyExistsLogicException(LogicException):
 
     @property
     def title(self) -> str:
-        return f"Пользователь c email: {self.email} или номером: {self.telephone} существует"
+        return f"Пользователь c email: {self.email} или номером: {self.telephone} - существует"
 
 
 @dataclass(eq=False)
 class UserNotFoundLogicException(NotFoundLogicException):
-    model: str = 'Пользователь'
+    model: str = "Пользователь"
 
 
 @dataclass(eq=False)
 class UserPointNotFoundLogicException(NotFoundLogicException):
-    model: str = 'Баллы пользователя'
+    model: str = "Баллы пользователя"
 
 
 @dataclass(eq=False)
 class IncorrectEmailOrPasswordLogicException(LogicException):
-
     @property
     def title(self) -> str:
-        return f"Неверная почта или пароль"
+        return "Неверная почта или пароль"

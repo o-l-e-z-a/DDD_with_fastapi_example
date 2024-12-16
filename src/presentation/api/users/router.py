@@ -6,7 +6,7 @@ from src.logic.exceptions.user_exceptions import IncorrectEmailOrPasswordLogicEx
 from src.logic.services.users_service import UserService
 from src.presentation.api.dependencies import CurrentUser, get_current_user_for_refresh, get_user_service
 from src.presentation.api.exceptions import IncorrectEmailOrPasswordException, UserAlreadyExistsException
-from src.presentation.api.users.schema import UserCreateSchema, UserLoginSchema, UserPointSchema, AllUserSchema
+from src.presentation.api.users.schema import AllUserSchema, UserCreateSchema, UserLoginSchema, UserPointSchema
 from src.presentation.api.users.utils import ACCESS_TOKEN_COOKIE_FIELD, create_access_token, create_refresh_token
 
 router_auth = APIRouter(prefix="/auth", tags=["auth"])
@@ -19,9 +19,10 @@ async def register_user(
     user_service: UserService = Depends(get_user_service),
 ):
     try:
-        await user_service.add_user(user_data=UserCreateDTO(**user_data.model_dump()))
+        user = await user_service.add_user(user_data=UserCreateDTO(**user_data.model_dump()))
     except UserAlreadyExistsLogicException as err:
         raise UserAlreadyExistsException(err.title)
+    return AllUserSchema.model_validate(user.to_dict())
 
 
 @router_auth.post("/login/")

@@ -1,5 +1,6 @@
 import asyncio
 
+import httpx
 import pytest
 
 from httpx import AsyncClient
@@ -39,7 +40,8 @@ def event_loop(request):
 
 @pytest.fixture(scope="function")
 async def ac():
-    async with AsyncClient(app=fastapi_app, base_url="http://test") as ac:
+    transport = httpx.ASGITransport(app=fastapi_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
 
