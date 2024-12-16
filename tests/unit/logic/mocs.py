@@ -42,7 +42,7 @@ class FakeGenericSQLAlchemyRepository:
         if results:
             return results[0]
 
-    async def find_all(self, **filter_by) -> Sequence[E]:
+    async def find_all(self, **filter_by) -> list[E]:
         results = []
         for model in self.models:
             if all(lambda el: to_generic_type(getattr(model, k, None)) == v for k, v in filter_by.items()):

@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Generic, Sequence, Type
+from typing import Generic, Type
 
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
@@ -24,7 +24,7 @@ class GenericSQLAlchemyRepository(Generic[T, E], AbstractRepository):
         scalar = result.scalar_one_or_none()
         return scalar.to_domain() if scalar else None
 
-    async def find_all(self, **filter_by) -> Sequence[E]:
+    async def find_all(self, **filter_by) -> list[E]:
         query = select(self.model).filter_by(**filter_by)
         result = await self.session.execute(query)
         return [el.to_domain() for el in result.scalars().all()]

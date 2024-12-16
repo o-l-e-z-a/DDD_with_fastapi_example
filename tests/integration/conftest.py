@@ -3,10 +3,10 @@ import asyncio
 import pytest
 
 from httpx import AsyncClient
-from sqlalchemy import insert
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.db.config import engine
+from src.infrastructure.db.config import AsyncSessionFactory, engine
 from src.infrastructure.db.models.base import Base
 from src.infrastructure.db.repositories.users import UserPointRepository, UserRepository
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
@@ -23,7 +23,7 @@ async def prepare_database():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    yield
+    yield engine
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -43,29 +43,15 @@ async def ac():
         yield ac
 
 
-@pytest.fixture()
-async def async_session() -> AsyncSession:
-    # async with AsyncSessionFactory() as session:
-    #     yield session
-
-    connection = await engine.connect()
-    trans = await connection.begin()
-
-    session_maker = async_sessionmaker(
-        connection,
-        expire_on_commit=False,
-    )
-    async with session_maker() as session:
+@pytest.fixture(scope="function")
+async def async_session(
+) -> AsyncSession:
+    async with AsyncSessionFactory() as session:
         yield session
-
-
-
-    # try:
-    #     yield session
-    # finally:
-    #     await session.close()
-    #     await trans.rollback()
-    #     await connection.close()
+        await session.rollback()
+    async with engine.begin() as conn:
+        for table in Base.metadata.sorted_tables:
+            await conn.execute(text(f"TRUNCATE TABLE public.{table.name} CASCADE"))
 
 
 @pytest.fixture()
@@ -78,26 +64,49 @@ def user_point_repo(async_session) -> UserPointRepository:
     return UserPointRepository(session=async_session)
 
 
+async def add_to_tb(repo, entity):
+    entity.id = None
+    added_entity = await repo.add(entity)
+    await repo.session.commit()
+    entity.id = added_entity.id
+    added_entity_with_joins = await repo.find_one_or_none(id=added_entity.id)
+    return added_entity_with_joins
+
+
 @pytest.fixture()
 async def user_ivanov_db(user_repo, user_ivanov):
-    user = await user_repo.add(user_ivanov)
-    # await user_repo.session.commit()
+    user = await add_to_tb(user_repo, user_ivanov)
     return user
 
 
 @pytest.fixture()
-async def user_point_db(user_point_repo, ivanov_user_point):
-    user_point = await user_point_repo.add(ivanov_user_point)
-    # await user_point_repo.session.commit()
+async def user_petrov_db(user_repo, user_petrov):
+    user = await add_to_tb(user_repo, user_petrov)
+    return user
+
+
+@pytest.fixture()
+async def ivanov_user_point_db(user_point_repo, ivanov_user_point):
+    user_point = await add_to_tb(user_point_repo, ivanov_user_point)
     return user_point
 
 
 @pytest.fixture()
-def user_service_db() -> UserService:
-    uow = SQLAlchemyUsersUnitOfWork()
+async def petrov_user_point_db(user_point_repo, petrov_user_point):
+    user_point = await add_to_tb(user_point_repo, petrov_user_point)
+    return user_point
+
+
+@pytest.fixture()
+def user_service_db(
+) -> UserService:
+    uow = SQLAlchemyUsersUnitOfWork(
+    )
     return UserService(uow)
 
 
 @pytest.fixture()
-def user_service_with_db_data(user_service_db, user_ivanov_db, user_point_db) -> UserService:
+def user_service_with_db_data(
+    user_service_db, user_ivanov_db, ivanov_user_point_db, user_petrov_db, petrov_user_point_db
+) -> UserService:
     return user_service_db

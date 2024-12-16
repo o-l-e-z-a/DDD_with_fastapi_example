@@ -3,8 +3,12 @@ from passlib.context import CryptContext
 from src.domain.users.entities import User, UserPoint
 from src.domain.users.values import Email, HumanName, Telephone
 from src.logic.dto.user_dto import UserCreateDTO, UserLoginDTO
+from src.logic.exceptions.user_exceptions import (
+    IncorrectEmailOrPasswordLogicException,
+    UserAlreadyExistsLogicException,
+    UserPointNotFoundLogicException,
+)
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
-from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException, IncorrectEmailOrPasswordLogicException
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -53,6 +57,8 @@ class UserService:
     async def get_user_point(self, user: User) -> UserPoint | None:
         async with self.uow:
             user_point = await self.uow.user_points.find_one_or_none(user_id=user.id)
+            if not user_point:
+                raise UserPointNotFoundLogicException(id=user.id)
         return user_point
 
     async def get_user_by_id(self, user_id: int) -> User | None:

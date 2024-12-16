@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Sequence, Type
+from typing import Type
 
 from src.domain.base.values import BaseValueObject, CountNumber, Name
 from src.domain.schedules.entities import Inventory, Master, Schedule, Service, Slot, SlotsForSchedule
@@ -20,12 +20,12 @@ class ProcedureService:
     def __init__(self, uow: SQLAlchemyScheduleUnitOfWork):
         self.uow = uow
 
-    async def get_services(self) -> Sequence[Service]:
+    async def get_services(self) -> list[Service]:
         async with self.uow:
             services = await self.uow.services.find_all()
         return services
 
-    async def get_inventories(self) -> Sequence[Inventory]:
+    async def get_inventories(self) -> list[Inventory]:
         async with self.uow:
             inventories = await self.uow.inventories.find_all()
         return inventories
@@ -75,12 +75,12 @@ class MasterService:
             master = await self.uow.masters.find_one_or_none(user_id=user.id)
         return master
 
-    async def get_all_masters(self) -> Sequence[Master]:
+    async def get_all_masters(self) -> list[Master]:
         async with self.uow:
             masters = await self.uow.masters.find_all()
         return masters
 
-    async def get_all_user_to_add_masters(self) -> Sequence[User]:
+    async def get_all_user_to_add_masters(self) -> list[User]:
         async with self.uow:
             masters = await self.uow.masters.get_users_to_masters()
         return masters
