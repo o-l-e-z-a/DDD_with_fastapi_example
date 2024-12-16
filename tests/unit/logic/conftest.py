@@ -52,7 +52,7 @@ def new_user_dto():
         first_name='Oleg',
         last_name='Olegov',
         telephone='+79003333333',
-        password='Oleg!111',
+        password=PASSWORD,
     )
 
 
@@ -63,7 +63,7 @@ def user_ivanov_dto(user_ivanov):
         first_name=user_ivanov.first_name.as_generic_type(),
         last_name=user_ivanov.last_name.as_generic_type(),
         telephone=user_ivanov.telephone.as_generic_type(),
-        password='Oleg!111',
+        password=PASSWORD,
     )
 
 

@@ -77,12 +77,14 @@ async def add_to_tb(repo, entity):
 
 @pytest.fixture()
 async def user_ivanov_db(user_repo, user_ivanov):
+    user_ivanov.hashed_password = get_password_hash(PASSWORD)
     user = await add_to_tb(user_repo, user_ivanov)
     return user
 
 
 @pytest.fixture()
 async def user_petrov_db(user_repo, user_petrov):
+    user_petrov.hashed_password = get_password_hash(PASSWORD)
     user = await add_to_tb(user_repo, user_petrov)
     return user
 

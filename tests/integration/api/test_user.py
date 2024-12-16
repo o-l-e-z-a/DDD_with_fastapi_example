@@ -2,6 +2,12 @@ import pytest
 
 from httpx import AsyncClient
 
+from src.presentation.api.users.utils import (
+    ACCESS_TOKEN_COOKIE_FIELD,
+    ACCESS_TOKEN_RESPONSE_FIELD,
+    REFRESH_TOKEN_RESPONSE_FIELD,
+)
+
 
 class TestRegisterRouter:
     url = "/auth/register/"
@@ -30,6 +36,8 @@ class TestLoginRouter:
         self, ac: AsyncClient, user_service_with_db_data, user_ivanov_dto
     ):
         response = await ac.post(self.url, json=user_ivanov_dto.model_dump())
-        print(response.cookies)
-        print(response.json())
-        assert response.status_code == 201
+
+        assert response.status_code == 200
+        assert response.cookies.get(ACCESS_TOKEN_COOKIE_FIELD)
+        assert ACCESS_TOKEN_RESPONSE_FIELD in response.json()
+        assert REFRESH_TOKEN_RESPONSE_FIELD in response.json()

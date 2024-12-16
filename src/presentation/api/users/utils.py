@@ -8,6 +8,8 @@ TOKEN_TYPE_FIELD = "type"
 ACCESS_TOKEN_TYPE = "access"
 REFRESH_TOKEN_TYPE = "refresh"
 ACCESS_TOKEN_COOKIE_FIELD = "access_token"
+ACCESS_TOKEN_RESPONSE_FIELD = "access_token"
+REFRESH_TOKEN_RESPONSE_FIELD = "refresh_token"
 
 
 def create_access_token(data: dict) -> str:

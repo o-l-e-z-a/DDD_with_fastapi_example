@@ -11,6 +11,7 @@ from src.domain.users.values import Email, HumanName, Telephone
 
 TODAY = date(year=2024, month=7, day=8)
 TOMORROW = date(year=2024, month=7, day=9)
+PASSWORD = "Admin@66"
 
 
 @pytest.fixture()

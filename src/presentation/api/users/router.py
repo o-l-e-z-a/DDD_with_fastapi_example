@@ -7,7 +7,13 @@ from src.logic.services.users_service import UserService
 from src.presentation.api.dependencies import CurrentUser, get_current_user_for_refresh, get_user_service
 from src.presentation.api.exceptions import IncorrectEmailOrPasswordException, UserAlreadyExistsException
 from src.presentation.api.users.schema import AllUserSchema, UserCreateSchema, UserLoginSchema, UserPointSchema
-from src.presentation.api.users.utils import ACCESS_TOKEN_COOKIE_FIELD, create_access_token, create_refresh_token
+from src.presentation.api.users.utils import (
+    ACCESS_TOKEN_COOKIE_FIELD,
+    ACCESS_TOKEN_RESPONSE_FIELD,
+    REFRESH_TOKEN_RESPONSE_FIELD,
+    create_access_token,
+    create_refresh_token,
+)
 
 router_auth = APIRouter(prefix="/auth", tags=["auth"])
 router_users = APIRouter(prefix="/users", tags=["Пользователи"])
@@ -40,7 +46,7 @@ async def login_user(
     access_token = create_access_token({"sub": str(user.id)})
     refresh_token = create_refresh_token({"sub": str(user.id)})
     response.set_cookie(ACCESS_TOKEN_COOKIE_FIELD, access_token, httponly=True)
-    return {"access_token": access_token, "refresh_token": refresh_token}
+    return {ACCESS_TOKEN_RESPONSE_FIELD: access_token, REFRESH_TOKEN_RESPONSE_FIELD: refresh_token}
 
 
 @router_auth.post("/refresh/")
@@ -50,7 +56,7 @@ async def refresh(
 ):
     access_token = create_access_token({"sub": str(user.id)})
     response.set_cookie(ACCESS_TOKEN_COOKIE_FIELD, access_token, httponly=True)
-    return {"access_token": access_token}
+    return {ACCESS_TOKEN_RESPONSE_FIELD: access_token}
 
 
 @router_auth.post("/logout/")
