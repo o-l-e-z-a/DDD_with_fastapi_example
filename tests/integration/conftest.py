@@ -10,7 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.db.config import AsyncSessionFactory, engine
 from src.infrastructure.db.models.base import Base
 from src.infrastructure.db.repositories.users import UserPointRepository, UserRepository
+from src.logic.services.order_service import PromotionService
+from src.logic.services.schedule_service import MasterService, ProcedureService
 from src.logic.services.users_service import get_password_hash
+from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
+from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
 from src.presentation.api.main import app as fastapi_app
 from src.presentation.api.settings import settings
@@ -109,11 +113,39 @@ async def petrov_user_point_db(user_point_repo, petrov_user_point):
 
 
 @pytest.fixture()
-def user_service_db(
-) -> UserService:
-    uow = SQLAlchemyUsersUnitOfWork(
-    )
+def user_service_db() -> UserService:
+    uow = SQLAlchemyUsersUnitOfWork()
     return UserService(uow)
+
+
+@pytest.fixture()
+def schedule_service_db() -> ScheduleService:
+    uow = SQLAlchemyScheduleUnitOfWork()
+    return ScheduleService(uow)
+
+
+@pytest.fixture()
+def master_service_db() -> MasterService:
+    uow = SQLAlchemyScheduleUnitOfWork()
+    return MasterService(uow)
+
+
+@pytest.fixture()
+def procedure_service_db() -> ProcedureService:
+    uow = SQLAlchemyScheduleUnitOfWork()
+    return ProcedureService(uow)
+
+
+@pytest.fixture()
+def order_service_db() -> OrderService:
+    uow = SQLAlchemyOrderUnitOfWork()
+    return OrderService(uow)
+
+
+@pytest.fixture()
+def promotion_service_db() -> PromotionService:
+    uow = SQLAlchemyOrderUnitOfWork()
+    return PromotionService(uow)
 
 
 @pytest.fixture()
@@ -121,6 +153,13 @@ def user_service_with_db_data(
     user_service_db, user_ivanov_db, ivanov_user_point_db, user_petrov_db, petrov_user_point_db
 ) -> UserService:
     return user_service_db
+
+
+@pytest.fixture()
+def procedure_service_db_data(
+    procedure_service_db, user_ivanov_db, ivanov_user_point_db, user_petrov_db, petrov_user_point_db
+) -> UserService:
+    return procedure_service_db
 
 
 @pytest.fixture()
