@@ -2,10 +2,15 @@ from fastapi import APIRouter, Depends, Response
 
 from src.domain.users.entities import User
 from src.logic.dto.user_dto import UserCreateDTO, UserLoginDTO
+from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.exceptions.user_exceptions import IncorrectEmailOrPasswordLogicException, UserAlreadyExistsLogicException
 from src.logic.services.users_service import UserService
 from src.presentation.api.dependencies import CurrentUser, get_current_user_for_refresh, get_user_service
-from src.presentation.api.exceptions import IncorrectEmailOrPasswordException, UserAlreadyExistsException
+from src.presentation.api.exceptions import (
+    IncorrectEmailOrPasswordException,
+    NotFoundHTTPException,
+    UserAlreadyExistsException,
+)
 from src.presentation.api.users.schema import AllUserSchema, UserCreateSchema, UserLoginSchema, UserPointSchema
 from src.presentation.api.users.utils import (
     ACCESS_TOKEN_COOKIE_FIELD,
@@ -71,6 +76,9 @@ async def read_users_me(current_user: CurrentUser) -> AllUserSchema:
 
 @router_users.get("/user_point/")
 async def get_user_point(user: CurrentUser, user_service: UserService = Depends(get_user_service)) -> UserPointSchema:
-    user_point = await user_service.get_user_point(user=user)
+    try:
+        user_point = await user_service.get_user_point(user=user)
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
     user_point_schema = UserPointSchema.model_validate(user_point.to_dict())
     return user_point_schema

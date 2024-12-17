@@ -1,5 +1,7 @@
 from fastapi import HTTPException, status
 
+EXCEPTION_DETAIL_FIELD = "detail"
+
 
 class BaseApiException(HTTPException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.db.config import AsyncSessionFactory, engine
 from src.infrastructure.db.models.base import Base
 from src.infrastructure.db.repositories.users import UserPointRepository, UserRepository
+from src.logic.services.users_service import get_password_hash
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
 from src.presentation.api.main import app as fastapi_app
 from src.presentation.api.settings import settings
@@ -43,6 +44,12 @@ async def ac():
     transport = httpx.ASGITransport(app=fastapi_app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture(scope="function")
+async def ac_with_login_ivanov(ac, user_service_with_db_data, user_ivanov_dto):
+    await ac.post("/auth/login/", json=user_ivanov_dto.model_dump())
+    yield ac
 
 
 @pytest.fixture(scope="function")
@@ -114,3 +121,15 @@ def user_service_with_db_data(
     user_service_db, user_ivanov_db, ivanov_user_point_db, user_petrov_db, petrov_user_point_db
 ) -> UserService:
     return user_service_db
+
+
+@pytest.fixture()
+def old_access_token():
+    return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsImV4cCI6MTczMzk3MTUxMiwidHlwZSI6ImFjY2VzcyJ9." \
+           "Nwxzu8J0yrlqMeVPuSY1jD461P0geFanBoKwssnBAfc"
+
+
+@pytest.fixture()
+def invalid_access_token():
+    return "adasdasasdasdasdasd.eyJzdWIiOiIxMyIsImV4cCI6MTczMzk3MTUxMiwidHlwZSI6ImFjY2VzcyJ9." \
+           "Nwxzu8J0yrlqMeVPuSY1jD461P0geFanBoKwssnBAfc"
