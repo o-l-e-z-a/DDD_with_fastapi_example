@@ -157,7 +157,7 @@ def schedule_service_with_data(
 @pytest.fixture()
 def new_schedule_dto(henna_and_shampooing_master, shampooing_service):
     return ScheduleAddDTO(
-        day=TOMORROW,
+        day=TODAY,
         service_id=shampooing_service.id,
         master_id=henna_and_shampooing_master.id,
     )

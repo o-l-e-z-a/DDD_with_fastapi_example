@@ -14,7 +14,7 @@ class TestRegisterRouter:
     url = "/auth/register/"
 
     async def test_register_user_compare_model(
-        self, ac: AsyncClient, user_service_with_db_data, new_user_dto, new_user_model
+        self, ac: AsyncClient, user_service_db_data, new_user_dto, new_user_model
     ):
         response = await ac.post(self.url, json=new_user_dto.model_dump())
 
@@ -25,7 +25,7 @@ class TestRegisterRouter:
         new_user_model_dict.pop('id')
         assert response_json == new_user_model_dict
 
-    async def test_add_user_already_exists_exception(self, ac: AsyncClient, user_service_with_db_data, user_ivanov_dto):
+    async def test_add_user_already_exists_exception(self, ac: AsyncClient, user_service_db_data, user_ivanov_dto):
         response = await ac.post(self.url, json=user_ivanov_dto.model_dump())
 
         assert response.status_code == 409
@@ -38,7 +38,7 @@ class TestLoginRouter:
     url = "/auth/login/"
 
     async def test_login_user_response(
-        self, ac: AsyncClient, user_service_with_db_data, user_ivanov_dto
+        self, ac: AsyncClient, user_service_db_data, user_ivanov_dto
     ):
         response = await ac.post(self.url, json=user_ivanov_dto.model_dump())
 
@@ -46,7 +46,7 @@ class TestLoginRouter:
         assert response.cookies.get(ACCESS_TOKEN_COOKIE_FIELD)
 
     async def test_login_user_cookie(
-        self, ac: AsyncClient, user_service_with_db_data, user_ivanov_dto
+        self, ac: AsyncClient, user_service_db_data, user_ivanov_dto
     ):
         response = await ac.post(self.url, json=user_ivanov_dto.model_dump())
 
@@ -54,7 +54,7 @@ class TestLoginRouter:
         assert REFRESH_TOKEN_RESPONSE_FIELD in response.json()
 
     async def test_login_invalid_user(
-        self, ac: AsyncClient, user_service_with_db_data, new_user_dto
+        self, ac: AsyncClient, user_service_db_data, new_user_dto
     ):
         response = await ac.post(self.url, json=new_user_dto.model_dump())
 

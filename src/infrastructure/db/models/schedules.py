@@ -79,6 +79,12 @@ class Consumables(Base):
         consumable.id = self.id
         return consumable
 
+    @classmethod
+    def from_entity(cls, entity: entities.Consumable) -> Consumables:
+        return cls(
+            id=getattr(entity, "id", None), count=entity.count.as_generic_type(), inventory_id=entity.inventory.id
+        )
+
 
 class Service(Base):
     __tablename__ = "service"

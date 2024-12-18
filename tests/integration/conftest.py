@@ -311,7 +311,7 @@ def order_db(henna_staining_today_12_order_db, henna_staining_today_14_order_db,
 
 
 @pytest.fixture()
-async def user_service_with_db_data(
+def user_service_db_data(
     user_service_db, db_users
 ) -> UserService:
     return user_service_db
@@ -332,7 +332,7 @@ def master_service_db_data(
     return master_service_db
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def schedule_service_db_data(
     schedule_service_db, db_users, inventories_db, procedures_db, schedule_db
 ) -> ScheduleService:
