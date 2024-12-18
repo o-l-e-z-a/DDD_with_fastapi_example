@@ -12,7 +12,7 @@ if settings.MODE == "TEST":
     DATABASE_PARAMS = {
         "poolclass": NullPool,
         "future": True,
-        "echo": True,
+        "echo": False,
         "pool_pre_ping": True,
     }
 else:

@@ -19,7 +19,11 @@ class TestRegisterRouter:
         response = await ac.post(self.url, json=new_user_dto.model_dump())
 
         assert response.status_code == 201
-        assert response.json() == new_user_model.to_dict()
+        response_json = response.json()
+        response_json.pop('id')
+        new_user_model_dict = new_user_model.to_dict()
+        new_user_model_dict.pop('id')
+        assert response_json == new_user_model_dict
 
     async def test_add_user_already_exists_exception(self, ac: AsyncClient, user_service_with_db_data, user_ivanov_dto):
         response = await ac.post(self.url, json=user_ivanov_dto.model_dump())

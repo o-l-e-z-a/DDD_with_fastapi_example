@@ -2,6 +2,7 @@ import asyncio
 
 import httpx
 import pytest
+import pytest_asyncio
 
 from httpx import AsyncClient
 from sqlalchemy import text
@@ -9,6 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.db.config import AsyncSessionFactory, engine
 from src.infrastructure.db.models.base import Base
+from src.infrastructure.db.repositories.orders import OrderRepository, PromotionRepository
+from src.infrastructure.db.repositories.schedules import (
+    ConsumablesRepository,
+    InventoryRepository,
+    MasterRepository,
+    ScheduleRepository,
+    ServiceRepository,
+    SlotRepository,
+)
 from src.infrastructure.db.repositories.users import UserPointRepository, UserRepository
 from src.logic.services.order_service import PromotionService
 from src.logic.services.schedule_service import MasterService, ProcedureService
@@ -22,7 +32,14 @@ from tests.unit.domain.conftest import *
 from tests.unit.logic.conftest import *
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest_asyncio.fixture(loop_scope="session", scope="session")
+def event_loop():
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest_asyncio.fixture(loop_scope="session", scope="session", autouse=True)
 async def prepare_database():
     assert settings.MODE == "TEST"
 
@@ -35,28 +52,20 @@ async def prepare_database():
         await conn.run_sync(Base.metadata.drop_all)
 
 
-@pytest.fixture(scope="session")
-def event_loop(request):
-    """Create an instance of the default event loop for each test case."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="function")
+@pytest.fixture()
 async def ac():
     transport = httpx.ASGITransport(app=fastapi_app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 async def ac_with_login_ivanov(ac, user_service_with_db_data, user_ivanov_dto):
     await ac.post("/auth/login/", json=user_ivanov_dto.model_dump())
     yield ac
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 async def async_session(
 ) -> AsyncSession:
     async with AsyncSessionFactory() as session:
@@ -75,6 +84,46 @@ def user_repo(async_session) -> UserRepository:
 @pytest.fixture()
 def user_point_repo(async_session) -> UserPointRepository:
     return UserPointRepository(session=async_session)
+
+
+@pytest.fixture()
+def consumables_repo(async_session) -> ConsumablesRepository:
+    return ConsumablesRepository(session=async_session)
+
+
+@pytest.fixture()
+def inventory_repo(async_session) -> InventoryRepository:
+    return InventoryRepository(session=async_session)
+
+
+@pytest.fixture()
+def master_repo(async_session) -> MasterRepository:
+    return MasterRepository(session=async_session)
+
+
+@pytest.fixture()
+def schedule_repo(async_session) -> ScheduleRepository:
+    return ScheduleRepository(session=async_session)
+
+
+@pytest.fixture()
+def service_repo(async_session) -> ServiceRepository:
+    return ServiceRepository(session=async_session)
+
+
+@pytest.fixture()
+def slot_repo(async_session) -> SlotRepository:
+    return SlotRepository(session=async_session)
+
+
+@pytest.fixture()
+def promotion_repo(async_session) -> PromotionRepository:
+    return PromotionRepository(session=async_session)
+
+
+@pytest.fixture()
+def order_repo(async_session) -> OrderRepository:
+    return OrderRepository(session=async_session)
 
 
 async def add_to_tb(repo, entity):
@@ -113,6 +162,90 @@ async def petrov_user_point_db(user_point_repo, petrov_user_point):
 
 
 @pytest.fixture()
+async def henna_inventory_db(inventory_repo, henna_inventory):
+    inventory = await add_to_tb(inventory_repo, henna_inventory)
+    return inventory
+
+
+@pytest.fixture()
+async def shampoo_inventory_db(inventory_repo, shampoo_inventory):
+    inventory = await add_to_tb(inventory_repo, shampoo_inventory)
+    return inventory
+
+
+@pytest.fixture()
+async def henna_consumable_db(consumables_repo, henna_consumable):
+    consumable = await add_to_tb(consumables_repo, henna_consumable)
+    return consumable
+
+
+@pytest.fixture()
+async def shampoo_consumable_db(consumables_repo, shampoo_consumable):
+    consumable = await add_to_tb(consumables_repo, shampoo_consumable)
+    return consumable
+
+
+@pytest.fixture()
+async def henna_staining_service_db(service_repo, henna_staining_service):
+    service = await add_to_tb(service_repo, henna_staining_service)
+    return service
+
+
+@pytest.fixture()
+async def shampooing_service_db(service_repo, shampooing_service):
+    service = await add_to_tb(service_repo, shampooing_service)
+    return service
+
+
+@pytest.fixture()
+async def henna_and_shampooing_master_db(master_repo, henna_and_shampooing_master):
+    master = await add_to_tb(master_repo, henna_and_shampooing_master)
+    return master
+
+
+@pytest.fixture()
+async def henna_staining_today_schedule_db(schedule_repo, henna_staining_today_schedule):
+    schedule = await add_to_tb(schedule_repo, henna_staining_today_schedule)
+    return schedule
+
+
+@pytest.fixture()
+async def shampooing_tomorrow_schedule_db(schedule_repo, shampooing_tomorrow_schedule):
+    schedule = await add_to_tb(schedule_repo, shampooing_tomorrow_schedule)
+    return schedule
+
+
+@pytest.fixture()
+async def henna_staining_today_12_slot_db(slot_repo, henna_staining_today_12_slot):
+    slot = await add_to_tb(slot_repo, henna_staining_today_12_slot)
+    return slot
+
+
+@pytest.fixture()
+async def henna_staining_today_14_slot_db(slot_repo, henna_staining_today_14_slot):
+    slot = await add_to_tb(slot_repo, henna_staining_today_14_slot)
+    return slot
+
+
+@pytest.fixture()
+async def henna_staining_today_12_order_db(order_repo, henna_staining_today_12_order):
+    order = await add_to_tb(order_repo, henna_staining_today_12_order)
+    return order
+
+
+@pytest.fixture()
+async def promotion_20_db(promotion_repo, promotion_20):
+    promotion = await add_to_tb(promotion_repo, promotion_20)
+    return promotion
+
+
+@pytest.fixture()
+async def henna_staining_today_14_order_db(order_repo, henna_staining_today_14_order):
+    order = await add_to_tb(order_repo, henna_staining_today_14_order)
+    return order
+
+
+@pytest.fixture()
 def user_service_db() -> UserService:
     uow = SQLAlchemyUsersUnitOfWork()
     return UserService(uow)
@@ -137,29 +270,87 @@ def procedure_service_db() -> ProcedureService:
 
 
 @pytest.fixture()
-def order_service_db() -> OrderService:
-    uow = SQLAlchemyOrderUnitOfWork()
-    return OrderService(uow)
-
-
-@pytest.fixture()
 def promotion_service_db() -> PromotionService:
     uow = SQLAlchemyOrderUnitOfWork()
     return PromotionService(uow)
 
 
 @pytest.fixture()
-def user_service_with_db_data(
-    user_service_db, user_ivanov_db, ivanov_user_point_db, user_petrov_db, petrov_user_point_db
+def order_service_db() -> OrderService:
+    uow = SQLAlchemyOrderUnitOfWork()
+    return OrderService(uow)
+
+
+@pytest.fixture()
+def db_users(user_ivanov_db, ivanov_user_point_db, user_petrov_db, petrov_user_point_db):
+    return user_ivanov_db, ivanov_user_point_db, user_petrov_db, petrov_user_point_db
+
+
+@pytest.fixture()
+def inventories_db(henna_inventory_db, shampoo_inventory_db, henna_consumable_db, shampoo_consumable_db):
+    return henna_inventory_db, shampoo_inventory_db, henna_consumable_db, shampoo_consumable_db
+
+
+@pytest.fixture()
+def procedures_db(henna_staining_service_db, shampooing_service_db, henna_and_shampooing_master_db):
+    return henna_staining_service_db, shampooing_service_db, henna_and_shampooing_master_db
+
+
+@pytest.fixture()
+def schedule_db(
+    henna_staining_today_schedule_db, shampooing_tomorrow_schedule_db,
+    henna_staining_today_12_slot_db, henna_staining_today_14_slot_db,
+):
+    return henna_staining_today_schedule_db, shampooing_tomorrow_schedule_db, \
+        henna_staining_today_12_slot_db, henna_staining_today_14_slot_db,
+
+
+@pytest.fixture()
+def order_db(henna_staining_today_12_order_db, henna_staining_today_14_order_db, promotion_20_db):
+    return henna_staining_today_12_order_db, henna_staining_today_14_order_db, promotion_20_db
+
+
+@pytest.fixture()
+async def user_service_with_db_data(
+    user_service_db, db_users
 ) -> UserService:
     return user_service_db
 
 
 @pytest.fixture()
 def procedure_service_db_data(
-    procedure_service_db, user_ivanov_db, ivanov_user_point_db, user_petrov_db, petrov_user_point_db
-) -> UserService:
+    procedure_service_db, db_users, inventories_db, procedures_db
+) -> ProcedureService:
     return procedure_service_db
+
+
+@pytest.fixture()
+def master_service_db_data(
+    master_service_db, db_users, inventories_db, procedures_db
+
+) -> MasterService:
+    return master_service_db
+
+
+@pytest.fixture()
+def schedule_service_db_data(
+    schedule_service_db, db_users, inventories_db, procedures_db, schedule_db
+) -> ScheduleService:
+    return schedule_service_db
+
+
+@pytest.fixture()
+def promotion_service_db_data(
+    promotion_service_db, db_users, inventories_db, procedures_db, schedule_db, order_db
+) -> PromotionService:
+    return promotion_service_db
+
+
+@pytest.fixture()
+def order_service_db_data(
+    order_service_db, db_users, inventories_db, procedures_db, schedule_db, order_db
+) -> OrderService:
+    return order_service_db
 
 
 @pytest.fixture()

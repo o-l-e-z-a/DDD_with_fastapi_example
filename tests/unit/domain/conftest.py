@@ -106,7 +106,7 @@ def shampooing_service(shampoo_consumable):
 
 
 @pytest.fixture()
-def henna_master(user_petrov, henna_staining_service):
+def henna_and_shampooing_master(user_petrov, henna_staining_service, shampooing_service):
     master = Master(
         user=user_petrov, services=[henna_staining_service, shampooing_service], description='master of henna staining'
     )
@@ -115,18 +115,18 @@ def henna_master(user_petrov, henna_staining_service):
 
 
 @pytest.fixture()
-def henna_staining_today_schedule(henna_staining_service, henna_master):
+def henna_staining_today_schedule(henna_staining_service, henna_and_shampooing_master):
     schedule = Schedule(
-        service=henna_staining_service, master=henna_master, day=TODAY
+        service=henna_staining_service, master=henna_and_shampooing_master, day=TODAY
     )
     schedule.id = 1
     return schedule
 
 
 @pytest.fixture()
-def shampooing_tomorrow_schedule(shampooing_service, henna_master):
+def shampooing_tomorrow_schedule(shampooing_service, henna_and_shampooing_master):
     schedule = Schedule(
-        service=shampooing_service, master=henna_master, day=TOMORROW
+        service=shampooing_service, master=henna_and_shampooing_master, day=TOMORROW
     )
     schedule.id = 2
     return schedule

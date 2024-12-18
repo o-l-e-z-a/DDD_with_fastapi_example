@@ -1,6 +1,6 @@
 import pytest
 
-from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException
+from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException, UserPointNotFoundLogicException
 
 
 class TestUserService:
@@ -34,6 +34,5 @@ class TestUserService:
         assert user_point == ivanov_user_point
 
     async def test_get_user_point_none(self, user_service_with_data, new_user_model, new_user_point_model):
-        user_point = await user_service_with_data.get_user_point(new_user_model)
-
-        assert not user_point
+        with pytest.raises(UserPointNotFoundLogicException):
+            await user_service_with_data.get_user_point(new_user_model)

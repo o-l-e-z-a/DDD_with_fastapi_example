@@ -25,7 +25,7 @@ class TestScheduleService:
 
         assert not schedule_service_with_data.uow.committed
 
-    async def test_get_master_days(self, schedule_service_with_data, henna_master, henna_master_days):
-        days = await schedule_service_with_data.get_master_days(master_id=henna_master.id)
+    async def test_get_master_days(self, schedule_service_with_data, henna_and_shampooing_master, henna_master_days):
+        days = await schedule_service_with_data.get_master_days(master_id=henna_and_shampooing_master.id)
 
         assert days == henna_master_days

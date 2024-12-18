@@ -89,15 +89,9 @@ def fake_user_repo_with_new_user(fake_user_repo_with_data, new_user_model):
 
 
 @pytest.fixture()
-def fake_schedules_repo_with_data(henna_staining_today_schedule, shampooing_tomorrow_schedule):
-    fake_schedules_repo = FakeScheduleRepository(models=[henna_staining_today_schedule, shampooing_tomorrow_schedule])
-    return fake_schedules_repo
-
-
-@pytest.fixture()
-def fake_slots_repo_with_data(henna_staining_today_12_slot, henna_staining_today_14_slot):
-    fake_slots_repo = FakeSlotRepository(models=[henna_staining_today_12_slot, henna_staining_today_14_slot])
-    return fake_slots_repo
+def fake_inventories_repo_with_data(henna_inventory, shampoo_inventory):
+    fake_inventories_repo = FakeInventoryRepository(models=[henna_inventory, shampoo_inventory])
+    return fake_inventories_repo
 
 
 @pytest.fixture()
@@ -107,21 +101,27 @@ def fake_consumables_repo_with_data(henna_consumable, shampoo_consumable):
 
 
 @pytest.fixture()
-def fake_masters_repo_with_data(henna_master):
-    fake_masters_repo = FakeMasterRepository(models=[henna_master])
-    return fake_masters_repo
-
-
-@pytest.fixture()
 def fake_service_repo_with_data(henna_staining_service, shampooing_service):
     fake_service_repo = FakeServiceRepository(models=[henna_staining_service, shampooing_service])
     return fake_service_repo
 
 
 @pytest.fixture()
-def fake_inventories_repo_with_data(henna_inventory, shampoo_inventory):
-    fake_inventories_repo = FakeInventoryRepository(models=[henna_inventory, shampoo_inventory])
-    return fake_inventories_repo
+def fake_masters_repo_with_data(henna_and_shampooing_master):
+    fake_masters_repo = FakeMasterRepository(models=[henna_and_shampooing_master])
+    return fake_masters_repo
+
+
+@pytest.fixture()
+def fake_schedules_repo_with_data(henna_staining_today_schedule, shampooing_tomorrow_schedule):
+    fake_schedules_repo = FakeScheduleRepository(models=[henna_staining_today_schedule, shampooing_tomorrow_schedule])
+    return fake_schedules_repo
+
+
+@pytest.fixture()
+def fake_slots_repo_with_data(henna_staining_today_12_slot, henna_staining_today_14_slot):
+    fake_slots_repo = FakeSlotRepository(models=[henna_staining_today_12_slot, henna_staining_today_14_slot])
+    return fake_slots_repo
 
 
 @pytest.fixture()
@@ -155,19 +155,19 @@ def schedule_service_with_data(
 
 
 @pytest.fixture()
-def new_schedule_dto(henna_master, shampooing_service):
+def new_schedule_dto(henna_and_shampooing_master, shampooing_service):
     return ScheduleAddDTO(
         day=TOMORROW,
         service_id=shampooing_service.id,
-        master_id=henna_master.id,
+        master_id=henna_and_shampooing_master.id,
     )
 
 
 @pytest.fixture()
-def new_schedule_model(new_user_dto, new_schedule_dto, henna_master, shampooing_service):
+def new_schedule_model(new_user_dto, new_schedule_dto, henna_and_shampooing_master, shampooing_service):
     u = Schedule(
         day=new_schedule_dto.day,
-        master=henna_master,
+        master=henna_and_shampooing_master,
         service=shampooing_service,
     )
     u.id = 3
@@ -200,7 +200,7 @@ def order_service_with_data(
 
 
 @pytest.fixture()
-def new_order_dto(henna_master, shampooing_service):
+def new_order_dto(henna_and_shampooing_master, shampooing_service):
     total_amount_dto = TotalAmountDTO(
         schedule_id=1,
         point="120",
