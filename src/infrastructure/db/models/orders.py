@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, Column, ForeignKey, String
@@ -85,7 +85,7 @@ class Order(Base):
     point_uses: Mapped[int] = mapped_column(default=0)
     promotion_sale: Mapped[int] = mapped_column(default=0)
     total_amount: Mapped[int] = mapped_column(default=0)
-    date_add: Mapped[date] = mapped_column(default=date.today())
+    date_add: Mapped[datetime] = mapped_column(default=datetime.today())
     photo_after = Column(ImageField)
     photo_before = Column(ImageField)
 

@@ -39,11 +39,15 @@ def mock_cache(*args, **kwargs):
         @wraps(func)
         async def inner(*args, **kwargs):
             return await func(*args, **kwargs)
+
         return inner
+
     return wrapper
 
 
 mock.patch("fastapi_cache.decorator.cache", mock_cache).start()
+
+
 @pytest_asyncio.fixture(loop_scope="session", scope="session")
 def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
@@ -330,24 +334,17 @@ def order_db(henna_staining_today_12_order_db, henna_staining_today_14_order_db,
 
 
 @pytest.fixture()
-def user_service_db_data(
-    user_service_db, db_users
-) -> UserService:
+def user_service_db_data(user_service_db, db_users) -> UserService:
     return user_service_db
 
 
 @pytest.fixture()
-def procedure_service_db_data(
-    procedure_service_db, db_users, inventories_db, procedures_db
-) -> ProcedureService:
+def procedure_service_db_data(procedure_service_db, db_users, inventories_db, procedures_db) -> ProcedureService:
     return procedure_service_db
 
 
 @pytest.fixture()
-def master_service_db_data(
-    master_service_db, db_users, inventories_db, procedures_db
-
-) -> MasterService:
+def master_service_db_data(master_service_db, db_users, inventories_db, procedures_db) -> MasterService:
     return master_service_db
 
 
@@ -386,17 +383,25 @@ def invalid_access_token():
 
 @pytest.fixture()
 def new_schedule_model_added_dict():
-    return {'day': '2024-07-08',
-            'master': {'description': 'master of henna staining',
-                       'id': 1,
-                       'user': {'date_birthday': None,
-                                'email': 'petrov@mail.ru',
-                                'first_name': 'Petr',
-                                'id': 2,
-                                'is_admin': False,
-                                'last_name': 'Petrov',
-                                'telephone': '880005553636'}},
-            'service': {'description': 'includes shampooing',
-                        'id': 2,
-                        'name': 'shampooing',
-                        'price': 500}}
+    return {
+        'day': '2024-07-08',
+        'master': {
+            'description': 'master of henna staining',
+            'id': 1,
+            'user': {
+                'date_birthday': None,
+                'email': 'petrov@mail.ru',
+                'first_name': 'Petr',
+                'id': 2,
+                'is_admin': False,
+                'last_name': 'Petrov',
+                'telephone': '880005553636'
+            }
+        },
+        'service': {
+            'description': 'includes shampooing',
+            'id': 2,
+            'name': 'shampooing',
+            'price': 500
+        }
+    }
