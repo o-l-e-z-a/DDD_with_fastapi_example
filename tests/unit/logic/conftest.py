@@ -1,7 +1,7 @@
 from src.domain.orders.entities import Order
 from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, TotalAmountDTO
 from src.logic.dto.schedule_dto import ScheduleAddDTO
-from src.logic.dto.user_dto import UserCreateDTO
+from src.logic.dto.user_dto import UserCreateDTO, UserLoginDTO
 from src.logic.services.order_service import OrderService
 from src.logic.services.schedule_service import ScheduleService
 from src.logic.services.users_service import UserService
@@ -63,6 +63,14 @@ def user_ivanov_dto(user_ivanov):
         first_name=user_ivanov.first_name.as_generic_type(),
         last_name=user_ivanov.last_name.as_generic_type(),
         telephone=user_ivanov.telephone.as_generic_type(),
+        password=PASSWORD,
+    )
+
+
+@pytest.fixture()
+def master_login_dto(user_petrov):
+    return UserLoginDTO(
+        email=user_petrov.email.as_generic_type(),
         password=PASSWORD,
     )
 

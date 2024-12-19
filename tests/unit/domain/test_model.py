@@ -77,16 +77,14 @@ class TestTotalAmount:
 
 
 class TestSlotsForSchedule:
-    def test_get_free_slots(self, henna_staining_today_12_slot, henna_staining_today_14_slot):
+    def test_get_free_slots(
+        self, henna_staining_today_12_slot, henna_staining_today_14_slot, slot_time_for_henna_staining_today_schedule
+    ):
         s = SlotsForSchedule()
-        expected = \
-            [SlotTime(f'{t}:00') for t in range(START_HOUR, 12)] \
-            + [SlotTime('13:00')] \
-            + [SlotTime(f'{t}:00') for t in range(15, END_HOUR + 1)]
 
         actual_free_slots = s.get_free_slots([henna_staining_today_12_slot, henna_staining_today_14_slot])
 
-        assert expected == actual_free_slots
+        assert slot_time_for_henna_staining_today_schedule == actual_free_slots
 
     def test_check_slot_time_is_free(self, henna_staining_today_12_slot, henna_staining_today_14_slot):
         s = SlotsForSchedule()

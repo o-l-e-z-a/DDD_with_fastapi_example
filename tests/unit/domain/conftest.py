@@ -5,7 +5,7 @@ import pytest
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders.entities import Order, Promotion
 from src.domain.schedules.entities import Consumable, Inventory, Master, Schedule, Service, Slot
-from src.domain.schedules.values import SlotTime
+from src.domain.schedules.values import END_HOUR, START_HOUR, SlotTime
 from src.domain.users.entities import User, UserPoint
 from src.domain.users.values import Email, HumanName, Telephone
 
@@ -144,6 +144,15 @@ def henna_staining_today_14_slot(henna_staining_today_schedule):
     slot = Slot(schedule=henna_staining_today_schedule, time_start=SlotTime("14:00"))
     slot.id = 2
     return slot
+
+
+@pytest.fixture()
+def slot_time_for_henna_staining_today_schedule():
+    slot_time = \
+        [SlotTime(f'{t}:00') for t in range(START_HOUR, 12)] \
+        + [SlotTime('13:00')] \
+        + [SlotTime(f'{t}:00') for t in range(15, END_HOUR + 1)]
+    return slot_time
 
 
 @pytest.fixture()

@@ -175,7 +175,7 @@ class SlotRepository(GenericSQLAlchemyRepository[Slot, entities.Slot]):
     model = Slot
 
     async def find_one_or_none(self, **filter_by) -> entities.Slot | None:
-        query = select(self.model).join(Schedule).options(contains_eager(Slot.schedule)).filter_by(**filter_by)
+        query = select(self.model).options(joinedload(self.model.schedule)).filter_by(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
         return scalar.to_domain(with_join=True) if scalar else None

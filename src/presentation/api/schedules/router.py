@@ -193,7 +193,10 @@ async def get_day_for_master(
 async def get_slot_for_day(
     schedule_pk: int, schedule_service: ScheduleService = Depends(get_schedule_service)
 ) -> SlotsTimeSchema:
-    all_day_slots = await schedule_service.get_slot_for_day(schedule_id=schedule_pk)
+    try:
+        all_day_slots = await schedule_service.get_slot_for_day(schedule_id=schedule_pk)
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
     return SlotsTimeSchema(slots=[slot_time.as_generic_type() for slot_time in all_day_slots])
 
 

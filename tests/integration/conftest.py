@@ -1,5 +1,8 @@
 import asyncio
 
+from functools import wraps
+from unittest import mock
+
 import httpx
 import pytest
 import pytest_asyncio
@@ -26,12 +29,21 @@ from src.logic.services.users_service import get_password_hash
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
-from src.presentation.api.main import app as fastapi_app
 from src.presentation.api.settings import settings
 from tests.unit.domain.conftest import *
 from tests.unit.logic.conftest import *
 
 
+def mock_cache(*args, **kwargs):
+    def wrapper(func):
+        @wraps(func)
+        async def inner(*args, **kwargs):
+            return await func(*args, **kwargs)
+        return inner
+    return wrapper
+
+
+mock.patch("fastapi_cache.decorator.cache", mock_cache).start()
 @pytest_asyncio.fixture(loop_scope="session", scope="session")
 def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
@@ -54,14 +66,21 @@ async def prepare_database():
 
 @pytest.fixture()
 async def ac():
+    from src.presentation.api.main import app as fastapi_app
     transport = httpx.ASGITransport(app=fastapi_app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
 
 @pytest.fixture()
-async def ac_with_login_ivanov(ac, user_service_with_db_data, user_ivanov_dto):
+async def ac_with_login_ivanov(ac, user_service_db_data, user_ivanov_dto):
     await ac.post("/auth/login/", json=user_ivanov_dto.model_dump())
+    yield ac
+
+
+@pytest.fixture()
+async def ac_with_master_login(ac, schedule_service_db_data, master_login_dto):
+    await ac.post("/auth/login/", json=master_login_dto.model_dump())
     yield ac
 
 
@@ -332,7 +351,7 @@ def master_service_db_data(
     return master_service_db
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def schedule_service_db_data(
     schedule_service_db, db_users, inventories_db, procedures_db, schedule_db
 ) -> ScheduleService:
@@ -363,3 +382,21 @@ def old_access_token():
 def invalid_access_token():
     return "adasdasasdasdasdasd.eyJzdWIiOiIxMyIsImV4cCI6MTczMzk3MTUxMiwidHlwZSI6ImFjY2VzcyJ9." \
            "Nwxzu8J0yrlqMeVPuSY1jD461P0geFanBoKwssnBAfc"
+
+
+@pytest.fixture()
+def new_schedule_model_added_dict():
+    return {'day': '2024-07-08',
+            'master': {'description': 'master of henna staining',
+                       'id': 1,
+                       'user': {'date_birthday': None,
+                                'email': 'petrov@mail.ru',
+                                'first_name': 'Petr',
+                                'id': 2,
+                                'is_admin': False,
+                                'last_name': 'Petrov',
+                                'telephone': '880005553636'}},
+            'service': {'description': 'includes shampooing',
+                        'id': 2,
+                        'name': 'shampooing',
+                        'price': 500}}

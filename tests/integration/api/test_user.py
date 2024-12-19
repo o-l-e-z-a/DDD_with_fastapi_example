@@ -1,5 +1,3 @@
-import pytest
-
 from httpx import AsyncClient
 
 from src.presentation.api.exceptions import EXCEPTION_DETAIL_FIELD
@@ -16,13 +14,14 @@ class TestRegisterRouter:
     async def test_register_user_compare_model(
         self, ac: AsyncClient, user_service_db_data, new_user_dto, new_user_model
     ):
-        response = await ac.post(self.url, json=new_user_dto.model_dump())
-
-        assert response.status_code == 201
-        response_json = response.json()
-        response_json.pop('id')
         new_user_model_dict = new_user_model.to_dict()
         new_user_model_dict.pop('id')
+
+        response = await ac.post(self.url, json=new_user_dto.model_dump())
+
+        response_json = response.json()
+        response_json.pop('id')
+        assert response.status_code == 201
         assert response_json == new_user_model_dict
 
     async def test_add_user_already_exists_exception(self, ac: AsyncClient, user_service_db_data, user_ivanov_dto):
