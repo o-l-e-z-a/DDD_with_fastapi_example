@@ -42,6 +42,15 @@ class Order(BaseEntity):
     photo_after_path: str | None = None
     date_add: date = datetime.today()
 
+    def __eq__(self, other):
+        return (self.user, self.slot, self.point_uses, self.total_amount, self.date_add.strftime("%Y-%m-%d %H:%M")) == (
+            other.user,
+            other.slot,
+            other.point_uses,
+            other.total_amount,
+            other.date_add.strftime("%Y-%m-%d %H:%M"),
+        )
+
     def to_dict(self) -> dict:
         user = self.user.to_dict() if self.user else None
         slot = self.slot.to_dict() if self.slot else None

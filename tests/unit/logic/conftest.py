@@ -208,9 +208,9 @@ def order_service_with_data(
 
 
 @pytest.fixture()
-def new_order_dto(henna_and_shampooing_master, shampooing_service):
+def new_order_dto(henna_staining_today_schedule):
     total_amount_dto = TotalAmountDTO(
-        schedule_id=1,
+        schedule_id=henna_staining_today_schedule.id,
         point="120",
         promotion_code='sale_20'
     )
