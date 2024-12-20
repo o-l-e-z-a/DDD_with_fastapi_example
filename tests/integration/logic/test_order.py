@@ -26,3 +26,16 @@ class TestOrderService:
         service = await service_repo.get_service_with_consumable(henna_staining_today_schedule.service.id)
         for i, consumable in enumerate(sorted(service.consumables, key=lambda el: el.id)):
             assert consumable.inventory.stock_count.as_generic_type() == stock_count_after_order[i]
+
+    async def test_add_order_check_user_point(
+        self,
+        order_service_db_data,
+        service_repo,
+        new_order_dto,
+        user_ivanov,
+        ivanov_user_point_db,
+        user_point_ivanov_after_order
+    ):
+        await order_service_db_data.add_order(new_order_dto, user_ivanov)
+
+        assert ivanov_user_point_db.count.as_generic_type() == user_point_ivanov_after_order

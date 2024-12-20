@@ -28,7 +28,7 @@ class TestOrderService:
         await order_service_with_data.add_order(new_order_dto, user_ivanov)
 
         new_user_point = await order_service_with_data.uow.user_points.find_one_or_none(user_id=user_ivanov.id)
-        assert new_user_point.count.as_generic_type() == 580
+        assert new_user_point.count.as_generic_type() == user_point_ivanov_after_order
         assert order_service_with_data.uow.committed
 
     async def test_add_order_slot_occupied_exception(
