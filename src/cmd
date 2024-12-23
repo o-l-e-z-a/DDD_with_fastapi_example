@@ -2,7 +2,8 @@ alembic init migrations  # создание папки и конфигураци
 alembic revision --autogenerate -m "init"  # создание миграций
 alembic upgrade head  # обновить базу данных до последней миграции
 
-fastapi dev main.py
+pip freeze | Out-File -Encoding UTF8 .\requirements.txt
+
 uvicorn app.main:app --reload
 uvicorn src.presentation.api.main:app --reload
 

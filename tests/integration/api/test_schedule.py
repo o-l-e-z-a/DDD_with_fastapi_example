@@ -13,6 +13,8 @@ class TestAddScheduleRouter:
 
         assert response.status_code == 201
         response_json = response.json()
+        print(response_json)
+        print(new_schedule_model_added_dict)
         response_json.pop('id')
         assert response_json == new_schedule_model_added_dict
 

@@ -384,27 +384,27 @@ def invalid_access_token():
 
 
 @pytest.fixture()
-def new_schedule_model_added_dict():
+def new_schedule_model_added_dict(shampooing_service, henna_and_shampooing_master):
     return {
         'day': '2024-07-08',
         'master': {
-            'description': 'master of henna staining',
-            'id': 1,
+            'description': henna_and_shampooing_master.description,
+            'id': henna_and_shampooing_master.id,
             'user': {
                 'date_birthday': None,
-                'email': 'petrov@mail.ru',
-                'first_name': 'Petr',
-                'id': 2,
+                'email': henna_and_shampooing_master.user.email.as_generic_type(),
+                'first_name': henna_and_shampooing_master.user.first_name.as_generic_type(),
+                'id': henna_and_shampooing_master.user.id,
                 'is_admin': False,
-                'last_name': 'Petrov',
-                'telephone': '880005553636'
+                'last_name': henna_and_shampooing_master.user.last_name.as_generic_type(),
+                'telephone': henna_and_shampooing_master.user.telephone.as_generic_type()
             }
         },
         'service': {
-            'description': 'includes shampooing',
-            'id': 2,
-            'name': 'shampooing',
-            'price': 500
+            'description': shampooing_service.description,
+            'id': shampooing_service.id,
+            'name': shampooing_service.name.as_generic_type(),
+            'price': shampooing_service.price.as_generic_type()
         }
     }
 
