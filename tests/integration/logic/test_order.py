@@ -74,3 +74,17 @@ class TestOrderService:
         service = await service_repo.get_service_with_consumable(henna_staining_today_14_order.slot.schedule.service.id)
         for i, consumable in enumerate(sorted(service.consumables, key=lambda el: el.id)):
             assert consumable.inventory.stock_count.as_generic_type() == stock_count_after_delete_order[i]
+
+    async def test_get_client_orders(
+        self,
+        order_service_db_data,
+        new_order_dto,
+        user_ivanov,
+        new_order_model,
+        henna_staining_today_14_order
+    ):
+        await order_service_db_data.add_order(new_order_dto, user_ivanov)
+
+        orders = await order_service_db_data.get_client_orders(user=user_ivanov)
+
+        assert orders == [henna_staining_today_14_order, new_order_model]

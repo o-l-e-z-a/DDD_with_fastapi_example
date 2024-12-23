@@ -1,7 +1,7 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import Field, field_serializer
 
 from src.presentation.api.base.base_schema import BaseSchema
 from src.presentation.api.schedules.schema import ServiceSchema, SlotCreateSchema, SlotSchema
@@ -23,13 +23,17 @@ class OrderUpdatePhotoSchema(BaseSchema):
 
 class OrderSchema(BaseSchema):
     id: int
-    date_add: date
+    date_add: datetime
     point_uses: int_ge_0
     promotion_sale: int_ge_0
     total_amount: int_ge_0
     slot: SlotSchema
     photo_before_path: str | None
     photo_after_path: str | None
+
+    @field_serializer("date_add")
+    def serialize_date_add(self, date_add: datetime, _info):
+        return date_add.strftime("%Y-%m-%dT%H:%M")
 
 
 class AllOrderSchema(OrderSchema):

@@ -29,6 +29,8 @@ from src.logic.services.users_service import get_password_hash
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
+from src.presentation.api.orders.schema import OrderCreateSchema
+from src.presentation.api.schedules.schema import SlotCreateSchema
 from src.presentation.api.settings import settings
 from tests.unit.domain.conftest import *
 from tests.unit.logic.conftest import *
@@ -405,3 +407,31 @@ def new_schedule_model_added_dict():
             'price': 500
         }
     }
+
+
+@pytest.fixture()
+def new_order_added_dict(new_order_model):
+    return {
+        'photo_after_path': None,
+        'photo_before_path': None,
+        'point_uses': new_order_model.point_uses.as_generic_type(),
+        'promotion_sale': new_order_model.promotion_sale.as_generic_type(),
+        'slot': {
+            'id': new_order_model.slot.id,
+            'schedule': {'day': str(new_order_model.slot.schedule.day)},
+            'time_start': new_order_model.slot.time_start.as_generic_type()
+        },
+        'total_amount': new_order_model.total_amount.as_generic_type(),
+    }
+
+
+@pytest.fixture()
+def new_order_add_schema(new_order_dto):
+    return OrderCreateSchema(
+        point=new_order_dto.total_amount.point,
+        promotion_code=new_order_dto.total_amount.promotion_code,
+        slot=SlotCreateSchema(
+            time_start=new_order_dto.time_start,
+            schedule_id=new_order_dto.total_amount.schedule_id
+        )
+    )
