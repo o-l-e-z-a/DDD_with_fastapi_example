@@ -1,0 +1,8 @@
+from dataclasses import dataclass
+
+from src.domain.base.events import BaseEvent
+
+
+@dataclass
+class ScheduleCreatedEvent(BaseEvent):
+    schedule_id: int
