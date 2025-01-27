@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
@@ -41,6 +43,10 @@ class Order(BaseEntity):
     photo_before_path: str | None = None
     photo_after_path: str | None = None
     date_add: date = datetime.today()
+
+    def cancel(self, order: Order, user_point: UserPoint):
+        self._increase_user_point(user_point, order.point_uses)
+        self._increase_service_inventory_count(order)
 
     def __eq__(self, other):
         return (self.user, self.slot, self.point_uses, self.total_amount, self.date_add.strftime("%Y-%m-%d %H:%M")) == (

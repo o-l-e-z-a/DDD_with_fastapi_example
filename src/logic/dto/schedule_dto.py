@@ -12,23 +12,23 @@ class InventoryAddDTO(BaseDTO):
 
 
 class InventoryUpdateDTO(BaseDTO):
-    inventory_id: int
+    inventory_id: PositiveInt
     name: str | None = None
     unit: str | None = None
     stock_count: PositiveInt | None = None
 
 
 class InventoryDTO(InventoryAddDTO):
-    id: int
+    id: PositiveInt
 
 
 class MasterAddDTO(BaseDTO):
     description: str
-    user_id: int
-    services_id: list[int]
+    user_id: PositiveInt
+    services_id: list[PositiveInt]
 
 
 class ScheduleAddDTO(BaseDTO):
     day: date
-    service_id: int
-    master_id: int
+    service_id: PositiveInt
+    master_id: PositiveInt
