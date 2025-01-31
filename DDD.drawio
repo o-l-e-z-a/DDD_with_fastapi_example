@@ -1,0 +1,46 @@
+<mxfile host="Electron" modified="2025-01-31T12:54:21.534Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.4.13 Chrome/124.0.6367.207 Electron/30.0.6 Safari/537.36" etag="mkjX7K7E76dwiP-m-OYA" version="24.4.13" type="device">
+  <diagram name="Page-1" id="2YBvvXClWsGukQMizWep">
+    <mxGraphModel dx="2284" dy="844" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="90" y="45" width="370" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-1" value="Slot" style="rounded=1;whiteSpace=wrap;html=1;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="140" y="130" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-4" value="schedule" style="rounded=0;whiteSpace=wrap;html=1;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="425" y="480" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-5" value="master" style="rounded=0;whiteSpace=wrap;html=1;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="110" y="480" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-6" value="service" style="rounded=0;whiteSpace=wrap;html=1;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="270" y="480" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-13" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="570" y="100" width="370" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-9" value="Order" style="rounded=0;whiteSpace=wrap;html=1;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="280" y="130" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-11" value="promotion" style="rounded=0;whiteSpace=wrap;html=1;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="-90" y="310" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-8" value="user_point" style="rounded=0;whiteSpace=wrap;html=1;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="620" y="190" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-7" value="user" style="rounded=0;whiteSpace=wrap;html=1;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="770" y="190" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-15" value="&lt;h1 style=&quot;margin-top: 0px; font-size: 20px;&quot;&gt;&lt;font style=&quot;font-size: 20px;&quot;&gt;Требования&lt;/font&gt;&lt;/h1&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;клиент может просматривать мастеров и услуги&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;клиент может записаться на услугу (заказ)&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;клиенту после завершения заказа начисляются баллы&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;клиент может баллами уменьшить стоимость услуги&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;оплачивает на кассе&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;мастер&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;делает фото до и после услуги&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;админ на кассе&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;оплата на кассе&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;запись на услугу&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;промокоды&amp;nbsp;&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;коллаб с блоггерами -&amp;gt; им дают промокоды, смотреть, сколько людей привлечет каждый блоггер&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;клиент увидит промо у блоггера&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;может применить его к записи&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;промокоды действуют на определенные услуги, у них ест период действия, скидка&lt;/p&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="-280" y="570" width="640" height="950" as="geometry" />
+        </mxCell>
+        <mxCell id="AG_jORgWEOwMNbRPTdQD-18" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;&lt;font style=&quot;font-size: 20px;&quot;&gt;Примечания&lt;/font&gt;&lt;/h1&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;Статусы заказа&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;font-size: 20px;&quot;&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;в обработке&lt;/li&gt;&lt;li&gt;обработан&lt;/li&gt;&lt;li&gt;в процессе услуги ????&lt;/li&gt;&lt;li&gt;завершен&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;&lt;/p&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="380" y="570" width="540" height="670" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

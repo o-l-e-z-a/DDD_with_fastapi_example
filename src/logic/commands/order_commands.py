@@ -138,20 +138,23 @@ class DeleteOrderCommandCommandHandler(CommandHandler[DeleteOrderCommand, None])
                 raise OrderNotFoundLogicException(id=command.order_id)
             elif not order.user == command.user:
                 raise NotUserOrderLogicException()
+
             user_point = await self.uow.user_points.find_one_or_none(user_id=command.user.id)
             if not user_point:
                 raise UserPointNotFoundLogicException(id=command.user.id)
-            schedule = await self.uow.schedules.find_one_with_consumables(id=order.slot.schedule.id)
-            order.slot.schedule = schedule
             order.cancel(user_point=user_point)
             await self.uow.user_points.update(user_point)
-            service_with_consumables = await self.uow.services.get_service_with_consumable(
-                service_id=order.slot.schedule.service.id
-            )
-            for consumable in service_with_consumables.consumables:
-                for consumable_from_aggregate in order.slot.schedule.service.consumables:
-                    if consumable.id == consumable_from_aggregate.id:
-                        await self.uow.inventories.update(consumable_from_aggregate.inventory)
+
+            # schedule = await self.uow.schedules.find_one_with_consumables(id=order.slot.schedule.id)
+            # order.slot.schedule = schedule
+            # service_with_consumables = await self.uow.services.get_service_with_consumable(
+            #     service_id=order.slot.schedule.service.id
+            # )
+            # for consumable in service_with_consumables.consumables:
+            #     for consumable_from_aggregate in order.slot.schedule.service.consumables:
+            #         if consumable.id == consumable_from_aggregate.id:
+            #             await self.uow.inventories.update(consumable_from_aggregate.inventory)
+
             await self.uow.slots.delete(id=order.slot.id)
             await self.uow.commit()
 

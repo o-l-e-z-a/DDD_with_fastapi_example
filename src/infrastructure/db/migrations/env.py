@@ -6,9 +6,9 @@ from alembic import context
 from src.infrastructure.db.models.base import Base
 from src.infrastructure.db.models.users import Users, UserPoint
 from src.infrastructure.db.models.schedules import (
-    Inventory,
-    ConsumableToService,
-    Consumables,
+    # Inventory,
+    # ConsumableToService,
+    # Consumables,
     Service,
     Master,
     ServiceToMaster,

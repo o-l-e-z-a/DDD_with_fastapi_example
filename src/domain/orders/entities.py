@@ -78,8 +78,8 @@ class Order(BaseEntity):
             total_amount=PositiveIntNumber(total_amount_result.total_amount),
         )
 
-        order._decrease_user_point(user_point, CountNumber(total_amount_result.point_uses))
-        order._decrease_service_inventory_count(order)
+        # order._decrease_user_point(user_point, CountNumber(total_amount_result.point_uses))
+        # order._decrease_service_inventory_count(order)
 
         order.register_event(
             OrderCreatedEvent(
@@ -103,25 +103,26 @@ class Order(BaseEntity):
 
     def cancel(self, user_point: UserPoint):
         self._increase_user_point(user_point)
-        self._increase_service_inventory_count()
+        # self._increase_service_inventory_count()
 
     def _decrease_user_point(self, user_point: UserPoint, point_uses: CountNumber) -> None:
         # move to user_point class ?
         user_point.count = CountNumber(user_point.count - point_uses)
 
-    def _decrease_service_inventory_count(self, order: Order) -> None:
-        # move to order class ?
-        service = order.slot.schedule.service
-        for consumable in service.consumables:
-            consumable.inventory.stock_count = CountNumber(consumable.inventory.stock_count - consumable.count)
-
     def _increase_user_point(self, user_point: UserPoint) -> None:
         user_point.count = CountNumber(user_point.count + self.point_uses)
 
-    def _increase_service_inventory_count(self) -> None:
-        service = self.slot.schedule.service
-        for consumable in service.consumables:
-            consumable.inventory.stock_count = CountNumber(consumable.inventory.stock_count + consumable.count)
+    # def _decrease_service_inventory_count(self, order: Order) -> None:
+    #     # move to order class ?
+    #     service = order.slot.schedule.service
+    #     for consumable in service.consumables:
+    #         consumable.inventory.stock_count = CountNumber(consumable.inventory.stock_count - consumable.count)
+    #
+    #
+    # def _increase_service_inventory_count(self) -> None:
+    #     service = self.slot.schedule.service
+    #     for consumable in service.consumables:
+    #         consumable.inventory.stock_count = CountNumber(consumable.inventory.stock_count + consumable.count)
 
     def __eq__(self, other):
         return (self.user, self.slot, self.point_uses, self.total_amount, self.date_add.strftime("%Y-%m-%d %H:%M")) == (

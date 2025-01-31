@@ -2,38 +2,37 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from src.domain.base.entities import BaseEntity
-from src.domain.base.values import CountNumber, Name, PositiveIntNumber
+from src.domain.base.values import Name, PositiveIntNumber
 from src.domain.schedules.values import END_HOUR, SLOT_DELTA, START_HOUR, SlotTime
 from src.domain.users.entities import User
 
-
-@dataclass()
-class Inventory(BaseEntity):
-    name: Name
-    unit: Name
-    stock_count: CountNumber
-
-    def to_dict(self) -> dict:
-        return {
-            'id': self.id,
-            'name': self.name.as_generic_type(),
-            'unit': self.unit.as_generic_type(),
-            'stock_count': self.stock_count.as_generic_type(),
-        }
-
-
-@dataclass()
-class Consumable(BaseEntity):
-    inventory: Inventory
-    count: PositiveIntNumber
-
-    def to_dict(self) -> dict:
-        inventory = self.inventory.to_dict() if self.inventory else None
-        return {
-            'id': self.id,
-            'count': self.count.as_generic_type(),
-            'inventory': inventory
-        }
+# @dataclass()
+# class Inventory(BaseEntity):
+#     name: Name
+#     unit: Name
+#     stock_count: CountNumber
+#
+#     def to_dict(self) -> dict:
+#         return {
+#             'id': self.id,
+#             'name': self.name.as_generic_type(),
+#             'unit': self.unit.as_generic_type(),
+#             'stock_count': self.stock_count.as_generic_type(),
+#         }
+#
+#
+# @dataclass()
+# class Consumable(BaseEntity):
+#     inventory: Inventory
+#     count: PositiveIntNumber
+#
+#     def to_dict(self) -> dict:
+#         inventory = self.inventory.to_dict() if self.inventory else None
+#         return {
+#             'id': self.id,
+#             'count': self.count.as_generic_type(),
+#             'inventory': inventory
+#         }
 
 
 @dataclass()
@@ -41,15 +40,15 @@ class Service(BaseEntity):
     name: Name
     description: str
     price: PositiveIntNumber
-    consumables: list[Consumable] = field(default_factory=list)
+    # consumables: list[Consumable] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
-            'id': self.id,
-            'name': self.name.as_generic_type(),
-            'price': self.price.as_generic_type(),
-            'description': self.description,
-            'consumables': [consumable.to_dict() for consumable in self.consumables]
+            "id": self.id,
+            "name": self.name.as_generic_type(),
+            "price": self.price.as_generic_type(),
+            "description": self.description,
+            # 'consumables': [consumable.to_dict() for consumable in self.consumables]
         }
 
 
@@ -62,10 +61,10 @@ class Master(BaseEntity):
     def to_dict(self) -> dict:
         user = self.user.to_dict() if self.user else None
         return {
-            'id': self.id,
-            'description': self.description,
-            'user': user,
-            'services': [service.to_dict() for service in self.services]
+            "id": self.id,
+            "description": self.description,
+            "user": user,
+            "services": [service.to_dict() for service in self.services],
         }
 
 
@@ -78,12 +77,7 @@ class Schedule(BaseEntity):
     def to_dict(self) -> dict:
         master = self.master.to_dict() if self.master else None
         service = self.service.to_dict() if self.service else None
-        return {
-            'id': self.id,
-            'day': self.day,
-            'master': master,
-            'service': service
-        }
+        return {"id": self.id, "day": self.day, "master": master, "service": service}
 
 
 @dataclass()
@@ -106,11 +100,7 @@ class Slot(BaseEntity):
 
     def to_dict(self) -> dict:
         schedule = self.schedule.to_dict() if self.schedule else None
-        return {
-            'id': self.id,
-            'time_start': self.time_start.as_generic_type(),
-            'schedule': schedule
-        }
+        return {"id": self.id, "time_start": self.time_start.as_generic_type(), "schedule": schedule}
 
 
 class SlotsForSchedule:
