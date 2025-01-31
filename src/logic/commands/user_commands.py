@@ -11,7 +11,7 @@ from src.logic.services.users_service import get_password_hash
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
 
 
-class CreateUserCommand(BaseCommand):
+class AddUserCommand(BaseCommand):
     email: EmailStr
     first_name: str
     last_name: str
@@ -21,10 +21,10 @@ class CreateUserCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class CreateUserCommandHandler(CommandHandler[CreateUserCommand, User]):
+class AddUserCommandHandler(CommandHandler[AddUserCommand, User]):
     uow: SQLAlchemyUsersUnitOfWork
 
-    async def handle(self, command: CreateUserCommand) -> User:
+    async def handle(self, command: AddUserCommand) -> User:
         async with self.uow:
             existing_user = await self.uow.users.find_duplicate_user(email=command.email, telephone=command.telephone)
             if existing_user:
@@ -42,8 +42,7 @@ class CreateUserCommandHandler(CommandHandler[CreateUserCommand, User]):
             user_point = UserPoint(user=user_from_repo)
             await self.uow.user_points.add(entity=user_point)
             await self.uow.commit()
-            # TODO! add to the all command handlers
-            events = user.pull_events() + user_point.pull_events()
+            events = user.pull_events()
             print(events)
             await self.mediator.publish(events)
             return user_from_repo

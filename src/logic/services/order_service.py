@@ -3,7 +3,7 @@ from typing import Sequence
 from sqlalchemy import RowMapping
 
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
-from src.domain.orders.entities import Order, OrderingProcess, Promotion, TotalAmount, TotalAmountResult
+from src.domain.orders.entities import Order, Promotion, TotalAmount, TotalAmountResult
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
 from src.logic.dto.order_dto import (
@@ -66,8 +66,7 @@ class OrderService:
             if not schedule:
                 raise ScheduleNotFoundLogicException(id=order_data.total_amount.schedule_id)
             occupied_slots = await self.uow.slots.find_all(day=schedule.day)
-            ordering_process = OrderingProcess()
-            order_from_aggregate = ordering_process.add(
+            order_from_aggregate = Order.add(
                 promotion=promotion,
                 user_point=user_point,
                 schedule=schedule,
@@ -99,10 +98,7 @@ class OrderService:
             elif not order.user == user:
                 raise NotUserOrderLogicException()
             occupied_slots = await self.uow.slots.find_all(day=order.slot.schedule.day)
-            ordering_process = OrderingProcess()
-            ordering_process.update_slot_time(
-                order, time_start=SlotTime(order_data.time_start), occupied_slots=occupied_slots
-            )
+            order.update_slot_time(time_start=SlotTime(order_data.time_start), occupied_slots=occupied_slots)
             await self.uow.slots.update(order.slot)
             await self.uow.commit()
             return await self.uow.orders.find_one_or_none(id=order.id)
@@ -132,8 +128,7 @@ class OrderService:
                 raise UserPointNotFoundLogicException(id=user.id)
             schedule = await self.uow.schedules.find_one_with_consumables(id=order.slot.schedule.id)
             order.slot.schedule = schedule
-            ordering_process = OrderingProcess()
-            ordering_process.cancel(order=order, user_point=user_point)
+            order.cancel(user_point=user_point)
             await self.uow.user_points.update(user_point)
             service_with_consumables = await self.uow.services.get_service_with_consumable(
                 service_id=order.slot.schedule.service.id

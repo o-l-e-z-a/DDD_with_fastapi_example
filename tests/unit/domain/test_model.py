@@ -1,11 +1,11 @@
 import pytest
 
 from src.domain.base.values import CountNumber, PositiveIntNumber
-from src.domain.orders.entities import OrderingProcess, TotalAmount, TotalAmountResult
+from src.domain.orders.entities import Order, TotalAmount, TotalAmountResult
 from src.domain.orders.values import LESS_POINT_WARNINGS, MINIMUM_BALANCE, MORE_POINT_WARNINGS
 from src.domain.schedules.entities import SlotsForSchedule
 from src.domain.schedules.exceptions import SlotOccupiedException
-from src.domain.schedules.values import END_HOUR, START_HOUR, SlotTime
+from src.domain.schedules.values import SlotTime
 
 
 class TestTotalAmount:
@@ -112,13 +112,12 @@ class TestOrderProcess:
             self, henna_staining_today_12_slot, henna_staining_today_14_slot,
             ivanov_user_point, promotion_20, henna_staining_today_schedule
     ):
-        order_process = OrderingProcess()
         input_user_point = CountNumber(150)
         slot_time = SlotTime('15:00')
         expected_total_amount = int(1500 * 0.8 - 150)
         expected_promotion_sale = int(1500 * 0.2)
 
-        new_order = order_process.add(
+        new_order = Order.add(
             promotion=promotion_20, input_user_point=input_user_point, user_point=ivanov_user_point,
             user=ivanov_user_point.user, schedule=henna_staining_today_schedule,
             time_start=slot_time, occupied_slots=[henna_staining_today_12_slot, henna_staining_today_14_slot]
@@ -138,12 +137,11 @@ class TestOrderProcess:
             self, henna_staining_today_12_slot, henna_staining_today_14_slot,
             ivanov_user_point, promotion_20, henna_staining_today_schedule
     ):
-        order_process = OrderingProcess()
         input_user_point = CountNumber(150)
         slot_time = SlotTime('12:00')
 
         with pytest.raises(SlotOccupiedException):
-            order_process.add(
+            Order.add(
                 promotion=promotion_20, input_user_point=input_user_point, user_point=ivanov_user_point,
                 user=ivanov_user_point.user, schedule=henna_staining_today_schedule,
                 time_start=slot_time, occupied_slots=[henna_staining_today_12_slot, henna_staining_today_14_slot]

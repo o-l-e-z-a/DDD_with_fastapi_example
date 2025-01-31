@@ -11,7 +11,7 @@ ER = TypeVar("ER", bound=Any)
 
 @dataclass
 class EventHandler(ABC, Generic[ET, ER]):
-    _uow: AbstractUnitOfWork
+    uow: AbstractUnitOfWork
 
     @abstractmethod
     def handle(self, event: ET) -> ER: ...

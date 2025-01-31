@@ -1,19 +1,18 @@
 from dataclasses import dataclass
+from datetime import date
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import Field, PositiveInt
 
-from src.domain.base.values import CountNumber
-from src.domain.orders.entities import OrderingProcess
+from src.domain.base.values import CountNumber, Name, PositiveIntNumber
+from src.domain.orders.entities import Order, Promotion
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
 from src.logic.commands.base import BaseCommand, CommandHandler
-from src.logic.exceptions.schedule_exceptions import (
-    ScheduleNotFoundLogicException,
-)
-from src.logic.exceptions.user_exceptions import (
-    UserPointNotFoundLogicException,
-)
+from src.logic.dto.order_dto import PhotoDTO
+from src.logic.exceptions.order_exceptions import NotUserOrderLogicException, OrderNotFoundLogicException
+from src.logic.exceptions.schedule_exceptions import ScheduleNotFoundLogicException, ServiceNotFoundLogicException
+from src.logic.exceptions.user_exceptions import UserPointNotFoundLogicException
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
 
 int_ge_0 = Annotated[int, Field(ge=0)]
@@ -47,8 +46,7 @@ class AddOrderCommandCommandHandler(CommandHandler[AddOrderCommand, None]):
             if not schedule:
                 raise ScheduleNotFoundLogicException(id=command.total_amount.schedule_id)
             occupied_slots = await self.uow.slots.find_all(day=schedule.day)
-            ordering_process = OrderingProcess()
-            order_from_aggregate = ordering_process.add(
+            order_from_aggregate = Order.add(
                 promotion=promotion,
                 user_point=user_point,
                 schedule=schedule,
@@ -70,4 +68,172 @@ class AddOrderCommandCommandHandler(CommandHandler[AddOrderCommand, None]):
                     if consumable.id == consumable_from_aggregate.id:
                         await self.uow.inventories.update(consumable_from_aggregate.inventory)
             await self.uow.commit()
+            events = order_from_aggregate.pull_events()
+            print("events", events)
+            await self.mediator.publish(events)
             return order_with_detail_info
+
+
+class UpdateOrderCommand(BaseCommand):
+    order_id: PositiveInt
+    time_start: slot_type
+    user: User
+
+
+@dataclass(frozen=True)
+class UpdateOrderCommandCommandHandler(CommandHandler[UpdateOrderCommand, None]):
+    uow: SQLAlchemyOrderUnitOfWork
+
+    async def handle(self, command: UpdateOrderCommand) -> None:
+        async with self.uow:
+            order = await self.uow.orders.find_one_or_none(id=command.order_id)
+            if not order:
+                raise OrderNotFoundLogicException(id=command.order_id)
+            elif not order.user == command.user:
+                raise NotUserOrderLogicException()
+            occupied_slots = await self.uow.slots.find_all(day=order.slot.schedule.day)
+            order.update_slot_time(time_start=SlotTime(command.time_start), occupied_slots=occupied_slots)
+            await self.uow.slots.update(order.slot)
+            await self.uow.commit()
+            return await self.uow.orders.find_one_or_none(id=order.id)
+
+
+class UpdatePhotoOrderCommand(BaseCommand):
+    order_id: PositiveInt
+    photo_before: PhotoDTO
+    photo_after: PhotoDTO
+
+
+@dataclass(frozen=True)
+class UpdatePhotoOrderCommandCommandHandler(CommandHandler[UpdatePhotoOrderCommand, None]):
+    uow: SQLAlchemyOrderUnitOfWork
+
+    async def handle(self, command: UpdatePhotoOrderCommand) -> None:
+        async with self.uow:
+            order = await self.uow.orders.find_one_or_none(id=command.order_id)
+            if not order:
+                raise OrderNotFoundLogicException(id=command.order_id)
+            order_from_repo = await self.uow.orders.update_photo(
+                entity=order,
+                photo_before=command.photo_before,
+                photo_after=command.photo_after,
+            )
+            await self.uow.commit()
+            return await self.uow.orders.find_one_or_none(id=order_from_repo.id)
+
+
+class DeleteOrderCommand(BaseCommand):
+    order_id: PositiveInt
+    user: User
+
+
+@dataclass(frozen=True)
+class DeleteOrderCommandCommandHandler(CommandHandler[DeleteOrderCommand, None]):
+    uow: SQLAlchemyOrderUnitOfWork
+
+    async def handle(self, command: DeleteOrderCommand) -> None:
+        async with self.uow:
+            order = await self.uow.orders.find_one_or_none(id=command.order_id)
+            if not order:
+                raise OrderNotFoundLogicException(id=command.order_id)
+            elif not order.user == command.user:
+                raise NotUserOrderLogicException()
+            user_point = await self.uow.user_points.find_one_or_none(user_id=command.user.id)
+            if not user_point:
+                raise UserPointNotFoundLogicException(id=command.user.id)
+            schedule = await self.uow.schedules.find_one_with_consumables(id=order.slot.schedule.id)
+            order.slot.schedule = schedule
+            order.cancel(user_point=user_point)
+            await self.uow.user_points.update(user_point)
+            service_with_consumables = await self.uow.services.get_service_with_consumable(
+                service_id=order.slot.schedule.service.id
+            )
+            for consumable in service_with_consumables.consumables:
+                for consumable_from_aggregate in order.slot.schedule.service.consumables:
+                    if consumable.id == consumable_from_aggregate.id:
+                        await self.uow.inventories.update(consumable_from_aggregate.inventory)
+            await self.uow.slots.delete(id=order.slot.id)
+            await self.uow.commit()
+
+
+class AddPromotionCommand(BaseCommand):
+    code: str = Field(..., max_length=15)
+    sale: int = Field(..., ge=0, lt=100)
+    is_active: bool = True
+    day_start: date
+    day_end: date
+    services_id: list[int]
+
+
+@dataclass(frozen=True)
+class AddPromotionCommandCommandHandler(CommandHandler[AddPromotionCommand, None]):
+    uow: SQLAlchemyOrderUnitOfWork
+
+    async def handle(self, command: AddPromotionCommand) -> None:
+        async with self.uow:
+            services = await self.uow.services.get_services_by_ids(command.promotion_data.services_id)
+            if not services:
+                raise ServiceNotFoundLogicException(id=command.promotion_data.services_id)
+            promotion = Promotion(
+                code=Name(command.promotion_data.code),
+                sale=PositiveIntNumber(command.promotion_data.sale),
+                is_active=command.promotion_data.is_active,
+                day_start=command.promotion_data.day_start,
+                day_end=command.promotion_data.day_end,
+                services=services,
+            )
+            promotion_from_repo = await self.uow.promotions.add(entity=promotion)
+            await self.uow.commit()
+            return await self.uow.promotions.find_one_or_none(id=promotion_from_repo.id)
+
+
+class UpdatePromotionCommand(AddPromotionCommand):
+    promotion_id: PositiveInt
+
+
+@dataclass(frozen=True)
+class UpdatePromotionCommandCommandHandler(CommandHandler[UpdatePromotionCommand, None]):
+    uow: SQLAlchemyOrderUnitOfWork
+
+    async def handle(self, command: UpdatePromotionCommand) -> None:
+        async with self.uow:
+            services = await self.uow.services.get_services_by_ids(command.promotion_data.services_id)
+            if not services:
+                raise ServiceNotFoundLogicException(id=command.promotion_data.services_id)
+            promotion = Promotion(
+                code=Name(command.promotion_data.code),
+                sale=PositiveIntNumber(command.promotion_data.sale),
+                is_active=command.promotion_data.is_active,
+                day_start=command.promotion_data.day_start,
+                day_end=command.promotion_data.day_end,
+                services=services,
+            )
+            promotion_from_repo = await self.uow.promotions.add(entity=promotion)
+            await self.uow.commit()
+            return await self.uow.promotions.find_one_or_none(id=promotion_from_repo.id)
+
+
+class DeletePromotionCommand(BaseCommand):
+    promotion_id: PositiveInt
+
+
+@dataclass(frozen=True)
+class DeletePromotionCommandCommandHandler(CommandHandler[DeletePromotionCommand, None]):
+    uow: SQLAlchemyOrderUnitOfWork
+
+    async def handle(self, command: DeletePromotionCommand) -> None:
+        async with self.uow:
+            services = await self.uow.services.get_services_by_ids(command.promotion_data.services_id)
+            if not services:
+                raise ServiceNotFoundLogicException(id=command.promotion_data.services_id)
+            promotion = Promotion(
+                code=Name(command.promotion_data.code),
+                sale=PositiveIntNumber(command.promotion_data.sale),
+                is_active=command.promotion_data.is_active,
+                day_start=command.promotion_data.day_start,
+                day_end=command.promotion_data.day_end,
+                services=services,
+            )
+            promotion_from_repo = await self.uow.promotions.add(entity=promotion)
+            await self.uow.commit()
+            return await self.uow.promotions.find_one_or_none(id=promotion_from_repo.id)
