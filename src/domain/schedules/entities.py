@@ -1,5 +1,6 @@
+import enum
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 
 from src.domain.base.entities import BaseEntity
 from src.domain.base.values import Name, PositiveIntNumber
@@ -72,7 +73,9 @@ class Master(BaseEntity):
 class Schedule(BaseEntity):
     day: date
     master: Master
-    service: Service
+
+    #  TODO: check!
+    # service in master.services
 
     def to_dict(self) -> dict:
         master = self.master.to_dict() if self.master else None
@@ -112,3 +115,117 @@ class SlotsForSchedule:
     def check_slot_time_is_free(self, slot_time: SlotTime, occupied_slots: list[Slot]) -> bool:
         free_slots = self.get_free_slots(occupied_slots)
         return True if slot_time in free_slots else False
+
+
+class OrderStatus(enum.Enum):
+    RECEIVED = enum.auto
+    IN_PROGRESS = enum.auto
+    FINISHED = enum.auto
+    CANCELLED = enum.auto
+
+
+@dataclass()
+class Order(BaseEntity):
+    user_id: int
+    slot_id: int
+    service_id: int
+    photo_before_path: str | None = None
+    photo_after_path: str | None = None
+    date_add: date = datetime.today()
+    status: OrderStatus = OrderStatus.RECEIVED
+
+    @classmethod
+    def add(
+        cls,
+        schedule: Schedule,
+        user_id: int,
+        time_start: SlotTime,
+        occupied_slots: list[Slot],
+    ) -> Order:
+        slot_for_schedule = SlotsForSchedule()
+        if not slot_for_schedule.check_slot_time_is_free(slot_time=time_start, occupied_slots=occupied_slots):
+            raise SlotOccupiedException()
+
+        slot = Slot(schedule=schedule, time_start=time_start)
+
+        # order._decrease_user_point(user_point, CountNumber(total_amount_result.point_uses))
+
+        # order._decrease_service_inventory_count(order)
+
+        order.register_event(
+            OrderCreatedEvent(
+                user_id=user_id,
+                # user_email=order.user.email.as_generic_type(),
+                # user_first_name=order.user.first_name.as_generic_type(),
+                # user_last_name=order.user.last_name.as_generic_type(),
+                slot_time=order.slot.time_start.as_generic_type(),
+                schedule_day=order.slot.schedule.day,
+                point_uses=order.point_uses.as_generic_type(),
+                total_amount=order.total_amount.as_generic_type(),
+                service_name=order.slot.schedule.service.name.as_generic_type(),
+            )
+        )
+        return order
+
+    def update_slot_time(self, time_start: SlotTime, occupied_slots: list[Slot]):
+        slot_for_schedule = SlotsForSchedule()
+        if not slot_for_schedule.check_slot_time_is_free(slot_time=time_start, occupied_slots=occupied_slots):
+            raise SlotOccupiedException()
+        self.slot.time_start = time_start
+
+    # def cancel(self, user_point: UserPoint):
+    #     self._increase_user_point(user_point)
+
+    # self._increase_service_inventory_count()
+
+    # def _decrease_user_point(self, user_point: UserPoint, point_uses: CountNumber) -> None:
+    #     # move to user_point class ?
+    #     user_point.count = CountNumber(user_point.count - point_uses)
+    #
+    # def _increase_user_point(self, user_point: UserPoint) -> None:
+    #     user_point.count = CountNumber(user_point.count + self.point_uses)
+
+    # def _decrease_service_inventory_count(self, order: Order) -> None:
+    #     # move to order class ?
+    #     service = order.slot.schedule.service
+    #     for consumable in service.consumables:
+    #         consumable.inventory.stock_count = CountNumber(consumable.inventory.stock_count - consumable.count)
+    #
+    #
+    # def _increase_service_inventory_count(self) -> None:
+    #     service = self.slot.schedule.service
+    #     for consumable in service.consumables:
+    #         consumable.inventory.stock_count = CountNumber(consumable.inventory.stock_count + consumable.count)
+
+    def __eq__(self, other):
+        return (
+            # self.user,
+            self.user_id,
+            self.slot,
+            self.point_uses,
+            self.total_amount,
+            self.date_add.strftime("%Y-%m-%d %H:%M")
+        ) == (
+            # other.user,
+            other.user_id,
+            other.slot,
+            other.point_uses,
+            other.total_amount,
+            other.date_add.strftime("%Y-%m-%d %H:%M"),
+        )
+
+    def to_dict(self) -> dict:
+        # user = self.user.to_dict() if self.user else None
+        slot = self.slot.to_dict() if self.slot else None
+        return {
+            "id": self.id,
+            "point_uses": self.point_uses.as_generic_type(),
+            "promotion_sale": self.promotion_sale.as_generic_type(),
+            "total_amount": self.total_amount.as_generic_type(),
+            "date_add": self.date_add,
+            "photo_before_path": self.photo_before_path,
+            "photo_after_path": self.photo_after_path,
+            # "user": user,
+            "user_id": self.user_id,
+            "slot": slot,
+        }

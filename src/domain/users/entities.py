@@ -30,16 +30,3 @@ class User(BaseEntity):
             'date_birthday': self.date_birthday,
             'is_admin': self.is_admin,
         }
-
-
-@dataclass()
-class UserPoint(BaseEntity):
-    user: User
-    count: CountNumber = CountNumber(0)
-
-    def to_dict(self) -> dict:
-        return {
-            'id': self.id,
-            'count': self.count.as_generic_type(),
-            'user': self.user.to_dict(),
-        }

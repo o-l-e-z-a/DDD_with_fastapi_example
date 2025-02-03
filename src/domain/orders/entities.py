@@ -10,7 +10,7 @@ from src.domain.orders.values import LESS_POINT_WARNINGS, MINIMUM_BALANCE, MORE_
 from src.domain.schedules.entities import Schedule, Service, Slot, SlotsForSchedule
 from src.domain.schedules.exceptions import SlotOccupiedException
 from src.domain.schedules.values import SlotTime
-from src.domain.users.entities import User, UserPoint
+from src.domain.users.entities import User
 
 
 @dataclass()
@@ -35,32 +35,33 @@ class Promotion(BaseEntity):
 
 
 @dataclass()
-class Order(BaseEntity):
+class UserPoint(BaseEntity):
     user: User
-    slot: Slot
+    count: CountNumber = CountNumber(0)
+
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'count': self.count.as_generic_type(),
+            'user': self.user.to_dict(),
+        }
+
+
+@dataclass()
+class OrderPayment(BaseEntity):
+    order_id: int
     point_uses: CountNumber
     promotion_sale: CountNumber
     total_amount: PositiveIntNumber
-    photo_before_path: str | None = None
-    photo_after_path: str | None = None
-    date_add: date = datetime.today()
+    is_payed: bool = False
 
     @classmethod
     def add(
         cls,
         promotion: Promotion | None,
         user_point: UserPoint,
-        schedule: Schedule,
         input_user_point: CountNumber,
-        user: User,
-        time_start: SlotTime,
-        occupied_slots: list[Slot],
-    ) -> Order:
-        slot_for_schedule = SlotsForSchedule()
-        if not slot_for_schedule.check_slot_time_is_free(slot_time=time_start, occupied_slots=occupied_slots):
-            raise SlotOccupiedException()
-
-        slot = Slot(schedule=schedule, time_start=time_start)
+    ):
         total_amount = TotalAmount(
             promotion=promotion,
             user_point=user_point,
@@ -71,82 +72,12 @@ class Order(BaseEntity):
         total_amount_result = total_amount.calculate()
 
         order = cls(
-            user=user,
+            user_id=user_id,
             slot=slot,
             point_uses=CountNumber(total_amount_result.point_uses),
             promotion_sale=CountNumber(total_amount_result.promotion_sale),
             total_amount=PositiveIntNumber(total_amount_result.total_amount),
         )
-
-        # order._decrease_user_point(user_point, CountNumber(total_amount_result.point_uses))
-        # order._decrease_service_inventory_count(order)
-
-        order.register_event(
-            OrderCreatedEvent(
-                user_email=order.user.email.as_generic_type(),
-                user_first_name=order.user.first_name.as_generic_type(),
-                user_last_name=order.user.last_name.as_generic_type(),
-                slot_time=order.slot.time_start.as_generic_type(),
-                schedule_day=order.slot.schedule.day,
-                point_uses=order.point_uses.as_generic_type(),
-                total_amount=order.total_amount.as_generic_type(),
-                service_name=order.slot.schedule.service.name.as_generic_type(),
-            )
-        )
-        return order
-
-    def update_slot_time(self, time_start: SlotTime, occupied_slots: list[Slot]):
-        slot_for_schedule = SlotsForSchedule()
-        if not slot_for_schedule.check_slot_time_is_free(slot_time=time_start, occupied_slots=occupied_slots):
-            raise SlotOccupiedException()
-        self.slot.time_start = time_start
-
-    def cancel(self, user_point: UserPoint):
-        self._increase_user_point(user_point)
-        # self._increase_service_inventory_count()
-
-    def _decrease_user_point(self, user_point: UserPoint, point_uses: CountNumber) -> None:
-        # move to user_point class ?
-        user_point.count = CountNumber(user_point.count - point_uses)
-
-    def _increase_user_point(self, user_point: UserPoint) -> None:
-        user_point.count = CountNumber(user_point.count + self.point_uses)
-
-    # def _decrease_service_inventory_count(self, order: Order) -> None:
-    #     # move to order class ?
-    #     service = order.slot.schedule.service
-    #     for consumable in service.consumables:
-    #         consumable.inventory.stock_count = CountNumber(consumable.inventory.stock_count - consumable.count)
-    #
-    #
-    # def _increase_service_inventory_count(self) -> None:
-    #     service = self.slot.schedule.service
-    #     for consumable in service.consumables:
-    #         consumable.inventory.stock_count = CountNumber(consumable.inventory.stock_count + consumable.count)
-
-    def __eq__(self, other):
-        return (self.user, self.slot, self.point_uses, self.total_amount, self.date_add.strftime("%Y-%m-%d %H:%M")) == (
-            other.user,
-            other.slot,
-            other.point_uses,
-            other.total_amount,
-            other.date_add.strftime("%Y-%m-%d %H:%M"),
-        )
-
-    def to_dict(self) -> dict:
-        user = self.user.to_dict() if self.user else None
-        slot = self.slot.to_dict() if self.slot else None
-        return {
-            "id": self.id,
-            "point_uses": self.point_uses.as_generic_type(),
-            "promotion_sale": self.promotion_sale.as_generic_type(),
-            "total_amount": self.total_amount.as_generic_type(),
-            "date_add": self.date_add,
-            "photo_before_path": self.photo_before_path,
-            "photo_after_path": self.photo_after_path,
-            "user": user,
-            "slot": slot,
-        }
 
 
 @dataclass()
