@@ -142,3 +142,4 @@ cython_debug/
 #custom
 src/presentation/api/media/
 /.ruff_cache/
+/.$DDD.drawio.dtmp
