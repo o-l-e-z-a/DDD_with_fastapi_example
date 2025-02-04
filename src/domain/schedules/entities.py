@@ -1,9 +1,14 @@
+from __future__ import annotations
+
 import enum
+
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
 from src.domain.base.entities import BaseEntity
 from src.domain.base.values import Name, PositiveIntNumber
+from src.domain.orders.events import OrderCreatedEvent
+from src.domain.schedules.exceptions import SlotOccupiedException
 from src.domain.schedules.values import END_HOUR, SLOT_DELTA, START_HOUR, SlotTime
 from src.domain.users.entities import User
 
@@ -57,7 +62,7 @@ class Service(BaseEntity):
 class Master(BaseEntity):
     description: str
     user: User
-    services: list[Service] = field(default_factory=list)
+    services_id: list[int] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         user = self.user.to_dict() if self.user else None
@@ -65,45 +70,65 @@ class Master(BaseEntity):
             "id": self.id,
             "description": self.description,
             "user": user,
-            "services": [service.to_dict() for service in self.services],
+            "services_id": [service_id for service_id in self.services_id],
         }
 
 
 @dataclass()
 class Schedule(BaseEntity):
     day: date
-    master: Master
+    master_id: int
+    slots: set[Slot]
+
+    # check schedule by day and master exists
+
+    @classmethod
+    def add(cls, day: date, master_id: int):
+        all_day_slots = {
+            Slot(
+                time_start=SlotTime(f"{hour}:00"),
+                # schedule_id=se
+            )
+            for hour in range(START_HOUR, END_HOUR + SLOT_DELTA)
+        }
+
+        schedule = cls(day=day, master_id=master_id, slots=all_day_slots)
+        return schedule
 
     #  TODO: check!
     # service in master.services
 
+    def get_free_slots(self, occupied_slots: list[Slot]) -> list[Slot]:
+        occupied_slots_time = {occupied_slot for occupied_slot in occupied_slots}
+        return sorted(self.slots.difference(occupied_slots_time))
+
     def to_dict(self) -> dict:
-        master = self.master.to_dict() if self.master else None
-        service = self.service.to_dict() if self.service else None
-        return {"id": self.id, "day": self.day, "master": master, "service": service}
+        # master = self.master.to_dict() if self.master else None
+        # service = self.service.to_dict() if self.service else None
+        return {"id": self.id, "day": self.day, "master_id": self.master_id, "slots": self.slots}
 
 
 @dataclass()
 class Slot(BaseEntity):
     time_start: SlotTime
-    schedule: Schedule
+    # schedule_id: int
 
     def __eq__(self, other) -> bool:
-        return (self.time_start, self.schedule.id) == (other.time_start, other.schedule.id)
+        return self.time_start == other.time_start
 
     def __gt__(self, other) -> bool:
-        if self.schedule.day > other.schedule.day:
+        # if self.schedule.day > other.schedule.day:
+        #     return True
+        # elif self.schedule.day < other.schedule.day:
+        #     return False
+        # else:
+        if self.time_start > other.time_start:
             return True
-        elif self.schedule.day < other.schedule.day:
-            return False
-        else:
-            if self.time_start > other.time_start:
-                return True
-            return False
+        return False
 
     def to_dict(self) -> dict:
-        schedule = self.schedule.to_dict() if self.schedule else None
-        return {"id": self.id, "time_start": self.time_start.as_generic_type(), "schedule": schedule}
+        # schedule = self.schedule.to_dict() if self.schedule else None
+        return {"id": self.id, "time_start": self.time_start.as_generic_type()}
 
 
 class SlotsForSchedule:
@@ -135,34 +160,28 @@ class Order(BaseEntity):
     status: OrderStatus = OrderStatus.RECEIVED
 
     @classmethod
-    def add(
-        cls,
-        schedule: Schedule,
-        user_id: int,
-        time_start: SlotTime,
-        occupied_slots: list[Slot],
-    ) -> Order:
-        slot_for_schedule = SlotsForSchedule()
-        if not slot_for_schedule.check_slot_time_is_free(slot_time=time_start, occupied_slots=occupied_slots):
+    def add(cls, user_id: int, service_id: int, slot_id: int, schedule: Schedule, occupied_slots: list[Slot]) -> Order:
+        #
+        # slot_for_schedule = SlotsForSchedule()
+        if slot_id in occupied_slots:
             raise SlotOccupiedException()
 
-        slot = Slot(schedule=schedule, time_start=time_start)
+        if service_id not in [service.id for service in schedule.master.services]:
+            raise
 
-        # order._decrease_user_point(user_point, CountNumber(total_amount_result.point_uses))
+        # slot = Slot(schedule=schedule, time_start=time_start)
 
-        # order._decrease_service_inventory_count(order)
+        order = cls(
+            user_id=user_id,
+            service_id=service_id,
+            slot_id=slot_id,
+        )
 
         order.register_event(
             OrderCreatedEvent(
-                user_id=user_id,
-                # user_email=order.user.email.as_generic_type(),
-                # user_first_name=order.user.first_name.as_generic_type(),
-                # user_last_name=order.user.last_name.as_generic_type(),
-                slot_time=order.slot.time_start.as_generic_type(),
-                schedule_day=order.slot.schedule.day,
-                point_uses=order.point_uses.as_generic_type(),
-                total_amount=order.total_amount.as_generic_type(),
-                service_name=order.slot.schedule.service.name.as_generic_type(),
+                user_id=order.user_id,
+                service_id=order.service_id,
+                slot_id=order.slot_id,
             )
         )
         return order
@@ -204,7 +223,7 @@ class Order(BaseEntity):
             self.slot,
             self.point_uses,
             self.total_amount,
-            self.date_add.strftime("%Y-%m-%d %H:%M")
+            self.date_add.strftime("%Y-%m-%d %H:%M"),
         ) == (
             # other.user,
             other.user_id,
@@ -229,3 +248,15 @@ class Order(BaseEntity):
             "user_id": self.user_id,
             "slot": slot,
         }
+
+
+# class OrderCheckCorrectSlotDomainService:
+#     def check_slot_is_correct():
+#         if slot in occupied_slots:
+#             raise SlotOccupiedException()
+#
+#
+#         # if not slot_for_schedule.check_slot_time_is_free(slot_time=time_start, occupied_slots=occupied_slots):
+#         #     raise SlotOccupiedException()
+#
+#         if service not in slot.schedule.master.services

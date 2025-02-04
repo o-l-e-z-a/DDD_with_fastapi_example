@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date
 
 from src.domain.base.entities import BaseEntity
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
-from src.domain.orders.events import OrderCreatedEvent
 from src.domain.orders.values import LESS_POINT_WARNINGS, MINIMUM_BALANCE, MORE_POINT_WARNINGS
-from src.domain.schedules.entities import Schedule, Service, Slot, SlotsForSchedule
-from src.domain.schedules.exceptions import SlotOccupiedException
-from src.domain.schedules.values import SlotTime
+from src.domain.schedules.entities import Service
 from src.domain.users.entities import User
 
 
@@ -41,9 +38,9 @@ class UserPoint(BaseEntity):
 
     def to_dict(self) -> dict:
         return {
-            'id': self.id,
-            'count': self.count.as_generic_type(),
-            'user': self.user.to_dict(),
+            "id": self.id,
+            "count": self.count.as_generic_type(),
+            "user": self.user.to_dict(),
         }
 
 
@@ -88,26 +85,19 @@ class TotalAmountResult:
     warnings: list[str] = field(default_factory=list)
 
 
-class TotalAmount:
-    def __init__(
-        self, promotion: Promotion | None, user_point: UserPoint, schedule: Schedule, input_user_point: CountNumber
-    ):
-        self.promotion = promotion
-        self.schedule = schedule
-        self.user_point = user_point
-        self.input_user_point = input_user_point
-
-    def calculate(self) -> TotalAmountResult:
-        service = self.schedule.service
+class TotalAmountDomainService:
+    def calculate(
+        self, promotion: Promotion | None, user_point: UserPoint, service: Service, input_user_point: CountNumber
+    ) -> TotalAmountResult:
         total_amount = service.price.as_generic_type()
-        point = self.input_user_point.as_generic_type()
+        point = input_user_point.as_generic_type()
         warnings = []
         promotion_sale = 0
 
-        if self.promotion:
-            promotion_sale = int(service.price * self.promotion.sale / 100)
+        if promotion:
+            promotion_sale = int(service.price * promotion.sale / 100)
             total_amount -= promotion_sale
-        if self.user_point.count < point:
+        if user_point.count < point:
             point = 0
             warnings.append(LESS_POINT_WARNINGS)
         elif point >= total_amount:

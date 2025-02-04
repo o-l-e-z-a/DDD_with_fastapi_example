@@ -11,6 +11,13 @@ class SlotOccupiedException(ValueError, DomainException):
 
 
 @dataclass(eq=False)
+class SlotServiceInvalidException(ValueError, DomainException):
+    @property
+    def title(self) -> str:
+        return "Времянное окно не подходит для данной услуги"
+
+
+@dataclass(eq=False)
 class SlotInvalidException(BaseValueObjectException):
     @property
     def title(self) -> str:

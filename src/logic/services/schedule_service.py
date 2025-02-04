@@ -124,13 +124,10 @@ class ScheduleService:
 
     async def add_schedule(self, schedule_data: ScheduleAddDTO) -> Schedule:
         async with self.uow:
-            service = await self.uow.services.find_one_or_none(id=schedule_data.service_id)
-            if not service:
-                raise ServiceNotFoundLogicException(id=schedule_data.service_id)
             master = await self.uow.masters.find_one_or_none(id=schedule_data.master_id)
             if not master:
                 raise MasterNotFoundLogicException(id=schedule_data.master_id)
-            schedule = Schedule(day=schedule_data.day, service=service, master=master)
+            schedule = Schedule(day=schedule_data.day, master=master)
             schedule_from_repo = await self.uow.schedules.add(entity=schedule)
             await self.uow.commit()
             return await self.uow.schedules.find_one_or_none(id=schedule_from_repo.id)

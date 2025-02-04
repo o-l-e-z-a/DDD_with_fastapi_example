@@ -40,6 +40,9 @@ class AddOrderCommandCommandHandler(CommandHandler[AddOrderCommand, None]):
             user = command.user
             promotion = await self.uow.promotions.find_one_or_none(code=command.total_amount.promotion_code)
             user_point = await self.uow.user_points.find_one_or_none(user_id=user.id)
+            service = await self.uow.services.find_one_or_none(id=command.service_id)
+            if not service:
+                raise ServiceNotFoundLogicException(id=command.service_id)
             if not user_point:
                 raise UserPointNotFoundLogicException(id=user.id)
             schedule = await self.uow.schedules.find_one_with_consumables(id=command.total_amount.schedule_id)
