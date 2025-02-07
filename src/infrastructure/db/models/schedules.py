@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from datetime import date, time
+from datetime import date, time, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, String, UniqueConstraint, Column
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy_file import ImageField
 
-from src.domain.base.values import Name, PositiveIntNumber
+from src.domain.base.values import Name, PositiveIntNumber, CountNumber
 from src.domain.schedules import entities
 from src.domain.schedules.values import SlotTime
 from src.infrastructure.db.models.base import Base, get_child_join_and_level, int_pk, str_255
-from src.infrastructure.db.models.orders import Order
 
 if TYPE_CHECKING:
     from src.infrastructure.db.models.users import Users
@@ -97,12 +98,12 @@ class Service(Base):
     # consumables: Mapped[list["Consumables"]] = relationship(
     #     back_populates="services", secondary="consumable_to_service"
     # )
+    orders: Mapped[list["Order"]] = relationship(
+        back_populates="service",
+    )
     masters: Mapped[list["Master"]] = relationship(
         back_populates="services",
         secondary="service_to_master",
-    )
-    schedules: Mapped[list["Schedule"]] = relationship(
-        back_populates="service",
     )
 
     __table_args__ = (CheckConstraint("price >= 0", name="check_count_positive"),)
@@ -145,7 +146,6 @@ class Master(Base):
     id: Mapped[int_pk]
     description: Mapped[str_255]
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    # photo = models.ImageField('Фото мастера', upload_to='service_photo/', blank=True, null=True)
 
     user: Mapped["Users"] = relationship(back_populates="master")
     services: Mapped[list["Service"]] = relationship(
@@ -160,23 +160,22 @@ class Master(Base):
 
     def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Master:
         with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
-        services = (
-            [service.to_domain(with_join=with_join_to_child, child_level=child_level) for service in self.services]
+        services_id = (
+            [service.id for service in self.services]
             if with_join
             else []
         )
-        user = self.user.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
         master = entities.Master(
             description=self.description,
-            user=user,
-            services=services,
+            user_id=self.user_id,
+            services_id=services_id,
         )
         master.id = self.id
         return master
 
     @classmethod
     def from_entity(cls, entity: entities.Master) -> Master:
-        return cls(id=getattr(entity, "id", None), description=entity.description, user_id=entity.user.id)
+        return cls(id=getattr(entity, "id", None), description=entity.description, user_id=entity.user_id)
 
     # def __repr__(self):
     # return f'{self.user.last_name} {self.user.first_name} , {self.user.email}'
@@ -202,21 +201,21 @@ class Schedule(Base):
     id: Mapped[int_pk]
     day: Mapped[date]
     master_id: Mapped[int] = mapped_column(ForeignKey("master.id", ondelete="CASCADE"))
-    service_id: Mapped[int] = mapped_column(ForeignKey("service.id", ondelete="CASCADE"))
 
     slots: Mapped[list["Slot"]] = relationship(back_populates="schedule")
     master: Mapped["Master"] = relationship(back_populates="schedules")
-    service: Mapped["Service"] = relationship(back_populates="schedules")
 
-    __table_args__ = (UniqueConstraint("day", "master_id", "service_id"),)
+    __table_args__ = (UniqueConstraint("day", "master_id"),)
 
     def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Schedule:
         with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
-        master = self.master.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
-        service = self.service.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
+        # master = self.master.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
+        slots = [
+            slot.to_domain(with_join=with_join_to_child, child_level=child_level) for slot in self.slots
+        ] if with_join else []
         schedule = entities.Schedule(
-            master=master,
-            service=service,
+            master_id=self.master_id,
+            slots=slots,
             day=self.day,
         )
         schedule.id = self.id
@@ -225,7 +224,9 @@ class Schedule(Base):
     @classmethod
     def from_entity(cls, entity: entities.Schedule) -> Schedule:
         return cls(
-            id=getattr(entity, "id", None), day=entity.day, master_id=entity.master.id, service_id=entity.service.id
+            id=getattr(entity, "id", None),
+            day=entity.day,
+            master_id=entity.master_id,
         )
 
 
@@ -243,19 +244,88 @@ class Slot(Base):
     __table_args__ = (UniqueConstraint("schedule_id", "time_start"),)
 
     def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Slot:
-        with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
-        schedule = self.schedule.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
+        # with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
+        # schedule = self.schedule.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
         slot = entities.Slot(
             time_start=SlotTime(str(self.time_start.strftime("%H:%M"))),
-            schedule=schedule,
         )
         slot.id = self.id
+        slot.schedule_id = self.schedule_id
+
         return slot
 
     @classmethod
-    def from_entity(cls, entity: entities.Slot) -> Slot:
+    def from_entity(cls, entity: entities.Slot, **kwargs) -> Slot:
         return cls(
             id=getattr(entity, "id", None),
             time_start=time.fromisoformat(entity.time_start.as_generic_type()),
-            schedule_id=entity.schedule.id,
+            # schedule_id=entity.schedule_id,
+        )
+
+
+class Order(Base):
+    __tablename__ = "order"
+
+    id: Mapped[int_pk]
+    slot_id: Mapped[int] = mapped_column(ForeignKey("slot.id", ondelete="CASCADE"), unique=True)
+    service_id: Mapped[int] = mapped_column(ForeignKey("service.id", ondelete="CASCADE"), nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    # point_uses: Mapped[int] = mapped_column(default=0)
+    # promotion_sale: Mapped[int] = mapped_column(default=0)
+    # total_amount: Mapped[int] = mapped_column(default=0)
+    status: Mapped[str] = mapped_column(nullable=True)
+    date_add: Mapped[datetime] = mapped_column(default=datetime.today())
+    photo_after = Column(ImageField)
+    photo_before = Column(ImageField)
+
+    slot: Mapped["Slot"] = relationship(back_populates="order")
+    service: Mapped["Service"] = relationship(back_populates="orders")
+    user: Mapped["Users"] = relationship()
+
+    # __table_args__ = (
+    #     CheckConstraint("point_uses >= 0", name="check_point_uses_positive"),
+    #     CheckConstraint("promotion_sale >= 0", name="check_promotion_sale_positive"),
+    #     CheckConstraint("total_amount >= 0", name="check_total_amount_positive"),
+    # )
+
+    @hybrid_property
+    def photo_before_path(self):
+        if self.photo_before:
+            return "media/" + self.photo_before.get("path", "")
+
+    @hybrid_property
+    def photo_after_path(self):
+        if self.photo_after:
+            return "media/" + self.photo_after.get("path", "")
+
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Order:
+        # with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
+        # user = self.user.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
+        # slot = self.slot.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
+        order = entities.Order(
+            # point_uses=CountNumber(self.point_uses),
+            # promotion_sale=CountNumber(self.promotion_sale),
+            # total_amount=PositiveIntNumber(self.total_amount),
+            photo_before_path=self.photo_before_path,
+            photo_after_path=self.photo_after_path,
+            user_id=self.user_id,
+            slot_id=self.slot_id,
+            service_id=self.service_id,
+            date_add=self.date_add,
+        )
+        order.id = self.id
+        return order
+
+    @classmethod
+    def from_entity(cls, entity: entities.Order) -> Order:
+        return cls(
+            id=getattr(entity, "id", None),
+            slot_id=entity.slot_id,
+            user_id=entity.user_id,
+            service_id=entity.service_id,
+            # point_uses=entity.point_uses.as_generic_type(),
+            # promotion_sale=entity.promotion_sale.as_generic_type(),
+            # total_amount=entity.total_amount.as_generic_type(),
+            photo_before=entity.photo_before_path,
+            photo_after=entity.photo_after_path,
         )

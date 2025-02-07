@@ -3,7 +3,9 @@ from typing import Sequence
 from sqlalchemy import RowMapping
 
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
-from src.domain.orders.entities import Order, Promotion, TotalAmount, TotalAmountResult
+from src.domain.orders.entities import Promotion, TotalAmountResult, TotalAmountDomainService
+from src.domain.schedules.entities import Order
+
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
 from src.logic.dto.order_dto import (
@@ -43,12 +45,12 @@ class OrderService:
             schedule = await self.uow.schedules.find_one_or_none(id=total_amount_dto.schedule_id)
             if not schedule:
                 raise ScheduleNotFoundLogicException(id=total_amount_dto.schedule_id)
-            amount_result = TotalAmount(
+            amount_result = TotalAmountDomainService().calculate(
                 promotion=promotion,
-                schedule=schedule,
+                service=service,
                 user_point=user_point,
                 input_user_point=CountNumber(total_amount_dto.point),
-            ).calculate()
+            )
             return amount_result
 
     async def get_client_orders(self, user: User) -> list[Order]:

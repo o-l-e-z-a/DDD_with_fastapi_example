@@ -7,7 +7,6 @@ from src.domain.base.entities import BaseEntity
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders.values import LESS_POINT_WARNINGS, MINIMUM_BALANCE, MORE_POINT_WARNINGS
 from src.domain.schedules.entities import Service
-from src.domain.users.entities import User
 
 
 @dataclass()
@@ -17,7 +16,7 @@ class Promotion(BaseEntity):
     is_active: bool
     day_start: date
     day_end: date
-    services: list[Service] = field(default_factory=list)
+    services_id: list[int] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -27,20 +26,20 @@ class Promotion(BaseEntity):
             "is_active": self.is_active,
             "day_start": self.day_start,
             "day_end": self.day_end,
-            "services": [service.to_dict() for service in self.services],
+            "services_id": [service_id for service_id in self.services_id],
         }
 
 
 @dataclass()
 class UserPoint(BaseEntity):
-    user: User
+    user_id: int
     count: CountNumber = CountNumber(0)
 
     def to_dict(self) -> dict:
         return {
             "id": self.id,
             "count": self.count.as_generic_type(),
-            "user": self.user.to_dict(),
+            "user_id": self.user_id,
         }
 
 
@@ -55,26 +54,34 @@ class OrderPayment(BaseEntity):
     @classmethod
     def add(
         cls,
+        order_id: int,
         promotion: Promotion | None,
         user_point: UserPoint,
         input_user_point: CountNumber,
+        service: Service
     ):
-        total_amount = TotalAmount(
+        total_amount_result = TotalAmountDomainService().calculate(
             promotion=promotion,
             user_point=user_point,
-            schedule=schedule,
+            service=service,
             input_user_point=input_user_point,
         )
-
-        total_amount_result = total_amount.calculate()
-
-        order = cls(
-            user_id=user_id,
-            slot=slot,
+        order_payment = cls(
+            order_id=order_id,
             point_uses=CountNumber(total_amount_result.point_uses),
             promotion_sale=CountNumber(total_amount_result.promotion_sale),
             total_amount=PositiveIntNumber(total_amount_result.total_amount),
         )
+        return order_payment
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "point_uses": self.point_uses.as_generic_type(),
+            "promotion_sale": self.promotion_sale.as_generic_type(),
+            "total_amount": self.total_amount.as_generic_type(),
+            "order_id": self.order_id,
+        }
 
 
 @dataclass()

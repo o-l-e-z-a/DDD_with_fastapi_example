@@ -1,4 +1,4 @@
-from src.domain.orders.entities import Order
+from src.domain.schedules.entities import Order
 from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, TotalAmountDTO
 from src.logic.dto.schedule_dto import ScheduleAddDTO
 from src.logic.dto.user_dto import UserCreateDTO, UserLoginDTO
@@ -8,8 +8,8 @@ from src.logic.services.users_service import UserService
 from tests.unit.domain.conftest import *
 
 from .mocs import (
-    FakeConsumablesRepository,
-    FakeInventoryRepository,
+    # FakeConsumablesRepository,
+    # FakeInventoryRepository,
     FakeMasterRepository,
     FakeOrderRepository,
     FakeOrderUnitOfWork,
@@ -87,7 +87,7 @@ def new_user_model(new_user_dto):
 
 @pytest.fixture()
 def new_user_point_model(new_user_model):
-    return UserPoint(user=new_user_model)
+    return UserPoint(user_id=new_user_model.id)
 
 
 @pytest.fixture()

@@ -3,7 +3,7 @@ from datetime import date
 
 from pydantic import EmailStr
 
-from src.domain.users.entities import User, UserPoint
+from src.domain.users.entities import User
 from src.domain.users.values import Email, HumanName, Telephone
 from src.logic.commands.base import BaseCommand, CommandHandler
 from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException
@@ -39,8 +39,8 @@ class AddUserCommandHandler(CommandHandler[AddUserCommand, User]):
             )
             user.hashed_password = password_hash
             user_from_repo = await self.uow.users.add(entity=user)
-            user_point = UserPoint(user=user_from_repo)
-            await self.uow.user_points.add(entity=user_point)
+            # user_point = UserPoint(user=user_from_repo)
+            # await self.uow.user_points.add(entity=user_point)
             await self.uow.commit()
             events = user.pull_events()
             print(events)

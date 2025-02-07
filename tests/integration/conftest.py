@@ -13,16 +13,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.db.config import AsyncSessionFactory, engine
 from src.infrastructure.db.models.base import Base
-from src.infrastructure.db.repositories.orders import OrderRepository, PromotionRepository
+from src.infrastructure.db.repositories.orders import PromotionRepository, UserPointRepository
 from src.infrastructure.db.repositories.schedules import (
-    ConsumablesRepository,
-    InventoryRepository,
+    # ConsumablesRepository,
+    # InventoryRepository,
     MasterRepository,
     ScheduleRepository,
     ServiceRepository,
     SlotRepository,
+    OrderRepository
 )
-from src.infrastructure.db.repositories.users import UserPointRepository, UserRepository
+from src.infrastructure.db.repositories.users import UserRepository
 from src.logic.services.order_service import PromotionService
 from src.logic.services.schedule_service import MasterService, ProcedureService
 from src.logic.services.users_service import get_password_hash
@@ -111,14 +112,14 @@ def user_point_repo(async_session) -> UserPointRepository:
     return UserPointRepository(session=async_session)
 
 
-@pytest.fixture()
-def consumables_repo(async_session) -> ConsumablesRepository:
-    return ConsumablesRepository(session=async_session)
-
-
-@pytest.fixture()
-def inventory_repo(async_session) -> InventoryRepository:
-    return InventoryRepository(session=async_session)
+# @pytest.fixture()
+# def consumables_repo(async_session) -> ConsumablesRepository:
+#     return ConsumablesRepository(session=async_session)
+#
+#
+# @pytest.fixture()
+# def inventory_repo(async_session) -> InventoryRepository:
+#     return InventoryRepository(session=async_session)
 
 
 @pytest.fixture()
@@ -186,30 +187,30 @@ async def petrov_user_point_db(user_point_repo, petrov_user_point):
     return user_point
 
 
-@pytest.fixture()
-async def henna_inventory_db(inventory_repo, henna_inventory):
-    inventory = await add_to_tb(inventory_repo, henna_inventory)
-    return inventory
+# @pytest.fixture()
+# async def henna_inventory_db(inventory_repo, henna_inventory):
+#     inventory = await add_to_tb(inventory_repo, henna_inventory)
+#     return inventory
+#
+#
+# @pytest.fixture()
+# async def shampoo_inventory_db(inventory_repo, shampoo_inventory):
+#     inventory = await add_to_tb(inventory_repo, shampoo_inventory)
+#     return inventory
 
 
-@pytest.fixture()
-async def shampoo_inventory_db(inventory_repo, shampoo_inventory):
-    inventory = await add_to_tb(inventory_repo, shampoo_inventory)
-    return inventory
-
-
-@pytest.fixture()
-async def henna_consumable_db(consumables_repo, henna_consumable):
-    consumable = await add_to_tb(consumables_repo, henna_consumable)
-    return consumable
-
-
-@pytest.fixture()
-async def shampoo_consumable_db(consumables_repo, shampoo_consumable):
-    consumable = await add_to_tb(consumables_repo, shampoo_consumable)
-    return consumable
-
-
+# @pytest.fixture()
+# async def henna_consumable_db(consumables_repo, henna_consumable):
+#     consumable = await add_to_tb(consumables_repo, henna_consumable)
+#     return consumable
+#
+#
+# @pytest.fixture()
+# async def shampoo_consumable_db(consumables_repo, shampoo_consumable):
+#     consumable = await add_to_tb(consumables_repo, shampoo_consumable)
+#     return consumable
+#
+#
 @pytest.fixture()
 async def henna_staining_service_db(service_repo, henna_staining_service):
     service = await add_to_tb(service_repo, henna_staining_service)

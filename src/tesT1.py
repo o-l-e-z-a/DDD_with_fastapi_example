@@ -7,6 +7,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 
 from src.infrastructure.db.config import AsyncSessionFactory
 from src.infrastructure.db.models.schedules import Schedule, Slot
+from src.infrastructure.db.repositories.schedules import ScheduleRepository
 from src.infrastructure.db.repositories.users import UserRepository
 from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
@@ -214,6 +215,12 @@ async def test_slot_querty():
         print(r.schedule)
 
 
+async def test_find_master_services_by_schedule():
+    async with AsyncSessionFactory() as session:
+        repo = ScheduleRepository(session)
+        print(await repo.find_master_services_by_schedule(3))
+
+
 if __name__ == "__main__":
     # asyncio.get_event_loop().run_until_complete(add_user())
     # asyncio.get_event_loop().run_until_complete(add_inventory())
@@ -226,4 +233,5 @@ if __name__ == "__main__":
     # asyncio.get_event_loop().run_until_complete(add_promotion())
     # asyncio.get_event_loop().run_until_complete(update_promotion())
     # asyncio.get_event_loop().run_until_complete(delete_promotion())
-    asyncio.get_event_loop().run_until_complete(test_slot_querty())
+    # asyncio.get_event_loop().run_until_complete(test_slot_querty())
+    asyncio.get_event_loop().run_until_complete(test_find_master_services_by_schedule())

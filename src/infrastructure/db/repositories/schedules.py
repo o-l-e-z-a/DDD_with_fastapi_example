@@ -1,21 +1,26 @@
 from datetime import date
+from typing import Sequence
 
-from sqlalchemy import extract, func, select
+from sqlalchemy import extract, func, select, RowMapping
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from sqlalchemy_file.exceptions import ContentTypeValidationError
 
 from src.domain.schedules import entities
-from src.infrastructure.db.models.orders import Order
-from src.infrastructure.db.models.schedules import Consumables, Inventory, Master, Schedule, Service, Slot
+from src.domain.users import entities as user_entities
+from src.infrastructure.db.exceptions import UpdateException, InsertException
+from src.infrastructure.db.models.schedules import Master, Schedule, Service, Slot, Order
 from src.infrastructure.db.models.users import Users
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyRepository
+from src.logic.dto.order_dto import PhotoDTO
 
-
-class InventoryRepository(GenericSQLAlchemyRepository[Inventory, entities.Inventory]):
-    model = Inventory
-
-
-class ConsumablesRepository(GenericSQLAlchemyRepository[Consumables, entities.Consumable]):
-    model = Consumables
+#
+# class InventoryRepository(GenericSQLAlchemyRepository[Inventory, entities.Inventory]):
+#     model = Inventory
+#
+#
+# class ConsumablesRepository(GenericSQLAlchemyRepository[Consumables, entities.Consumable]):
+#     model = Consumables
 
 
 class ServiceRepository(GenericSQLAlchemyRepository[Service, entities.Service]):
@@ -29,7 +34,9 @@ class ServiceRepository(GenericSQLAlchemyRepository[Service, entities.Service]):
     async def get_service_with_consumable(self, service_id: int) -> entities.Service | None:
         query = (
             select(self.model)
-            .options(selectinload(self.model.consumables).joinedload(Consumables.inventory))
+            .options(
+                # selectinload(self.model.consumables).joinedload(Consumables.inventory)
+            )
             .where(self.model.id == service_id)
         )
         result = await self.session.execute(query)
@@ -42,14 +49,16 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
 
     async def add(self, entity: entities.Master) -> entities.Master:
         model = self.model.from_entity(entity)
-        services = [Service.from_entity(service) for service in entity.services]
-        # model.user = await self.session.merge(Users.from_entity(entity.user))
-        model.services = [await self.session.merge(service) for service in services]
+        services = [await self.session.get(Service, service_id) for service_id in entity.services_id]
+        model.services = services
         self.session.add(model)
-        await self.session.flush()
-        return model.to_domain()
+        try:
+            await self.session.flush()
+        except IntegrityError as err:
+            raise InsertException(entity=entity, detail=str(err.args))
+        return model.to_domain(with_join=True)
 
-    async def get_users_to_masters(self) -> list[entities.User]:
+    async def get_users_to_masters(self) -> list[user_entities.User]:
         query = select(Users).where(~Users.master.has())
         result = await self.session.execute(query)
         return [el.to_domain() for el in result.scalars().all()]
@@ -92,7 +101,7 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
                 Master.id,
                 Master.user_id,
                 func.count(Master.id).label("total_count"),
-                func.sum(Order.total_amount).label("total_sum"),
+                # func.sum(Order.total_amount).label("total_sum"),
             )
             .join(Schedule)
             .join(Slot)
@@ -107,7 +116,7 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
                 Users.last_name,
                 Users.first_name,
                 master_with_reports.c.total_count,
-                master_with_reports.c.total_sum,
+                # master_with_reports.c.total_sum,
                 master_with_reports.c.id,
             )
             .select_from(Users)
@@ -120,13 +129,26 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
 class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule]):
     model = Schedule
 
+    async def add(self, entity: entities.Schedule) -> entities.Schedule:
+        model = self.model.from_entity(entity)
+        slots = [Slot.from_entity(slot) for slot in entity.slots]
+        model.slots = slots
+        self.session.add(model)
+        try:
+            await self.session.flush()
+        except IntegrityError as err:
+            raise InsertException(entity=entity, detail=str(err.args))
+        return model.to_domain(with_join=True)
+
     async def find_all(self, **filter_by) -> list[entities.Schedule]:
         query = (
             select(self.model)
             .options(
                 joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
             )
-            .options(joinedload(self.model.service).options(selectinload(Service.consumables)))
+            # .options(joinedload(self.model.service)
+                     # .options(selectinload(Service.consumables))
+                     # )
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
@@ -138,7 +160,9 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
             .options(
                 joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
             )
-            .options(joinedload(self.model.service).options(selectinload(Service.consumables)))
+            # .options(joinedload(self.model.service)
+                     # .options(selectinload(Service.consumables))
+                     # )
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
@@ -150,14 +174,17 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
             select(self.model)
             .options(
                 joinedload(self.model.master)
-                .options(selectinload(Master.services).selectinload(Service.consumables))
+                .options(selectinload(Master.services)
+                         # .selectinload(Service.consumables)
+                         )
                 .options(joinedload(Master.user))
             )
-            .options(
-                joinedload(self.model.service).options(
-                    selectinload(Service.consumables).joinedload(Consumables.inventory)
-                )
-            )
+            # .options(
+            #     joinedload(self.model.service)
+                # .options(
+                #     selectinload(Service.consumables).joinedload(Consumables.inventory)
+                # )
+            # )
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
@@ -169,6 +196,34 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         execute_result = await self.session.execute(query)
         result = execute_result.scalars().all()
         return list(result)
+
+    # query = (
+        #         select(Order)
+        #         .join(Slot).join(Schedule).join(Service).join(Master)
+        #         .join(user_1, Master.user_id == user_1.id)
+        #         .join(user_2, Order.user_id == user_2.id)
+        #         .options(
+        #             contains_eager(Order.slot)
+        #             .contains_eager(Slot.schedule)
+        #             .options(contains_eager(Schedule.service))
+        #             .options(contains_eager(Schedule.master).contains_eager(Master.user.of_type(user_1)))
+        #         )
+        #         .options(contains_eager(Order.user.of_type(user_2)))
+        #         .where(Schedule.day == day)
+        #     )
+
+    async def find_master_services_by_schedule(self, schedule_id: int):
+        query = (
+            select(Service)
+            .join(Master)
+            .join(Schedule)
+            .options(
+                contains_eager(Service.masters).options(contains_eager(Master.schedules))
+            )
+            .where(Schedule.id == schedule_id)
+        )
+        result = await self.session.execute(query)
+        return [el.to_domain(with_join=True) for el in result.scalars().all()]
 
 
 class SlotRepository(GenericSQLAlchemyRepository[Slot, entities.Slot]):
@@ -186,3 +241,89 @@ class SlotRepository(GenericSQLAlchemyRepository[Slot, entities.Slot]):
         query = select(self.model).join(Slot.schedule).options(contains_eager(Slot.schedule)).filter_by(**filter_by)
         result = await self.session.execute(query)
         return [el.to_domain(with_join=True) for el in result.scalars().all()]
+
+
+class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
+    model = Order
+
+    async def get_order_report_by_service(self) -> Sequence[RowMapping]:
+        query = (
+            select(
+                Service.id,
+                Service.name,
+                Service.price,
+                func.count(Service.id).label("total_count"),
+                func.sum(Order.total_amount).label("total_sum"),
+            )
+            .join(Schedule)
+            .join(Slot)
+            .join(Order)
+            .group_by(Service.id)
+        )
+        result = await self.session.execute(query)
+        return result.mappings().all()
+
+    async def find_one_or_none(self, **filter_by) -> entities.Order | None:
+        query = self.get_query_to_find_all(**filter_by)
+        result = await self.session.execute(query)
+        scalar = result.scalar_one_or_none()
+        return scalar.to_domain(with_join=True, child_level=4) if scalar else None
+
+    async def find_all(self, **filter_by) -> list[entities.Order]:
+        query = self.get_query_to_find_all(**filter_by)
+        result = await self.session.execute(query)
+        return [el.to_domain(with_join=True, child_level=4) for el in result.scalars().all()]
+
+    # def find_order_by_day(self, day):
+    #     user_2 = aliased(Users)
+    #     user_1 = aliased(Users)
+    #     query = (
+    #         select(Order)
+    #         .join(Slot).join(Schedule).join(Service).join(Master)
+    #         .join(user_1, Master.user_id == user_1.id)
+    #         .join(user_2, Order.user_id == user_2.id)
+    #         .options(
+    #             contains_eager(Order.slot)
+    #             .contains_eager(Slot.schedule)
+    #             .options(contains_eager(Schedule.service))
+    #             .options(contains_eager(Schedule.master).contains_eager(Master.user.of_type(user_1)))
+    #         )
+    #         .options(contains_eager(Order.user.of_type(user_2)))
+    #         .where(Schedule.day == day)
+    #     )
+    #     result = self.session.execute(query)
+    #     return result.scalars().all()
+
+    def get_query_to_find_all(self, **filter_by):
+        query = (
+            select(self.model)
+            .options(
+                joinedload(self.model.slot, innerjoin=True)
+                .joinedload(Slot.schedule, innerjoin=True)
+                .options(joinedload(Schedule.service, innerjoin=True).options(selectinload(Service.consumables)))
+                .options(
+                    joinedload(Schedule.master, innerjoin=True)
+                    .options(joinedload(Master.user, innerjoin=True))
+                    .options(selectinload(Master.services))
+                )
+            )
+            .options(joinedload(self.model.user, innerjoin=True))
+            .filter_by(**filter_by)
+        )
+        return query
+
+    async def update_photo(self, entity: entities.Order, photo_after: PhotoDTO, photo_before: PhotoDTO):
+        model = self.model.from_entity(entity)
+        model.photo_before = File(  # type: ignore[assignment]
+            content=photo_before, content_type=photo_before.content_type, filename=photo_before.filename
+        )
+        model.photo_after = File(  # type: ignore[assignment]
+            content=photo_after, content_type=photo_after.content_type, filename=photo_after.filename
+        )
+        try:
+            await self.session.merge(model)
+            await self.session.flush()
+        except ContentTypeValidationError as err:
+            # print(err.msg)
+            raise UpdateException(detail=err.msg, entity=entity)
+        return model.to_domain()

@@ -2,7 +2,7 @@ from datetime import date
 from typing import Type
 
 from src.domain.base.values import BaseValueObject, CountNumber, Name
-from src.domain.schedules.entities import Inventory, Master, Schedule, Service, Slot, SlotsForSchedule
+from src.domain.schedules.entities import Master, Schedule, Service, Slot, SlotsForSchedule
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
@@ -25,37 +25,37 @@ class ProcedureService:
             services = await self.uow.services.find_all()
         return services
 
-    async def get_inventories(self) -> list[Inventory]:
-        async with self.uow:
-            inventories = await self.uow.inventories.find_all()
-        return inventories
-
-    async def add_inventory(self, inventory_data: InventoryAddDTO) -> Inventory:
-        async with self.uow:
-            inventory = Inventory(
-                name=Name(inventory_data.name),
-                stock_count=CountNumber(inventory_data.stock_count),
-                unit=Name(inventory_data.unit),
-            )
-            inventory_from_repo = await self.uow.inventories.add(entity=inventory)
-            await self.uow.commit()
-            return inventory_from_repo
-
-    async def update_inventory(self, inventory_data: InventoryUpdateDTO) -> Inventory:
-        async with self.uow:
-            inventory = await self.uow.inventories.find_one_or_none(id=inventory_data.inventory_id)
-            if not inventory:
-                raise InventoryNotFoundLogicException(inventory_data.inventory_id)
-            key_mapper: dict[str, Type[BaseValueObject]] = {
-                "name": Name,
-                "unit": Name,
-                "stock_count": CountNumber,
-            }
-            for k, v in inventory_data.model_dump(exclude_none=True, exclude={"inventory_id"}).items():
-                setattr(inventory, k, key_mapper.get(k)(value=v))
-            inventory_from_repo = await self.uow.inventories.update(entity=inventory)
-            await self.uow.commit()
-            return inventory_from_repo
+    # async def get_inventories(self) -> list[Inventory]:
+    #     async with self.uow:
+    #         inventories = await self.uow.inventories.find_all()
+    #     return inventories
+    #
+    # async def add_inventory(self, inventory_data: InventoryAddDTO) -> Inventory:
+    #     async with self.uow:
+    #         inventory = Inventory(
+    #             name=Name(inventory_data.name),
+    #             stock_count=CountNumber(inventory_data.stock_count),
+    #             unit=Name(inventory_data.unit),
+    #         )
+    #         inventory_from_repo = await self.uow.inventories.add(entity=inventory)
+    #         await self.uow.commit()
+    #         return inventory_from_repo
+    #
+    # async def update_inventory(self, inventory_data: InventoryUpdateDTO) -> Inventory:
+    #     async with self.uow:
+    #         inventory = await self.uow.inventories.find_one_or_none(id=inventory_data.inventory_id)
+    #         if not inventory:
+    #             raise InventoryNotFoundLogicException(inventory_data.inventory_id)
+    #         key_mapper: dict[str, Type[BaseValueObject]] = {
+    #             "name": Name,
+    #             "unit": Name,
+    #             "stock_count": CountNumber,
+    #         }
+    #         for k, v in inventory_data.model_dump(exclude_none=True, exclude={"inventory_id"}).items():
+    #             setattr(inventory, k, key_mapper.get(k)(value=v))
+    #         inventory_from_repo = await self.uow.inventories.update(entity=inventory)
+    #         await self.uow.commit()
+    #         return inventory_from_repo
 
     async def delete_inventory(self, inventory_id: int):
         async with self.uow:

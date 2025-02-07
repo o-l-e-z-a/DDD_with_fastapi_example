@@ -14,6 +14,11 @@ class ServiceNotFoundLogicException(NotFoundLogicException):
 
 
 @dataclass(eq=False)
+class SlotNotFoundLogicException(NotFoundLogicException):
+    model: str = "Времянное окно"
+
+
+@dataclass(eq=False)
 class MasterNotFoundLogicException(NotFoundLogicException):
     model: str = "Мастер"
 

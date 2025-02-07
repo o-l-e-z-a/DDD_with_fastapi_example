@@ -2,18 +2,18 @@ from datetime import date
 from typing import Any, Self, Sequence
 
 from src.domain.base.values import BaseValueObject
-from src.domain.users import entities
 from src.infrastructure.db.models.base import E, T
-from src.infrastructure.db.repositories.orders import OrderRepository, PromotionRepository
+from src.infrastructure.db.repositories.orders import PromotionRepository, UserPointRepository
 from src.infrastructure.db.repositories.schedules import (
-    ConsumablesRepository,
-    InventoryRepository,
+    # ConsumablesRepository,
+    # InventoryRepository,
     MasterRepository,
     ScheduleRepository,
     ServiceRepository,
     SlotRepository,
+    OrderRepository
 )
-from src.infrastructure.db.repositories.users import UserPointRepository, UserRepository
+from src.infrastructure.db.repositories.users import UserRepository
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
 
 
@@ -117,10 +117,10 @@ class FakeScheduleRepository(FakeGenericSQLAlchemyRepository, ScheduleRepository
 
     async def find_one_with_consumables(self, **filter_by):
         return await self.find_one_or_none(**filter_by)
-
-
-class FakeInventoryRepository(FakeGenericSQLAlchemyRepository, InventoryRepository):
-    pass
+#
+#
+# class FakeInventoryRepository(FakeGenericSQLAlchemyRepository, InventoryRepository):
+#     pass
 
 
 class FakeMasterRepository(FakeGenericSQLAlchemyRepository, MasterRepository):
@@ -136,8 +136,8 @@ class FakeSlotRepository(FakeGenericSQLAlchemyRepository, SlotRepository):
     pass
 
 
-class FakeConsumablesRepository(FakeGenericSQLAlchemyRepository, ConsumablesRepository):
-    pass
+# class FakeConsumablesRepository(FakeGenericSQLAlchemyRepository, ConsumablesRepository):
+#     pass
 
 
 class FakePromotionRepository(FakeGenericSQLAlchemyRepository, PromotionRepository):

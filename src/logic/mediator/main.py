@@ -1,30 +1,28 @@
 import asyncio
 
-from datetime import date
+from datetime import date, timedelta
 
 from src.domain.orders.events import OrderCreatedEvent
 from src.domain.users.entities import User
 from src.domain.users.values import Email, HumanName, Telephone
 from src.logic.commands.order_commands import (
-    AddOrderCommand,
-    AddOrderCommandCommandHandler,
-    DeleteOrderCommand,
-    DeleteOrderCommandCommandHandler,
     TotalAmountDTO,
-    UpdateOrderCommand,
-    UpdateOrderCommandCommandHandler,
 )
+from src.logic.commands.schedule_commands import AddOrderCommand, AddOrderCommandCommandHandler, UpdateOrderCommand, \
+    UpdateOrderCommandCommandHandler, DeleteOrderCommand, AddMasterCommand, AddMasterCommandCommandHandler, \
+    CancelOrderCommandCommandHandler, AddScheduleCommand, AddScheduleCommandCommandHandler
 from src.logic.commands.user_commands import AddUserCommand, AddUserCommandHandler
 from src.logic.events.order_handlers import OrderCreatedEmailEventHandler, OrderCreatedPointIncreaseEventHandler
 from src.logic.mediator.base import Mediator
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
+from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
 
 
 def get_message_bus_with_user_register_handlers():
     mediator = Mediator()
-    user_uow = SQLAlchemyUsersUnitOfWork()
-    mediator.register_command(AddUserCommand, [AddUserCommandHandler(mediator=mediator, uow=user_uow)])
+    uow = SQLAlchemyUsersUnitOfWork()
+    mediator.register_command(AddUserCommand, [AddUserCommandHandler(mediator=mediator, uow=uow)])
     return mediator
 
 
@@ -41,21 +39,49 @@ async def create_user():
     )
 
 
-def get_message_bus_with_order_register_handlers():
+def get_message_bus_with_schedule_register_handlers():
     mediator = Mediator()
-    user_uow = SQLAlchemyOrderUnitOfWork()
-    mediator.register_command(AddOrderCommand, [AddOrderCommandCommandHandler(mediator=mediator, uow=user_uow)])
-    mediator.register_command(UpdateOrderCommand, [UpdateOrderCommandCommandHandler(mediator=mediator, uow=user_uow)])
-    mediator.register_command(DeleteOrderCommand, [DeleteOrderCommandCommandHandler(mediator=mediator, uow=user_uow)])
+    uow = SQLAlchemyScheduleUnitOfWork()
+    mediator.register_command(AddOrderCommand, [AddOrderCommandCommandHandler(mediator=mediator, uow=uow)])
+    mediator.register_command(UpdateOrderCommand, [UpdateOrderCommandCommandHandler(mediator=mediator, uow=uow)])
+    mediator.register_command(DeleteOrderCommand, [CancelOrderCommandCommandHandler(mediator=mediator, uow=uow)])
+    mediator.register_command(AddMasterCommand, [AddMasterCommandCommandHandler(mediator=mediator, uow=uow)])
+    mediator.register_command(AddScheduleCommand, [AddScheduleCommandCommandHandler(mediator=mediator, uow=uow)])
     mediator.register_event(
         OrderCreatedEvent,
-        [OrderCreatedEmailEventHandler(uow=user_uow), OrderCreatedPointIncreaseEventHandler(uow=user_uow)],
+        [OrderCreatedEmailEventHandler(uow=uow), OrderCreatedPointIncreaseEventHandler(uow=uow)],
     )
     return mediator
 
 
+async def add_master():
+    message_bus = get_message_bus_with_schedule_register_handlers()
+    user = User(
+        email=Email("hue@grant.com"),
+        first_name=HumanName("Hue"),
+        last_name=HumanName("Grant"),
+        telephone=Telephone("88005553434"),
+    )
+    user.id = 13
+    data = AddMasterCommand(
+        description="asdasdasdasd",
+        user_id=user.id,
+        services_id=[1, 2],
+    )
+    await message_bus.handle_command(data)
+
+
+async def add_schedule():
+    message_bus = get_message_bus_with_schedule_register_handlers()
+    data = AddScheduleCommand(
+        day=date.today() + timedelta(days=1),
+        master_id=17
+    )
+    print(await message_bus.handle_command(data))
+
+
 async def add_order():
-    message_bus = get_message_bus_with_order_register_handlers()
+    message_bus = get_message_bus_with_schedule_register_handlers()
     user = User(
         email=Email("hue@grant.com"),
         first_name=HumanName("Hue"),
@@ -64,19 +90,15 @@ async def add_order():
     )
     user.id = 13
     order_data = AddOrderCommand(
-        total_amount=TotalAmountDTO(
-            schedule_id=5,
-            point=0,
-            promotion_code="sfcsdf6666",
-        ),
-        time_start="14:00",
+        slot_id=33,
+        service_id=1,
         user=user,
     )
     await message_bus.handle_command(order_data)
 
 
 async def update_order():
-    message_bus = get_message_bus_with_order_register_handlers()
+    message_bus = get_message_bus_with_schedule_register_handlers()
     user = User(
         email=Email("hue@grant.com"),
         first_name=HumanName("Hue"),
@@ -90,7 +112,7 @@ async def update_order():
 
 
 async def delete_order():
-    message_bus = get_message_bus_with_order_register_handlers()
+    message_bus = get_message_bus_with_schedule_register_handlers()
     user = User(
         email=Email("hue@grant.com"),
         first_name=HumanName("Hue"),

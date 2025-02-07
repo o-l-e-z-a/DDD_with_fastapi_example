@@ -4,7 +4,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from src.infrastructure.db.models.base import Base
-from src.infrastructure.db.models.users import Users, UserPoint
+from src.infrastructure.db.models.users import Users
 from src.infrastructure.db.models.schedules import (
     # Inventory,
     # ConsumableToService,
@@ -13,9 +13,10 @@ from src.infrastructure.db.models.schedules import (
     Master,
     ServiceToMaster,
     Schedule,
-    Slot
+    Slot,
+    Order
 )
-from src.infrastructure.db.models.orders import Promotion, PromotionToService, Order
+from src.infrastructure.db.models.orders import Promotion, PromotionToService, UserPoint
 from src.presentation.api.settings import settings
 
 # this is the Alembic Config object, which provides

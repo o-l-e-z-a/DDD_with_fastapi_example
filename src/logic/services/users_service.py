@@ -1,6 +1,7 @@
 from passlib.context import CryptContext
 
-from src.domain.users.entities import User, UserPoint
+# from src.domain.orders.entities import UserPoint
+from src.domain.users.entities import User
 from src.domain.users.values import Email, HumanName, Telephone
 from src.logic.dto.user_dto import UserCreateDTO, UserLoginDTO
 from src.logic.exceptions.user_exceptions import (
@@ -42,8 +43,8 @@ class UserService:
             )
             user.hashed_password = password_hash
             user_from_repo = await self.uow.users.add(entity=user)
-            user_point = UserPoint(user=user_from_repo)
-            await self.uow.user_points.add(entity=user_point)
+            # user_point = UserPoint(user=user_from_repo)
+            # await self.uow.user_points.add(entity=user_point)
             await self.uow.commit()
             return user_from_repo
 
@@ -54,12 +55,12 @@ class UserService:
                 raise IncorrectEmailOrPasswordLogicException()
             return user
 
-    async def get_user_point(self, user: User) -> UserPoint | None:
-        async with self.uow:
-            user_point = await self.uow.user_points.find_one_or_none(user_id=user.id)
-            if not user_point:
-                raise UserPointNotFoundLogicException(id=user.id)
-        return user_point
+    # async def get_user_point(self, user: User) -> UserPoint | None:
+    #     async with self.uow:
+    #         user_point = await self.uow.user_points.find_one_or_none(user_id=user.id)
+    #         if not user_point:
+    #             raise UserPointNotFoundLogicException(id=user.id)
+    #     return user_point
 
     async def get_user_by_id(self, user_id: int) -> User | None:
         async with self.uow:

@@ -21,12 +21,6 @@ class OrderCreatedEvent(BaseEvent):
 
 @dataclass()
 class OrderDeletedEvent(BaseEvent):
-    order_id: str
-    user_email: str
-    user_first_name: str
-    user_last_name: str
-    slot_time: str
-    schedule_day: date
-    service_name: str
-    point_uses: int
-    total_amount: int
+    user_id: int
+    slot_id: int
+    service_id: int

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, Column, ForeignKey, String
+from sqlalchemy import CheckConstraint, Column, ForeignKey, String, Integer
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy_file import ImageField
 
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders import entities
+from src.domain.orders.entities import UserPoint
 from src.infrastructure.db.models.base import Base, get_child_join_and_level, int_pk
 
 if TYPE_CHECKING:
@@ -49,7 +50,7 @@ class Promotion(Base):
     def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Promotion:
         with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
         services = (
-            [service.to_domain(with_join=with_join_to_child, child_level=child_level) for service in self.services]
+            [service.to_domain(with_join=with_join_to_child, child_level=child_level).id for service in self.services]
             if with_join
             else []
         )
@@ -59,7 +60,7 @@ class Promotion(Base):
             is_active=self.is_active,
             day_start=self.day_start,
             day_end=self.day_end,
-            services=services,
+            services_id=services,
         )
         promotion.id = self.id
         return promotion
@@ -76,64 +77,32 @@ class Promotion(Base):
         )
 
 
-class Order(Base):
-    __tablename__ = "order"
+class UserPoint(Base[UserPoint]):
+    __tablename__ = "user_point"
 
     id: Mapped[int_pk]
-    slot_id: Mapped[int] = mapped_column(ForeignKey("slot.id", ondelete="CASCADE"), unique=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    point_uses: Mapped[int] = mapped_column(default=0)
-    promotion_sale: Mapped[int] = mapped_column(default=0)
-    total_amount: Mapped[int] = mapped_column(default=0)
-    date_add: Mapped[datetime] = mapped_column(default=datetime.today())
-    photo_after = Column(ImageField)
-    photo_before = Column(ImageField)
+    count: Mapped[int] = mapped_column(Integer, default=0)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
 
-    slot: Mapped["Slot"] = relationship(back_populates="order")
-    user: Mapped["Users"] = relationship()
+    user: Mapped["Users"] = relationship(back_populates="points")
 
-    __table_args__ = (
-        CheckConstraint("point_uses >= 0", name="check_point_uses_positive"),
-        CheckConstraint("promotion_sale >= 0", name="check_promotion_sale_positive"),
-        CheckConstraint("total_amount >= 0", name="check_total_amount_positive"),
-    )
+    __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
 
-    @hybrid_property
-    def photo_before_path(self):
-        if self.photo_before:
-            return "media/" + self.photo_before.get("path", "")
-
-    @hybrid_property
-    def photo_after_path(self):
-        if self.photo_after:
-            return "media/" + self.photo_after.get("path", "")
-
-    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Order:
+    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.UserPoint:
         with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
         user = self.user.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
-        slot = self.slot.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
-        order = entities.Order(
-            point_uses=CountNumber(self.point_uses),
-            promotion_sale=CountNumber(self.promotion_sale),
-            total_amount=PositiveIntNumber(self.total_amount),
-            photo_before_path=self.photo_before_path,
-            photo_after_path=self.photo_after_path,
-            user=user,
-            slot=slot,
-            date_add=self.date_add,
+        user_point = entities.UserPoint(
+            count=CountNumber(self.count),
+            user_id=self.user_id,
         )
-        order.id = self.id
-        return order
+        user_point.id = self.id
+        return user_point
 
     @classmethod
-    def from_entity(cls, entity: entities.Order) -> Order:
+    def from_entity(cls, entity: entities.UserPoint) -> UserPoint:
         return cls(
             id=getattr(entity, "id", None),
-            slot_id=entity.slot.id,
-            user_id=entity.user.id,
-            point_uses=entity.point_uses.as_generic_type(),
-            promotion_sale=entity.promotion_sale.as_generic_type(),
-            total_amount=entity.total_amount.as_generic_type(),
-            photo_before=entity.photo_before_path,
-            photo_after=entity.photo_after_path,
+            count=entity.count.as_generic_type(),
+            user_id=entity.user_id
         )
+
