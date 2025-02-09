@@ -7,7 +7,7 @@ from datetime import date, datetime
 
 from src.domain.base.entities import BaseEntity
 from src.domain.base.values import Name, PositiveIntNumber
-from src.domain.orders.events import OrderCreatedEvent, OrderDeletedEvent
+from src.domain.orders.events import OrderCreatedEvent, OrderCancelledEvent
 from src.domain.schedules.exceptions import SlotOccupiedException, SlotServiceInvalidException
 from src.domain.schedules.values import END_HOUR, SLOT_DELTA, START_HOUR, SlotTime
 
@@ -142,10 +142,10 @@ class SlotsForSchedule:
 
 
 class OrderStatus(enum.Enum):
-    RECEIVED = enum.auto
-    IN_PROGRESS = enum.auto
-    FINISHED = enum.auto
-    CANCELLED = enum.auto
+    RECEIVED = enum.auto()
+    IN_PROGRESS = enum.auto()
+    FINISHED = enum.auto()
+    CANCELLED = enum.auto()
 
 
 @dataclass()
@@ -164,13 +164,13 @@ class Order(BaseEntity):
         user_id: int,
         service_id: int,
         slot_id: int,
-        schedule_master_services: list[Service],
+        schedule_master_services_id: list[int],
         occupied_slots: list[Slot]
     ) -> Order:
         if slot_id in [slot.id for slot in occupied_slots]:
             raise SlotOccupiedException()
 
-        if service_id not in [service.id for service in schedule_master_services]:
+        if service_id not in schedule_master_services_id:
             raise SlotServiceInvalidException()
 
         order = cls(
@@ -189,40 +189,19 @@ class Order(BaseEntity):
         return order
 
     def update_slot_time(self, slot_id: int, occupied_slots: list[Slot]):
-        if slot_id in occupied_slots:
+        if slot_id in [slot.id for slot in occupied_slots]:
             raise SlotOccupiedException()
         self.slot_id = slot_id
 
     def cancel(self):
         self.status = OrderStatus.CANCELLED
         self.register_event(
-            OrderDeletedEvent(
+            OrderCancelledEvent(
                 user_id=self.user_id,
                 service_id=self.service_id,
                 slot_id=self.slot_id,
             )
         )
-
-    # self._increase_service_inventory_count()
-
-    # def _decrease_user_point(self, user_point: UserPoint, point_uses: CountNumber) -> None:
-    #     # move to user_point class ?
-    #     user_point.count = CountNumber(user_point.count - point_uses)
-    #
-    # def _increase_user_point(self, user_point: UserPoint) -> None:
-    #     user_point.count = CountNumber(user_point.count + self.point_uses)
-
-    # def _decrease_service_inventory_count(self, order: Order) -> None:
-    #     # move to order class ?
-    #     service = order.slot.schedule.service
-    #     for consumable in service.consumables:
-    #         consumable.inventory.stock_count = CountNumber(consumable.inventory.stock_count - consumable.count)
-    #
-    #
-    # def _increase_service_inventory_count(self) -> None:
-    #     service = self.slot.schedule.service
-    #     for consumable in service.consumables:
-    #         consumable.inventory.stock_count = CountNumber(consumable.inventory.stock_count + consumable.count)
 
     def __eq__(self, other):
         return (
@@ -246,14 +225,3 @@ class Order(BaseEntity):
             "user_id": self.user_id,
             "slot_id": self.slot_id,
         }
-
-# class OrderCheckCorrectSlotDomainService:
-#     def check_slot_is_correct():
-#         if slot in occupied_slots:
-#             raise SlotOccupiedException()
-#
-#
-#         # if not slot_for_schedule.check_slot_time_is_free(slot_time=time_start, occupied_slots=occupied_slots):
-#         #     raise SlotOccupiedException()
-#
-#         if service not in slot.schedule.master.services

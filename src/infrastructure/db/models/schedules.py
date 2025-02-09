@@ -10,6 +10,7 @@ from sqlalchemy_file import ImageField
 
 from src.domain.base.values import Name, PositiveIntNumber, CountNumber
 from src.domain.schedules import entities
+from src.domain.schedules.entities import OrderStatus
 from src.domain.schedules.values import SlotTime
 from src.infrastructure.db.models.base import Base, get_child_join_and_level, int_pk, str_255
 
@@ -303,15 +304,13 @@ class Order(Base):
         # user = self.user.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
         # slot = self.slot.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
         order = entities.Order(
-            # point_uses=CountNumber(self.point_uses),
-            # promotion_sale=CountNumber(self.promotion_sale),
-            # total_amount=PositiveIntNumber(self.total_amount),
             photo_before_path=self.photo_before_path,
             photo_after_path=self.photo_after_path,
             user_id=self.user_id,
             slot_id=self.slot_id,
             service_id=self.service_id,
             date_add=self.date_add,
+            status=OrderStatus(self.status)
         )
         order.id = self.id
         return order
@@ -323,9 +322,7 @@ class Order(Base):
             slot_id=entity.slot_id,
             user_id=entity.user_id,
             service_id=entity.service_id,
-            # point_uses=entity.point_uses.as_generic_type(),
-            # promotion_sale=entity.promotion_sale.as_generic_type(),
-            # total_amount=entity.total_amount.as_generic_type(),
             photo_before=entity.photo_before_path,
             photo_after=entity.photo_after_path,
+            status=entity.status.value
         )

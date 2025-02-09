@@ -85,31 +85,32 @@ class AddOrderCommandCommandHandler(CommandHandler[AddOrderCommand, None]):
             service = await self.uow.services.find_one_or_none(id=command.service_id)
             if not service:
                 raise ServiceNotFoundLogicException(id=command.service_id)
-            slot = await self.uow.schedules.find_one_or_none_slot(id=command.slot_id)
+            slot = await self.uow.schedules.find_one_or_none_slot(slot_id=command.slot_id)
             if not slot:
                 raise SlotNotFoundLogicException(id=command.slot_id)
             schedule_master_services = await self.uow.schedules.find_master_services_by_schedule(
-                id=slot.schedule_id
+                schedule_id=slot.schedule_id
             )
-            occupied_slots = await self.uow.schedules.find_occupied_slots(id=slot.schedule_id)
+            occupied_slots = await self.uow.schedules.find_occupied_slots(schedule_id=slot.schedule_id)
             order_from_aggregate = Order.add(
-                user_id=command.id,
-                service_id=command.id,
-                slot_id=command.id,
-                schedule_master_services=schedule_master_services,
+                user_id=command.user_id,
+                service_id=command.service_id,
+                slot_id=command.slot_id,
+                schedule_master_services_id=schedule_master_services,
                 occupied_slots=occupied_slots,
             )
+            order_from_repo = await self.uow.orders.add(order_from_aggregate)
             await self.uow.commit()
             events = order_from_aggregate.pull_events()
             print("events", events)
             await self.mediator.publish(events)
-            return order_from_aggregate
+            return order_from_repo
 
 
 class UpdateOrderCommand(BaseCommand):
     order_id: PositiveInt
-    slot_id: slot_type
-    user: User
+    slot_id: PositiveInt
+    user_id: PositiveInt
 
 
 @dataclass(frozen=True)
@@ -121,13 +122,19 @@ class UpdateOrderCommandCommandHandler(CommandHandler[UpdateOrderCommand, None])
             order = await self.uow.orders.find_one_or_none(id=command.order_id)
             if not order:
                 raise OrderNotFoundLogicException(id=command.order_id)
-            elif not order.user == command.user:
+            elif not order.user_id == command.user_id:
                 raise NotUserOrderLogicException()
-            occupied_slots = await self.uow.slots.find_all(day=order.slot.schedule.day)
-            order.update_slot_time(time_start=SlotTime(command.time_start), occupied_slots=occupied_slots)
-            await self.uow.slots.update(order.slot)
+            slot = await self.uow.schedules.find_one_or_none_slot(slot_id=command.slot_id)
+            if not slot:
+                raise SlotNotFoundLogicException(id=command.slot_id)
+            occupied_slots = await self.uow.schedules.find_occupied_slots(schedule_id=slot.schedule_id)
+            order.update_slot_time(slot_id=command.slot_id, occupied_slots=occupied_slots)
+            await self.uow.orders.update(order)
             await self.uow.commit()
-            return await self.uow.orders.find_one_or_none(id=order.id)
+            events = order.pull_events()
+            print("events", events)
+            await self.mediator.publish(events)
+            return order
 
 
 class UpdatePhotoOrderCommand(BaseCommand):
@@ -156,7 +163,7 @@ class UpdatePhotoOrderCommandCommandHandler(CommandHandler[UpdatePhotoOrderComma
 
 class DeleteOrderCommand(BaseCommand):
     order_id: PositiveInt
-    user: User
+    user_id: PositiveInt
 
 
 @dataclass(frozen=True)
@@ -168,16 +175,13 @@ class CancelOrderCommandCommandHandler(CommandHandler[DeleteOrderCommand, None])
             order = await self.uow.orders.find_one_or_none(id=command.order_id)
             if not order:
                 raise OrderNotFoundLogicException(id=command.order_id)
-            elif not order.user == command.user:
+            elif not order.user_id == command.user_id:
                 raise NotUserOrderLogicException()
 
-            user_point = await self.uow.user_points.find_one_or_none(user_id=command.user.id)
-            if not user_point:
-                raise UserPointNotFoundLogicException(id=command.user.id)
-            order.cancel(user_point=user_point)
-            await self.uow.user_points.update(user_point)
-
-            await self.uow.slots.delete(id=order.slot.id)
+            # user_point = await self.uow.user_points.find_one_or_none(user_id=command.user.id)
+            # if not user_point:
+            #     raise UserPointNotFoundLogicException(id=command.user.id)
+            order.cancel()
             await self.uow.commit()
 
 

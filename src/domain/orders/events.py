@@ -20,7 +20,7 @@ class OrderCreatedEvent(BaseEvent):
 
 
 @dataclass()
-class OrderDeletedEvent(BaseEvent):
+class OrderCancelledEvent(BaseEvent):
     user_id: int
     slot_id: int
     service_id: int

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from src.infrastructure.db.config import AsyncSessionFactory
-from src.infrastructure.db.models.schedules import Schedule, Slot
+from src.infrastructure.db.models.schedules import Schedule, Slot, Service, Master
 from src.infrastructure.db.repositories.schedules import ScheduleRepository
 from src.infrastructure.db.repositories.users import UserRepository
 from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
@@ -197,7 +197,7 @@ async def delete_promotion():
     await u_s.delete_promotion(promotion_id=2)
 
 
-async def test_slot_querty():
+async def slot_querty():
     async with AsyncSessionFactory() as session:
         # query = select(Slot, Schedule).join(Schedule).filter_by(day=datetime.date(year=2024, month=12, day=25))
         # result = await session.execute(query)
@@ -215,10 +215,11 @@ async def test_slot_querty():
         print(r.schedule)
 
 
-async def test_find_master_services_by_schedule():
+async def find_master_services_by_schedule():
     async with AsyncSessionFactory() as session:
         repo = ScheduleRepository(session)
-        print(await repo.find_master_services_by_schedule(3))
+        # print(await repo.find_master_services_by_schedule(1))
+        print(await repo.find_occupied_slots(schedule_id=2))
 
 
 if __name__ == "__main__":
@@ -234,4 +235,4 @@ if __name__ == "__main__":
     # asyncio.get_event_loop().run_until_complete(update_promotion())
     # asyncio.get_event_loop().run_until_complete(delete_promotion())
     # asyncio.get_event_loop().run_until_complete(test_slot_querty())
-    asyncio.get_event_loop().run_until_complete(test_find_master_services_by_schedule())
+    asyncio.get_event_loop().run_until_complete(find_master_services_by_schedule())

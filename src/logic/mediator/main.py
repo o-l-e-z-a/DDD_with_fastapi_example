@@ -56,16 +56,9 @@ def get_message_bus_with_schedule_register_handlers():
 
 async def add_master():
     message_bus = get_message_bus_with_schedule_register_handlers()
-    user = User(
-        email=Email("hue@grant.com"),
-        first_name=HumanName("Hue"),
-        last_name=HumanName("Grant"),
-        telephone=Telephone("88005553434"),
-    )
-    user.id = 13
     data = AddMasterCommand(
         description="asdasdasdasd",
-        user_id=user.id,
+        user_id=11,
         services_id=[1, 2],
     )
     await message_bus.handle_command(data)
@@ -75,39 +68,28 @@ async def add_schedule():
     message_bus = get_message_bus_with_schedule_register_handlers()
     data = AddScheduleCommand(
         day=date.today() + timedelta(days=1),
-        master_id=17
+        master_id=2
     )
     print(await message_bus.handle_command(data))
 
 
 async def add_order():
     message_bus = get_message_bus_with_schedule_register_handlers()
-    user = User(
-        email=Email("hue@grant.com"),
-        first_name=HumanName("Hue"),
-        last_name=HumanName("Grant"),
-        telephone=Telephone("88005553434"),
-    )
-    user.id = 13
     order_data = AddOrderCommand(
-        slot_id=33,
+        slot_id=4,
         service_id=1,
-        user=user,
+        user_id=8,
     )
     await message_bus.handle_command(order_data)
 
 
 async def update_order():
     message_bus = get_message_bus_with_schedule_register_handlers()
-    user = User(
-        email=Email("hue@grant.com"),
-        first_name=HumanName("Hue"),
-        last_name=HumanName("Grant"),
-        telephone=Telephone("88005553434"),
-        date_birthday=date(2024, 12, 6),
+    order_data = UpdateOrderCommand(
+        slot_id=5,
+        order_id=2,
+        user_id=8,
     )
-    user.id = 13
-    order_data = UpdateOrderCommand(user=user, order_id=19, time_start="18:00")
     await message_bus.handle_command(order_data)
 
 
@@ -126,4 +108,4 @@ async def delete_order():
 
 
 if __name__ == "__main__":
-    asyncio.new_event_loop().run_until_complete(add_order())
+    asyncio.new_event_loop().run_until_complete(update_order())

@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Sequence
 
-from sqlalchemy import extract, func, select, RowMapping
+from sqlalchemy import extract, func, select, RowMapping, and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from sqlalchemy_file.exceptions import ContentTypeValidationError
@@ -212,18 +212,27 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         #         .where(Schedule.day == day)
         #     )
 
-    async def find_master_services_by_schedule(self, schedule_id: int):
+    async def find_master_services_by_schedule(self, schedule_id: int) -> list[int]:
         query = (
-            select(Service)
-            .join(Master)
-            .join(Schedule)
-            .options(
-                contains_eager(Service.masters).options(contains_eager(Master.schedules))
-            )
+            select(Service.id)
+            .join(Service.masters)
+            .join(Master.schedules)
             .where(Schedule.id == schedule_id)
         )
         result = await self.session.execute(query)
-        return [el.to_domain(with_join=True) for el in result.scalars().all()]
+        # return [el.to_domain(with_join=True) for el in result.scalars().all()]
+        return result.scalars().all()
+
+    async def find_one_or_none_slot(self, slot_id: int) -> entities.Slot | None:
+        query = select(Slot).filter_by(id=slot_id)
+        result = await self.session.execute(query)
+        scalar = result.scalar_one_or_none()
+        return scalar.to_domain(with_join=True) if scalar else None
+
+    async def find_occupied_slots(self, schedule_id: int) -> list[Slot]:
+        query = select(Slot).where(and_(Slot.schedule_id == schedule_id, Slot.order.has()))
+        result = await self.session.execute(query)
+        return [el.to_domain() for el in result.scalars().all()]
 
 
 class SlotRepository(GenericSQLAlchemyRepository[Slot, entities.Slot]):
@@ -300,7 +309,6 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
             .options(
                 joinedload(self.model.slot, innerjoin=True)
                 .joinedload(Slot.schedule, innerjoin=True)
-                .options(joinedload(Schedule.service, innerjoin=True).options(selectinload(Service.consumables)))
                 .options(
                     joinedload(Schedule.master, innerjoin=True)
                     .options(joinedload(Master.user, innerjoin=True))
