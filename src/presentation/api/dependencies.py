@@ -1,26 +1,33 @@
 from typing import Annotated
 
 from fastapi import Depends, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 
 from src.domain.schedules.entities import Master
 from src.domain.users.entities import User
 from src.logic.services.order_service import OrderService, PromotionService
-from src.logic.services.schedule_service import ScheduleService, ProcedureService, MasterService
+from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService
 from src.logic.services.users_service import UserService
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
 from src.presentation.api.exceptions import (
     IncorrectTokenFormatException,
+    InvalidTokenType,
     TokenAbsentException,
     TokenExpiredException,
-    UserIsNotPresentException, InvalidTokenType, UserIsNotAdminException, UserIsNotActiveException,
+    UserIsNotAdminException,
     UserIsNotMasterException,
+    UserIsNotPresentException,
 )
 from src.presentation.api.settings import settings
-from src.presentation.api.users.utils import TOKEN_TYPE_FIELD, ACCESS_TOKEN_TYPE, REFRESH_TOKEN_TYPE, ACCESS_TOKEN_COOKIE_FIELD
+from src.presentation.api.users.utils import (
+    ACCESS_TOKEN_COOKIE_FIELD,
+    ACCESS_TOKEN_TYPE,
+    REFRESH_TOKEN_TYPE,
+    TOKEN_TYPE_FIELD,
+)
 
 http_bearer = HTTPBearer()
 
@@ -34,9 +41,7 @@ def get_token(request: Request) -> str:
 
 def get_token_payload(token: str) -> dict:
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, settings.ALGORITHM
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, settings.ALGORITHM)
     except ExpiredSignatureError:
         raise TokenExpiredException
     except JWTError:
@@ -64,26 +69,22 @@ def get_user_service(sql_user_uow: SQLAlchemyUsersUnitOfWork = Depends(get_sqla_
 
 
 def get_schedule_service(
-    sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow)
+    sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow),
 ) -> ScheduleService:
     return ScheduleService(sql_user_uow)
 
 
 def get_procedure_service(
-    sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow)
+    sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow),
 ) -> ProcedureService:
     return ProcedureService(sql_user_uow)
 
 
-def get_order_service(
-    sql_user_uow: SQLAlchemyOrderUnitOfWork = Depends(get_sqla_order_uow)
-) -> OrderService:
+def get_order_service(sql_user_uow: SQLAlchemyOrderUnitOfWork = Depends(get_sqla_order_uow)) -> OrderService:
     return OrderService(sql_user_uow)
 
 
-def get_promotion_service(
-    sql_user_uow: SQLAlchemyOrderUnitOfWork = Depends(get_sqla_order_uow)
-) -> PromotionService:
+def get_promotion_service(sql_user_uow: SQLAlchemyOrderUnitOfWork = Depends(get_sqla_order_uow)) -> PromotionService:
     return PromotionService(sql_user_uow)
 
 
@@ -113,7 +114,7 @@ async def get_current_user(
 
 async def get_current_user_for_refresh(
     credentials: HTTPAuthorizationCredentials = Depends(http_bearer),
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
 ) -> User:
     token = credentials.credentials
     payload = get_token_payload(token)
@@ -136,6 +137,7 @@ async def get_current_master(user: CurrentUser, master_service: MasterService = 
     if master:
         return master
     raise UserIsNotMasterException
+
 
 CurrentMaster = Annotated[Master, Depends(get_current_master)]
 

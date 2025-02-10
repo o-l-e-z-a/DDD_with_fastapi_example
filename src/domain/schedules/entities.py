@@ -7,10 +7,14 @@ from datetime import date, datetime
 
 from src.domain.base.entities import BaseEntity
 from src.domain.base.values import Name, PositiveIntNumber
-from src.domain.orders.events import OrderCreatedEvent, OrderCancelledEvent
-from src.domain.schedules.exceptions import SlotOccupiedException, SlotServiceInvalidException
+from src.domain.orders.events import OrderCancelledEvent, OrderCreatedEvent
+from src.domain.schedules.exceptions import (
+    OrderNotInProgressException,
+    OrderNotReceivedException,
+    SlotOccupiedException,
+    SlotServiceInvalidException,
+)
 from src.domain.schedules.values import END_HOUR, SLOT_DELTA, START_HOUR, SlotTime
-
 
 # @dataclass()
 # class Inventory(BaseEntity):
@@ -98,12 +102,7 @@ class Schedule(BaseEntity):
         return sorted(difference)
 
     def to_dict(self) -> dict:
-        return {
-            "id": self.id,
-            "day": self.day,
-            "master_id": self.master_id,
-            "slots": self.slots
-        }
+        return {"id": self.id, "day": self.day, "master_id": self.master_id, "slots": self.slots}
 
 
 @dataclass()
@@ -165,7 +164,7 @@ class Order(BaseEntity):
         service_id: int,
         slot_id: int,
         schedule_master_services_id: list[int],
-        occupied_slots: list[Slot]
+        occupied_slots: list[Slot],
     ) -> Order:
         if slot_id in [slot.id for slot in occupied_slots]:
             raise SlotOccupiedException()
@@ -189,12 +188,32 @@ class Order(BaseEntity):
         return order
 
     def update_slot_time(self, slot_id: int, occupied_slots: list[Slot]):
+        if self.status != OrderStatus.RECEIVED:
+            raise OrderNotReceivedException()
+
         if slot_id in [slot.id for slot in occupied_slots]:
             raise SlotOccupiedException()
+
         self.slot_id = slot_id
 
+    def start(self):
+        if self.status != OrderStatus.RECEIVED:
+            raise OrderNotReceivedException()
+
+        self.status = OrderStatus.IN_PROGRESS
+
+    def update_photo(self):
+        if self.status != OrderStatus.IN_PROGRESS:
+            raise OrderNotInProgressException()
+
+        self.status = OrderStatus.FINISHED
+
     def cancel(self):
+        if self.status != OrderStatus.RECEIVED:
+            raise OrderNotReceivedException()
+
         self.status = OrderStatus.CANCELLED
+
         self.register_event(
             OrderCancelledEvent(
                 user_id=self.user_id,

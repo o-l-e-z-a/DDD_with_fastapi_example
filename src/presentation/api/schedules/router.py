@@ -1,23 +1,32 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi_cache.decorator import cache
 
-from src.infrastructure.db.exceptions import InsertException
-from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
+from src.domain.schedules.exceptions import SlotOccupiedException
+from src.infrastructure.db.exceptions import InsertException, UpdateException
+from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PhotoDTO, TotalAmountDTO
+from src.logic.dto.schedule_dto import MasterAddDTO, ScheduleAddDTO
 from src.logic.exceptions.base_exception import NotFoundLogicException
+from src.logic.exceptions.order_exceptions import NotUserOrderLogicException
+from src.logic.services.order_service import OrderService
 from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService
 from src.presentation.api.dependencies import (
     CurrentMaster,
+    CurrentUser,
     get_master_service,
+    get_order_service,
     get_procedure_service,
     get_schedule_service,
 )
-from src.presentation.api.exceptions import NotCorrectDataHTTPException, NotFoundHTTPException
+from src.presentation.api.exceptions import (
+    CannotUpdateDataToDatabase,
+    NotCorrectDataHTTPException,
+    NotFoundHTTPException,
+    NotUserOrderException,
+)
+from src.presentation.api.orders.schema import AllOrderSchema, OrderCreateSchema, OrderReportSchema, OrderSchema
 from src.presentation.api.schedules.schema import (
-    InventoryAddSchema,
-    InventorySchema,
-    InventoryUpdateSchema,
     MasterAddSchema,
     MasterDaysSchema,
     MasterReportSchema,
@@ -28,6 +37,7 @@ from src.presentation.api.schedules.schema import (
     ServiceSchema,
     SlotSchema,
     SlotsTimeSchema,
+    SlotUpdateSchema,
 )
 from src.presentation.api.users.schema import AllUserSchema
 
@@ -39,57 +49,6 @@ async def get_services(procedure_service: ProcedureService = Depends(get_procedu
     results = await procedure_service.get_services()
     service_schemas = [ServiceSchema.model_validate(service.to_dict()) for service in results]
     return service_schemas
-
-
-@router.get("/inventories/", tags=["inventory"])
-@cache(expire=60)
-async def get_inventories(
-    # admin: CurrentAdmin,
-    procedure_service: ProcedureService = Depends(get_procedure_service),
-) -> list[InventorySchema]:
-    results = await procedure_service.get_inventories()
-    inventory_schemas = [InventorySchema.model_validate(inventory.to_dict()) for inventory in results]
-    return inventory_schemas
-
-
-@router.delete("/inventory/{inventory_id}/delete/", tags=["inventory"], status_code=status.HTTP_204_NO_CONTENT)
-async def delete_inventory(
-    # admin: CurrentAdmin,
-    inventory_id: int,
-    procedure_service: ProcedureService = Depends(get_procedure_service),
-):
-    try:
-        await procedure_service.delete_inventory(inventory_id=inventory_id)
-    except NotFoundLogicException as err:
-        raise NotFoundHTTPException(detail=err.title)
-
-
-@router.patch("/inventory/{inventory_id}/update/", tags=["inventory"])
-async def patch_inventory(
-    # admin: CurrentAdmin,
-    inventory_id: int,
-    inventory_data: InventoryUpdateSchema,
-    procedure_service: ProcedureService = Depends(get_procedure_service),
-) -> InventorySchema:
-    try:
-        inventory = await procedure_service.update_inventory(
-            InventoryUpdateDTO(**inventory_data.model_dump(exclude_unset=True), inventory_id=inventory_id)
-        )
-    except NotFoundLogicException as err:
-        raise NotFoundHTTPException(detail=err.title)
-    inventory_schema = InventorySchema.model_validate(inventory.to_dict())
-    return inventory_schema
-
-
-@router.post("/inventory/add/", tags=["inventory"], status_code=status.HTTP_201_CREATED)
-async def add_inventory(
-    # admin: CurrentAdmin,
-    inventory_data: InventoryAddSchema,
-    procedure_service: ProcedureService = Depends(get_procedure_service),
-) -> InventorySchema:
-    inventory = await procedure_service.add_inventory(InventoryAddDTO(**inventory_data.model_dump()))
-    inventory_schema = InventorySchema.model_validate(inventory.to_dict())
-    return inventory_schema
 
 
 @router.get("/all_masters/")
@@ -207,3 +166,117 @@ async def get_current_master_schedule(
     slots = await schedule_service.get_current_master_slots(day=day, master_id=master.id)
     slot_schemas = [SlotSchema.model_validate(slot.to_dict()) for slot in slots]
     return slot_schemas
+
+
+@router.get("/all_orders/", description="все заказы для просмотра мастером")
+@cache(expire=60)
+async def get_all_orders(order_service: OrderService = Depends(get_order_service)) -> list[AllOrderSchema]:
+    results = await order_service.get_all_orders()
+    order_schemas = [AllOrderSchema.model_validate(order.to_dict()) for order in results]
+    return order_schemas
+
+
+@router.get("/orders/", description="все заказы клиента")
+@cache(expire=60)
+async def get_client_orders(
+    user: CurrentUser, order_service: OrderService = Depends(get_order_service)
+) -> list[OrderSchema]:
+    results = await order_service.get_client_orders(user=user)
+    order_schemas = [OrderSchema.model_validate(order.to_dict()) for order in results]
+    return order_schemas
+
+
+@router.post("/order/add/", status_code=status.HTTP_201_CREATED)
+async def add_order(
+    order_data: OrderCreateSchema,
+    user: CurrentUser,
+    order_service: OrderService = Depends(get_order_service),
+) -> OrderSchema:
+    try:
+        order = await order_service.add_order(
+            order_data=OrderCreateDTO(
+                total_amount=TotalAmountDTO(
+                    schedule_id=order_data.slot.schedule_id,
+                    point=order_data.point,
+                    promotion_code=order_data.promotion_code,
+                ),
+                time_start=order_data.slot.time_start,
+            ),
+            user=user,
+        )
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    except SlotOccupiedException as err:
+        raise NotCorrectDataHTTPException(detail=err.title)
+    order_schema = OrderSchema.model_validate(order.to_dict())
+    # order_create_send_mail_task.delay(order_dict)
+    return order_schema
+
+
+@router.put("/order/{order_id}/update/")
+async def update_order(
+    order_id: int,
+    slot_data: SlotUpdateSchema,
+    user: CurrentUser,
+    order_service: OrderService = Depends(get_order_service),
+) -> OrderSchema:
+    try:
+        order = await order_service.update_order(
+            order_data=OrderUpdateDTO(**slot_data.model_dump(), order_id=order_id), user=user
+        )
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    except NotUserOrderLogicException as err:
+        raise NotUserOrderException(detail=err.title)
+    except SlotOccupiedException as err:
+        raise NotCorrectDataHTTPException(detail=err.title)
+    order_schema = OrderSchema.model_validate(order.to_dict())
+    return order_schema
+
+
+@router.patch("/order/{order_id}/update_photo/")
+async def update_photo(
+    order_id: int,
+    photo_before: UploadFile,
+    photo_after: UploadFile,
+    order_service: OrderService = Depends(get_order_service),
+) -> OrderSchema:
+    photo_before_dto = PhotoDTO(
+        file=photo_before.file, filename=photo_before.filename, content_type=photo_before.content_type
+    )
+    photo_after_dto = PhotoDTO(
+        file=photo_after.file, filename=photo_after.filename, content_type=photo_after.content_type
+    )
+    try:
+        order = await order_service.update_order_photos(
+            order_id=order_id, photo_before=photo_before_dto, photo_after=photo_after_dto
+        )
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    except NotUserOrderLogicException as err:
+        raise NotUserOrderException(detail=err.title)
+    except UpdateException as err:
+        raise CannotUpdateDataToDatabase(detail=err.title)
+    order_schema = OrderSchema.model_validate(order.to_dict())
+    return order_schema
+
+
+@router.delete("/order/{order_id}/cancel/", status_code=status.HTTP_204_NO_CONTENT)
+async def cancel_order(
+    order_id: int,
+    user: CurrentUser,
+    order_service: OrderService = Depends(get_order_service),
+):
+    try:
+        await order_service.delete_order(order_id=order_id, user=user)
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    except NotUserOrderLogicException as err:
+        raise NotUserOrderException(detail=err.title)
+
+
+@router.post("/service_report/")
+async def get_service_report(order_service: OrderService = Depends(get_order_service)) -> list[OrderReportSchema]:
+    report_results = await order_service.get_service_report()
+    order_schema = [OrderReportSchema.model_validate(report) for report in report_results]
+    return order_schema

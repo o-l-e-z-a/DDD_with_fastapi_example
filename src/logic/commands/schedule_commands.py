@@ -2,16 +2,18 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Annotated
 
-from pydantic import PositiveInt, Field
-from src.domain.schedules.entities import Master, Schedule, Order
-from src.domain.schedules.values import SlotTime
-from src.domain.users.entities import User
+from pydantic import Field, PositiveInt
+
+from src.domain.schedules.entities import Master, Order, Schedule
 from src.logic.commands.base import BaseCommand, CommandHandler
 from src.logic.dto.order_dto import PhotoDTO
-from src.logic.exceptions.order_exceptions import OrderNotFoundLogicException, NotUserOrderLogicException
-from src.logic.exceptions.schedule_exceptions import MasterNotFoundLogicException, ServiceNotFoundLogicException, \
-    SlotNotFoundLogicException
-from src.logic.exceptions.user_exceptions import UserNotFoundLogicException, UserPointNotFoundLogicException
+from src.logic.exceptions.order_exceptions import NotUserOrderLogicException, OrderNotFoundLogicException
+from src.logic.exceptions.schedule_exceptions import (
+    MasterNotFoundLogicException,
+    ServiceNotFoundLogicException,
+    SlotNotFoundLogicException,
+)
+from src.logic.exceptions.user_exceptions import UserNotFoundLogicException
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 
 
@@ -22,7 +24,7 @@ class AddMasterCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class AddMasterCommandCommandHandler(CommandHandler[AddMasterCommand, None]):
+class AddMasterCommandHandler(CommandHandler[AddMasterCommand, None]):
     uow: SQLAlchemyScheduleUnitOfWork
 
     async def handle(self, command: AddMasterCommand) -> Master:
@@ -51,7 +53,7 @@ class AddScheduleCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class AddScheduleCommandCommandHandler(CommandHandler[AddScheduleCommand, None]):
+class AddScheduleCommandHandler(CommandHandler[AddScheduleCommand, None]):
     uow: SQLAlchemyScheduleUnitOfWork
 
     async def handle(self, command: AddScheduleCommand) -> Schedule:
@@ -77,7 +79,7 @@ class AddOrderCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class AddOrderCommandCommandHandler(CommandHandler[AddOrderCommand, None]):
+class AddOrderCommandHandler(CommandHandler[AddOrderCommand, None]):
     uow: SQLAlchemyScheduleUnitOfWork
 
     async def handle(self, command: AddOrderCommand) -> Order:
@@ -114,7 +116,7 @@ class UpdateOrderCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class UpdateOrderCommandCommandHandler(CommandHandler[UpdateOrderCommand, None]):
+class UpdateOrderCommandHandler(CommandHandler[UpdateOrderCommand, None]):
     uow: SQLAlchemyScheduleUnitOfWork
 
     async def handle(self, command: UpdateOrderCommand) -> None:
@@ -137,6 +139,25 @@ class UpdateOrderCommandCommandHandler(CommandHandler[UpdateOrderCommand, None])
             return order
 
 
+class StartOrderCommand(BaseCommand):
+    order_id: PositiveInt
+
+
+@dataclass(frozen=True)
+class StartOrderCommandHandler(CommandHandler[StartOrderCommand, None]):
+    uow: SQLAlchemyScheduleUnitOfWork
+
+    async def handle(self, command: StartOrderCommand) -> None:
+        async with self.uow:
+            order = await self.uow.orders.find_one_or_none(id=command.order_id)
+            if not order:
+                raise OrderNotFoundLogicException(id=command.order_id)
+            order.start()
+            await self.uow.orders.update(entity=order)
+            await self.uow.commit()
+            return order
+
+
 class UpdatePhotoOrderCommand(BaseCommand):
     order_id: PositiveInt
     photo_before: PhotoDTO
@@ -144,7 +165,7 @@ class UpdatePhotoOrderCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class UpdatePhotoOrderCommandCommandHandler(CommandHandler[UpdatePhotoOrderCommand, None]):
+class UpdatePhotoOrderCommandHandler(CommandHandler[UpdatePhotoOrderCommand, None]):
     uow: SQLAlchemyScheduleUnitOfWork
 
     async def handle(self, command: UpdatePhotoOrderCommand) -> None:
@@ -152,25 +173,26 @@ class UpdatePhotoOrderCommandCommandHandler(CommandHandler[UpdatePhotoOrderComma
             order = await self.uow.orders.find_one_or_none(id=command.order_id)
             if not order:
                 raise OrderNotFoundLogicException(id=command.order_id)
+            order.update_photo()
             order_from_repo = await self.uow.orders.update_photo(
                 entity=order,
                 photo_before=command.photo_before,
                 photo_after=command.photo_after,
             )
             await self.uow.commit()
-            return await self.uow.orders.find_one_or_none(id=order_from_repo.id)
+            return order_from_repo
 
 
-class DeleteOrderCommand(BaseCommand):
+class CancelOrderCommand(BaseCommand):
     order_id: PositiveInt
     user_id: PositiveInt
 
 
 @dataclass(frozen=True)
-class CancelOrderCommandCommandHandler(CommandHandler[DeleteOrderCommand, None]):
+class CancelOrderCommandHandler(CommandHandler[CancelOrderCommand, None]):
     uow: SQLAlchemyScheduleUnitOfWork
 
-    async def handle(self, command: DeleteOrderCommand) -> None:
+    async def handle(self, command: CancelOrderCommand) -> None:
         async with self.uow:
             order = await self.uow.orders.find_one_or_none(id=command.order_id)
             if not order:
@@ -178,11 +200,10 @@ class CancelOrderCommandCommandHandler(CommandHandler[DeleteOrderCommand, None])
             elif not order.user_id == command.user_id:
                 raise NotUserOrderLogicException()
 
-            # user_point = await self.uow.user_points.find_one_or_none(user_id=command.user.id)
-            # if not user_point:
-            #     raise UserPointNotFoundLogicException(id=command.user.id)
             order.cancel()
+            await self.uow.orders.update(order)
             await self.uow.commit()
+            return order
 
 
 # class DeleteScheduleCommand(BaseCommand):
@@ -200,7 +221,6 @@ class CancelOrderCommandCommandHandler(CommandHandler[DeleteOrderCommand, None])
 #     name: str
 #     unit: str
 #     stock_count: PositiveInt
-
 
 
 # @dataclass(frozen=True)

@@ -11,6 +11,20 @@ class SlotOccupiedException(ValueError, DomainException):
 
 
 @dataclass(eq=False)
+class OrderNotReceivedException(ValueError, DomainException):
+    @property
+    def title(self) -> str:
+        return "У заказа не верный статус, заказ не отмечен, как полученный"
+
+
+@dataclass(eq=False)
+class OrderNotInProgressException(ValueError, DomainException):
+    @property
+    def title(self) -> str:
+        return "У заказа не верный статус, заказ не отмечен, как начатый"
+
+
+@dataclass(eq=False)
 class SlotServiceInvalidException(ValueError, DomainException):
     @property
     def title(self) -> str:

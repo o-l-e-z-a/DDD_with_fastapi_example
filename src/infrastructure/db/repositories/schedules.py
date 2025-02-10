@@ -1,15 +1,16 @@
 from datetime import date
 from typing import Sequence
 
-from sqlalchemy import extract, func, select, RowMapping, and_
+from sqlalchemy import RowMapping, and_, extract, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from sqlalchemy_file.exceptions import ContentTypeValidationError
 
 from src.domain.schedules import entities
+from src.domain.schedules.entities import OrderStatus
 from src.domain.users import entities as user_entities
-from src.infrastructure.db.exceptions import UpdateException, InsertException
-from src.infrastructure.db.models.schedules import Master, Schedule, Service, Slot, Order
+from src.infrastructure.db.exceptions import InsertException, UpdateException
+from src.infrastructure.db.models.schedules import Master, Order, Schedule, Service, Slot
 from src.infrastructure.db.models.users import Users
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyRepository
 from src.logic.dto.order_dto import PhotoDTO
@@ -147,8 +148,8 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
                 joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
             )
             # .options(joinedload(self.model.service)
-                     # .options(selectinload(Service.consumables))
-                     # )
+            # .options(selectinload(Service.consumables))
+            # )
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
@@ -161,8 +162,8 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
                 joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
             )
             # .options(joinedload(self.model.service)
-                     # .options(selectinload(Service.consumables))
-                     # )
+            # .options(selectinload(Service.consumables))
+            # )
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
@@ -174,16 +175,17 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
             select(self.model)
             .options(
                 joinedload(self.model.master)
-                .options(selectinload(Master.services)
-                         # .selectinload(Service.consumables)
-                         )
+                .options(
+                    selectinload(Master.services)
+                    # .selectinload(Service.consumables)
+                )
                 .options(joinedload(Master.user))
             )
             # .options(
             #     joinedload(self.model.service)
-                # .options(
-                #     selectinload(Service.consumables).joinedload(Consumables.inventory)
-                # )
+            # .options(
+            #     selectinload(Service.consumables).joinedload(Consumables.inventory)
+            # )
             # )
             .filter_by(**filter_by)
         )
@@ -198,27 +200,22 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         return list(result)
 
     # query = (
-        #         select(Order)
-        #         .join(Slot).join(Schedule).join(Service).join(Master)
-        #         .join(user_1, Master.user_id == user_1.id)
-        #         .join(user_2, Order.user_id == user_2.id)
-        #         .options(
-        #             contains_eager(Order.slot)
-        #             .contains_eager(Slot.schedule)
-        #             .options(contains_eager(Schedule.service))
-        #             .options(contains_eager(Schedule.master).contains_eager(Master.user.of_type(user_1)))
-        #         )
-        #         .options(contains_eager(Order.user.of_type(user_2)))
-        #         .where(Schedule.day == day)
-        #     )
+    #         select(Order)
+    #         .join(Slot).join(Schedule).join(Service).join(Master)
+    #         .join(user_1, Master.user_id == user_1.id)
+    #         .join(user_2, Order.user_id == user_2.id)
+    #         .options(
+    #             contains_eager(Order.slot)
+    #             .contains_eager(Slot.schedule)
+    #             .options(contains_eager(Schedule.service))
+    #             .options(contains_eager(Schedule.master).contains_eager(Master.user.of_type(user_1)))
+    #         )
+    #         .options(contains_eager(Order.user.of_type(user_2)))
+    #         .where(Schedule.day == day)
+    #     )
 
     async def find_master_services_by_schedule(self, schedule_id: int) -> list[int]:
-        query = (
-            select(Service.id)
-            .join(Service.masters)
-            .join(Master.schedules)
-            .where(Schedule.id == schedule_id)
-        )
+        query = select(Service.id).join(Service.masters).join(Master.schedules).where(Schedule.id == schedule_id)
         result = await self.session.execute(query)
         # return [el.to_domain(with_join=True) for el in result.scalars().all()]
         return result.scalars().all()
@@ -230,7 +227,16 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         return scalar.to_domain(with_join=True) if scalar else None
 
     async def find_occupied_slots(self, schedule_id: int) -> list[Slot]:
-        query = select(Slot).where(and_(Slot.schedule_id == schedule_id, Slot.order.has()))
+        query = (
+            select(Slot)
+            .join(Slot.orders)
+            .where(
+                and_(
+                    Slot.schedule_id == schedule_id,
+                    or_(Order.status != OrderStatus.CANCELLED.value, Order.status == None),
+                )
+            )
+        )
         result = await self.session.execute(query)
         return [el.to_domain() for el in result.scalars().all()]
 

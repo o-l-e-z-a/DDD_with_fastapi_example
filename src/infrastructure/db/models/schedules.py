@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from datetime import date, time, datetime
+from datetime import date, datetime, time
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, UniqueConstraint, Column
+from sqlalchemy import CheckConstraint, Column, ForeignKey, String, UniqueConstraint
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy_file import ImageField
 
-from src.domain.base.values import Name, PositiveIntNumber, CountNumber
+from src.domain.base.values import Name, PositiveIntNumber
 from src.domain.schedules import entities
 from src.domain.schedules.entities import OrderStatus
 from src.domain.schedules.values import SlotTime
@@ -161,11 +161,7 @@ class Master(Base):
 
     def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Master:
         with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
-        services_id = (
-            [service.id for service in self.services]
-            if with_join
-            else []
-        )
+        services_id = [service.id for service in self.services] if with_join else []
         master = entities.Master(
             description=self.description,
             user_id=self.user_id,
@@ -211,9 +207,11 @@ class Schedule(Base):
     def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Schedule:
         with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
         # master = self.master.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
-        slots = [
-            slot.to_domain(with_join=with_join_to_child, child_level=child_level) for slot in self.slots
-        ] if with_join else []
+        slots = (
+            [slot.to_domain(with_join=with_join_to_child, child_level=child_level) for slot in self.slots]
+            if with_join
+            else []
+        )
         schedule = entities.Schedule(
             master_id=self.master_id,
             slots=slots,
@@ -240,7 +238,7 @@ class Slot(Base):
     schedule_id: Mapped[int] = mapped_column(ForeignKey("schedule.id", ondelete="CASCADE"))
 
     schedule: Mapped["Schedule"] = relationship(back_populates="slots")
-    order: Mapped["Order"] = relationship(back_populates="slot")
+    orders: Mapped[list["Order"]] = relationship(back_populates="slot")
 
     __table_args__ = (UniqueConstraint("schedule_id", "time_start"),)
 
@@ -268,18 +266,18 @@ class Order(Base):
     __tablename__ = "order"
 
     id: Mapped[int_pk]
-    slot_id: Mapped[int] = mapped_column(ForeignKey("slot.id", ondelete="CASCADE"), unique=True)
+    slot_id: Mapped[int] = mapped_column(ForeignKey("slot.id", ondelete="CASCADE"))
     service_id: Mapped[int] = mapped_column(ForeignKey("service.id", ondelete="CASCADE"), nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     # point_uses: Mapped[int] = mapped_column(default=0)
     # promotion_sale: Mapped[int] = mapped_column(default=0)
     # total_amount: Mapped[int] = mapped_column(default=0)
-    status: Mapped[str] = mapped_column(nullable=True)
+    status: Mapped[int] = mapped_column(nullable=True)
     date_add: Mapped[datetime] = mapped_column(default=datetime.today())
     photo_after = Column(ImageField)
     photo_before = Column(ImageField)
 
-    slot: Mapped["Slot"] = relationship(back_populates="order")
+    slot: Mapped["Slot"] = relationship(back_populates="orders")
     service: Mapped["Service"] = relationship(back_populates="orders")
     user: Mapped["Users"] = relationship()
 
@@ -310,7 +308,7 @@ class Order(Base):
             slot_id=self.slot_id,
             service_id=self.service_id,
             date_add=self.date_add,
-            status=OrderStatus(self.status)
+            status=OrderStatus(self.status),
         )
         order.id = self.id
         return order
@@ -324,5 +322,5 @@ class Order(Base):
             service_id=entity.service_id,
             photo_before=entity.photo_before_path,
             photo_after=entity.photo_after_path,
-            status=entity.status.value
+            status=entity.status.value,
         )

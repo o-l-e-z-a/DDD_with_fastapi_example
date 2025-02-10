@@ -1,7 +1,7 @@
 from datetime import date, time
 from typing import Annotated
 
-from pydantic import Field, PositiveInt, field_serializer
+from pydantic import Field, field_serializer
 
 from src.presentation.api.base.base_schema import BaseSchema
 from src.presentation.api.users.schema import AllUserSchema
@@ -9,20 +9,20 @@ from src.presentation.api.users.schema import AllUserSchema
 slot_type = Annotated[str, Field(pattern=r"^(?:[01][0-9]|2?[0-3]):[0-5]{1}\d{1}$")]
 
 
-class InventoryAddSchema(BaseSchema):
-    name: str
-    unit: str
-    stock_count: PositiveInt
-
-
-class InventoryUpdateSchema(BaseSchema):
-    name: str | None = None
-    unit: str | None = None
-    stock_count: PositiveInt | None = None
-
-
-class InventorySchema(InventoryAddSchema):
-    id: int
+# class InventoryAddSchema(BaseSchema):
+#     name: str
+#     unit: str
+#     stock_count: PositiveInt
+#
+#
+# class InventoryUpdateSchema(BaseSchema):
+#     name: str | None = None
+#     unit: str | None = None
+#     stock_count: PositiveInt | None = None
+#
+#
+# class InventorySchema(InventoryAddSchema):
+#     id: int
 
 
 class ServiceSchema(BaseSchema):
