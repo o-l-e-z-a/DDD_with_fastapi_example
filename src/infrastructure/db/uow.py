@@ -6,7 +6,7 @@ from typing import Self
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.infrastructure.db.config import AsyncSessionFactory
+# from src.infrastructure.db.config import AsyncSessionFactory
 
 
 class AbstractUnitOfWork(abc.ABC):
@@ -26,7 +26,7 @@ class AbstractUnitOfWork(abc.ABC):
 
 
 class SQLAlchemyAbstractUnitOfWork(AbstractUnitOfWork):
-    def __init__(self, session_factory: async_sessionmaker = AsyncSessionFactory) -> None:
+    def __init__(self, session_factory: async_sessionmaker) -> None:
         super().__init__()
         self._session_factory: async_sessionmaker = session_factory
 

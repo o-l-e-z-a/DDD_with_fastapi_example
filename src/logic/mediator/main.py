@@ -2,10 +2,11 @@ import asyncio
 
 from datetime import date, timedelta
 
-from dishka import Provider, Scope, make_async_container, provide
-from sqlalchemy.ext.asyncio import AsyncEngine
+from dishka import Provider, Scope, from_context, make_async_container, provide
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from src.domain.orders.events import OrderCreatedEvent
+from src.infrastructure.db.config import get_async_engine, get_async_session_factory
 from src.logic.commands.schedule_commands import (
     AddMasterCommand,
     AddMasterCommandHandler,
@@ -23,10 +24,12 @@ from src.logic.events.order_handlers import OrderCreatedEmailEventHandler, Order
 from src.logic.mediator.base import Mediator
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
+from src.presentation.api.settings import Settings, settings
 
 
 class MyProvider(Provider):
     scope = Scope.APP
+    settings = from_context(Settings)
 
     user_uow = provide(SQLAlchemyUsersUnitOfWork)
     schedule_uow = provide(SQLAlchemyUsersUnitOfWork)
@@ -40,17 +43,13 @@ class MyProvider(Provider):
     add_schedule_cmd_handler = provide(AddUserCommandHandler)
 
     @provide(scope=Scope.APP)
-    def engine(self) -> AsyncEngine:
-        engine = create_async_engine(
-            self.config.ASYNC_DB_URL(),
-            echo=True,
-        )
+    def engine(self, setting: Settings) -> AsyncEngine:
+        engine = get_async_engine(setting)
         return engine
 
-    @provide(scope=Scope.REQUEST)
-    async def session(self, engine: AsyncEngine) -> AsyncIterable[AsyncSession]:
-        async with AsyncSession(engine) as session:
-            yield session
+    @provide(scope=Scope.APP)
+    def get_async_session_maker(self, engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+        return get_async_session_factory(engine)
 
     @provide()
     def get_mediator(
@@ -152,5 +151,5 @@ async def delete_order():
 
 
 if __name__ == "__main__":
-    container = make_async_container(MyProvider())
+    container = make_async_container(MyProvider(settings))
     asyncio.new_event_loop().run_until_complete(add_order())

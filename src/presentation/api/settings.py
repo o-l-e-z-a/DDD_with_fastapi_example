@@ -11,7 +11,9 @@ load_dotenv(find_dotenv(".env"))
 env_file = find_dotenv(".env")
 
 
-class DatabaseConfig(BaseModel):
+class DatabaseConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
+
     DB_HOST: str
     DB_PORT: int
     DB_USER: str
@@ -44,9 +46,11 @@ class DatabaseConfig(BaseModel):
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
+
     MODE: Literal["DEV", "TEST", "PROD"]
     # LOG_LEVEL: str
-    db: DatabaseConfig
+    db: DatabaseConfig = DatabaseConfig()
 
     EMAIL_USER: str
     EMAIL_HOST: str
@@ -63,7 +67,6 @@ class Settings(BaseSettings):
     REDIS_DB: int
 
     # model_config = SettingsConfigDict(env_file=".env.docker")
-    model_config = SettingsConfigDict(env_file=env_file)
     # model_config = SettingsConfigDict()
 
 
