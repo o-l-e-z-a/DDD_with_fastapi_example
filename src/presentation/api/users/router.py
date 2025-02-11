@@ -1,10 +1,13 @@
+from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Depends, Response
 
 from src.domain.users.entities import User
-from src.logic.dto.user_dto import UserCreateDTO, UserLoginDTO
+from src.logic.commands.user_commands import AddUserCommand
+from src.logic.dto.user_dto import UserLoginDTO
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.exceptions.user_exceptions import IncorrectEmailOrPasswordLogicException, UserAlreadyExistsLogicException
+from src.logic.mediator.base import Mediator
 from src.logic.services.users_service import UserService
 from src.presentation.api.dependencies import CurrentUser, get_current_user_for_refresh, get_user_service
 from src.presentation.api.exceptions import (
@@ -12,8 +15,8 @@ from src.presentation.api.exceptions import (
     NotFoundHTTPException,
     UserAlreadyExistsException,
 )
-from src.presentation.api.users.schema import AllUserSchema, UserCreateSchema, UserLoginSchema
 from src.presentation.api.orders.schema import UserPointSchema
+from src.presentation.api.users.schema import AllUserSchema, UserCreateSchema, UserLoginSchema
 from src.presentation.api.users.utils import (
     ACCESS_TOKEN_COOKIE_FIELD,
     ACCESS_TOKEN_RESPONSE_FIELD,
@@ -29,10 +32,10 @@ router_users = APIRouter(route_class=DishkaRoute, prefix="/users", tags=["Пол
 @router_auth.post("/register/", status_code=201)
 async def register_user(
     user_data: UserCreateSchema,
-    user_service: UserService = Depends(get_user_service),
+    mediator: FromDishka[Mediator],
 ):
     try:
-        user = await user_service.add_user(user_data=UserCreateDTO(**user_data.model_dump()))
+        user, *_ = mediator.handle_command(AddUserCommand(**user_data.model_dump()))
     except UserAlreadyExistsLogicException as err:
         raise UserAlreadyExistsException(err.title)
     return AllUserSchema.model_validate(user.to_dict())

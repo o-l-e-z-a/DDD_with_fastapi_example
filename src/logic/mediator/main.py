@@ -1,8 +1,6 @@
 import asyncio
 
-from collections import defaultdict
 from datetime import date, timedelta
-from typing import Type
 
 from dishka import make_async_container
 
