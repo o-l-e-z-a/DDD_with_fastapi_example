@@ -32,7 +32,8 @@ class Mediator(EventMediator, CommandMediator):
         result = []
 
         for event in events:
-            handlers: Iterable[EventHandler] = self.events_map[event.__class__]
+            event_type = event.__class__
+            handlers: Iterable[EventHandler] = self.events_map[event_type]
             result.extend([await handler.handle(event) for handler in handlers])
 
         return result

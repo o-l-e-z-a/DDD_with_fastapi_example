@@ -102,7 +102,7 @@ class AddOrderCommandHandler(CommandHandler[AddOrderCommand, None]):
                 occupied_slots=occupied_slots,
             )
             order_from_repo = await self.uow.orders.add(order_from_aggregate)
-            await self.uow.commit()
+            # await self.uow.commit()
             events = order_from_aggregate.pull_events()
             print("events", events)
             await self.mediator.publish(events)
