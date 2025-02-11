@@ -34,7 +34,7 @@ class PromotionToService(Base):
     )
 
 
-class Promotion(Base):
+class Promotion(Base[entities.Promotion]):
     __tablename__ = "promotion"
 
     id: Mapped[int_pk]
@@ -77,7 +77,7 @@ class Promotion(Base):
         )
 
 
-class UserPoint(Base[UserPoint]):
+class UserPoint(Base[entities.UserPoint]):
     __tablename__ = "user_point"
 
     id: Mapped[int_pk]

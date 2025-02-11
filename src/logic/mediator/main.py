@@ -1,10 +1,10 @@
 import asyncio
-from collections import defaultdict
 
+from collections import defaultdict
 from datetime import date, timedelta
 from typing import Type
 
-from dishka import Provider, Scope, from_context, make_async_container, provide, AnyOf
+from dishka import AnyOf, Provider, Scope, make_async_container, provide
 
 from src.domain.orders.events import OrderCreatedEvent
 from src.infrastructure.db.provider import DBProvider
@@ -22,7 +22,7 @@ from src.logic.commands.schedule_commands import (
     UpdateOrderCommandHandler,
 )
 from src.logic.commands.user_commands import AddUserCommand, AddUserCommandHandler
-from src.logic.events.base import EventHandler, ET
+from src.logic.events.base import ET, EventHandler
 from src.logic.events.order_handlers import OrderCreatedEmailEventHandler, OrderCreatedPointIncreaseEventHandler
 from src.logic.mediator.base import Mediator
 from src.logic.mediator.command import CommandMediator
@@ -48,40 +48,6 @@ class MyProvider(Provider):
     def get_cmd_with_event_handlers_dict(self) -> dict[Type[ET], list[EventHandler]]:
         return defaultdict(list)
 
-    # add_user_cmd_handler = provide(AddUserCommandHandler)
-    # add_order_cmd_handler = provide(AddOrderCommandHandler)
-    # update_order_cmd_handler = provide(UpdateOrderCommandHandler)
-    # cancel_order_cmd_handler = provide(CancelOrderCommandHandler)
-    # add_master_cmd_handler = provide(AddMasterCommandHandler)
-    # add_schedule_cmd_handler = provide(AddScheduleCommandHandler)
-    # order_created_point_increase_event_handler = provide(OrderCreatedPointIncreaseEventHandler)
-    # order_created_email_event_handler = provide(OrderCreatedEmailEventHandler)
-
-    # @provide(scope=Scope.APP)
-    # def get_mediator(
-    #     self,
-    #     add_user_cmd_handler: AddUserCommandHandler,
-    #     add_order_cmd_handler: AddOrderCommandHandler,
-    #     update_order_cmd_handler: UpdateOrderCommandHandler,
-    #     cancel_order_cmd_handler: CancelOrderCommandHandler,
-    #     add_master_cmd_handler: AddMasterCommandHandler,
-    #     add_schedule_cmd_handler: AddScheduleCommandHandler,
-    #     order_created_point_increase_event_handler: OrderCreatedPointIncreaseEventHandler,
-    #     order_created_email_event_handler: OrderCreatedEmailEventHandler,
-    # ) -> Mediator:
-    #     mediator = Mediator()
-    #     mediator.register_command(AddUserCommand, [add_user_cmd_handler])
-    #     mediator.register_command(AddOrderCommand, [add_order_cmd_handler])
-    #     mediator.register_command(UpdateOrderCommand, [update_order_cmd_handler])
-    #     mediator.register_command(CancelOrderCommand, [cancel_order_cmd_handler])
-    #     mediator.register_command(AddMasterCommand, [add_master_cmd_handler])
-    #     mediator.register_command(AddScheduleCommand, [add_schedule_cmd_handler])
-    #     mediator.register_event(
-    #         OrderCreatedEvent,
-    #         [order_created_email_event_handler, order_created_point_increase_event_handler],
-    #     )
-    #     return mediator
-
     @provide(scope=Scope.APP, provides=AnyOf[EventMediator, CommandMediator])
     def init_mediator(
         self,
@@ -97,12 +63,25 @@ class MyProvider(Provider):
         mediator.register_command(AddMasterCommand, [AddMasterCommandHandler(mediator=mediator, uow=schedule_uow)])
         mediator.register_command(AddScheduleCommand, [AddScheduleCommandHandler(mediator=mediator, uow=schedule_uow)])
         mediator.register_event(
-            OrderCreatedEvent, [
-                OrderCreatedPointIncreaseEventHandler(uow=schedule_uow),
-                OrderCreatedEmailEventHandler(uow=schedule_uow)
-            ],
+            OrderCreatedEvent,
+            [OrderCreatedPointIncreaseEventHandler(uow=schedule_uow), OrderCreatedEmailEventHandler(uow=schedule_uow)],
         )
         return mediator
+
+
+# def get_mediator_with_schedule_register_handlers():
+#     mediator = Mediator()
+#     uow = SQLAlchemyScheduleUnitOfWork()
+#     mediator.register_command(AddOrderCommand, [AddOrderCommandHandler(mediator=mediator, uow=uow)])
+#     mediator.register_command(UpdateOrderCommand, [UpdateOrderCommandHandler(mediator=mediator, uow=uow)])
+#     mediator.register_command(CancelOrderCommand, [CancelOrderCommandHandler(mediator=mediator, uow=uow)])
+#     mediator.register_command(AddMasterCommand, [AddMasterCommandHandler(mediator=mediator, uow=uow)])
+#     mediator.register_command(AddScheduleCommand, [AddScheduleCommandHandler(mediator=mediator, uow=uow)])
+#     mediator.register_event(
+#         OrderCreatedEvent,
+#         [OrderCreatedEmailEventHandler(uow=uow), OrderCreatedPointIncreaseEventHandler(uow=uow)],
+#     )
+#     return mediator
 
 
 def get_mediator_with_user_register_handlers():
@@ -113,7 +92,7 @@ def get_mediator_with_user_register_handlers():
 
 
 async def create_user():
-    mediator = get_mediator_with_user_register_handlers()
+    mediator = await container.get(Mediator)
     await mediator.handle_command(
         AddUserCommand(
             email="safas@wsefg.com",
@@ -125,23 +104,8 @@ async def create_user():
     )
 
 
-def get_mediator_with_schedule_register_handlers():
-    mediator = Mediator()
-    uow = SQLAlchemyScheduleUnitOfWork()
-    mediator.register_command(AddOrderCommand, [AddOrderCommandHandler(mediator=mediator, uow=uow)])
-    mediator.register_command(UpdateOrderCommand, [UpdateOrderCommandHandler(mediator=mediator, uow=uow)])
-    mediator.register_command(CancelOrderCommand, [CancelOrderCommandHandler(mediator=mediator, uow=uow)])
-    mediator.register_command(AddMasterCommand, [AddMasterCommandHandler(mediator=mediator, uow=uow)])
-    mediator.register_command(AddScheduleCommand, [AddScheduleCommandHandler(mediator=mediator, uow=uow)])
-    mediator.register_event(
-        OrderCreatedEvent,
-        [OrderCreatedEmailEventHandler(uow=uow), OrderCreatedPointIncreaseEventHandler(uow=uow)],
-    )
-    return mediator
-
-
 async def add_master():
-    mediator = get_mediator_with_schedule_register_handlers()
+    mediator = await container.get(Mediator)
     data = AddMasterCommand(
         description="asdasdasdasd",
         user_id=11,
@@ -151,13 +115,12 @@ async def add_master():
 
 
 async def add_schedule():
-    mediator = get_mediator_with_schedule_register_handlers()
+    mediator = await container.get(Mediator)
     data = AddScheduleCommand(day=date.today() + timedelta(days=1), master_id=2)
     print(await mediator.handle_command(data))
 
 
 async def add_order():
-    # mediator = get_mediator_with_schedule_register_handlers()
     mediator = await container.get(Mediator)
     order_data = AddOrderCommand(
         slot_id=35,
@@ -168,7 +131,7 @@ async def add_order():
 
 
 async def update_order():
-    mediator = get_mediator_with_schedule_register_handlers()
+    mediator = await container.get(Mediator)
     order_data = UpdateOrderCommand(
         slot_id=37,
         order_id=22,
@@ -178,7 +141,7 @@ async def update_order():
 
 
 async def delete_order():
-    mediator = get_mediator_with_schedule_register_handlers()
+    mediator = await container.get(Mediator)
     user_id = 13
     order_data = CancelOrderCommand(user_id=user_id, order_id=19)
     await mediator.handle_command(order_data)
