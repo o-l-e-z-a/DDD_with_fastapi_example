@@ -2,8 +2,6 @@ from typing import Sequence
 
 from sqlalchemy import RowMapping, func, select
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy_file import File
-from sqlalchemy_file.exceptions import ContentTypeValidationError
 
 from src.domain.orders import entities
 from src.infrastructure.db.exceptions import UpdateException

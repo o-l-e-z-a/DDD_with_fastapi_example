@@ -30,8 +30,7 @@ from src.logic.services.users_service import get_password_hash
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
-from src.presentation.api.orders.schema import OrderCreateSchema
-from src.presentation.api.schedules.schema import SlotCreateSchema
+from src.presentation.api.schedules.schema import SlotCreateSchema, OrderCreateSchema
 from src.presentation.api.settings import settings
 from tests.unit.domain.conftest import *
 from tests.unit.logic.conftest import *

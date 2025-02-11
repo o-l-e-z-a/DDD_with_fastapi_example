@@ -67,6 +67,11 @@ class NotUserOrderException(BaseApiException):
     detail = "Пользователь не может редактировать чужой заказ"
 
 
+class OrderNotCorrectStatusException(BaseApiException):
+    status_code = status.HTTP_403_FORBIDDEN
+    detail = "Некорректый статус заказ"
+
+
 class CannotAddDataToDatabase(BaseApiException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     detail = "Не удалось добавить запись"

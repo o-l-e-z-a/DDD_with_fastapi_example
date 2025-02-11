@@ -107,7 +107,7 @@ class Schedule(BaseEntity):
 
 @dataclass()
 class Slot(BaseEntity):
-    schedule_id: int = field(init=False, hash=False, repr=True, compare=False)
+    schedule_id: int = field(init=False, hash=False, repr=False, compare=False)
     time_start: SlotTime
     # schedule_id: int
 
@@ -126,7 +126,8 @@ class Slot(BaseEntity):
 
     def to_dict(self) -> dict:
         # schedule = self.schedule.to_dict() if self.schedule else None
-        return {"id": self.id, "time_start": self.time_start.as_generic_type(), "schedule_id": self.schedule_id}
+        schedule_id = self.schedule_id if self.schedule_id else None
+        return {"id": self.id, "time_start": self.time_start.as_generic_type(), "schedule_id": schedule_id}
 
 
 class SlotsForSchedule:
@@ -242,5 +243,6 @@ class Order(BaseEntity):
             "photo_before_path": self.photo_before_path,
             "photo_after_path": self.photo_after_path,
             "user_id": self.user_id,
+            "service_id": self.service_id,
             "slot_id": self.slot_id,
         }

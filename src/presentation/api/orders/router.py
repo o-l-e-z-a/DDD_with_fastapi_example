@@ -1,5 +1,6 @@
 from dataclasses import asdict
 
+from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Depends, status
 
 from src.logic.dto.order_dto import (
@@ -20,7 +21,7 @@ from src.presentation.api.orders.schema import (
     TotalAmountSchema,
 )
 
-router = APIRouter(prefix="/api", tags=["order"])
+router = APIRouter(route_class=DishkaRoute, prefix="/api", tags=["order"])
 
 
 @router.post("/total_amount/")

@@ -5,6 +5,7 @@ from sqlalchemy import RowMapping, and_, extract, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from sqlalchemy_file.exceptions import ContentTypeValidationError
+from sqlalchemy_file import File
 
 from src.domain.schedules import entities
 from src.domain.schedules.entities import OrderStatus

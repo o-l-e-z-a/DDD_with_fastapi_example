@@ -6,7 +6,7 @@ from typing import Type
 from src.domain.base.events import BaseEvent
 from src.logic.commands.base import CR, CT, BaseCommand, CommandHandler
 from src.logic.events.base import ER, ET, EventHandler
-from src.logic.exceptions.message_bus import CommandHandlersNotRegisteredException
+from src.logic.exceptions.mediator_exceptions import CommandHandlersNotRegisteredException
 from src.logic.mediator.command import CommandMediator
 from src.logic.mediator.event import EventMediator
 

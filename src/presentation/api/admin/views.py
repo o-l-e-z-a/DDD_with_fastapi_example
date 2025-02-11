@@ -1,8 +1,8 @@
 from sqladmin import ModelView
 
-from src.infrastructure.db.models.orders import Order, Promotion
-from src.infrastructure.db.models.schedules import Consumables, Inventory, Master, Schedule, Service, Slot
-from src.infrastructure.db.models.users import UserPoint, Users
+from src.infrastructure.db.models.orders import Promotion, UserPoint
+from src.infrastructure.db.models.schedules import Master, Schedule, Service, Slot, Order
+from src.infrastructure.db.models.users import Users
 
 
 class UsersAdmin(ModelView, model=Users):  # type: ignore[call-arg]
@@ -11,14 +11,6 @@ class UsersAdmin(ModelView, model=Users):  # type: ignore[call-arg]
     name = "Пользователь"
     name_plural = "Пользователи"
     icon = "fa-solid  fa-user"
-
-
-class InventoryAdmin(ModelView, model=Inventory):  # type: ignore[call-arg]
-    column_list = "__all__"
-
-
-class ConsumablesAdmin(ModelView, model=Consumables):  # type: ignore[call-arg]
-    column_list = "__all__"
 
 
 class ServiceAdmin(ModelView, model=Service):  # type: ignore[call-arg]

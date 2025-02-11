@@ -1,43 +1,10 @@
-from datetime import date, datetime
+from datetime import date
 from typing import Annotated
 
-from pydantic import Field, field_serializer
+from pydantic import Field
 
-from src.presentation.api.base.base_schema import BaseSchema
-from src.presentation.api.schedules.schema import ServiceSchema, SlotCreateSchema, SlotSchema
-from src.presentation.api.users.schema import AllUserSchema
-
-int_ge_0 = Annotated[int, Field(ge=0)]
-
-
-class OrderCreateSchema(BaseSchema):
-    point: int_ge_0 | None = 0
-    promotion_code: str | None = "0"
-    slot: SlotCreateSchema
-
-
-class OrderUpdatePhotoSchema(BaseSchema):
-    photo_before: str
-    photo_after: str
-
-
-class OrderSchema(BaseSchema):
-    id: int
-    date_add: datetime
-    point_uses: int_ge_0
-    promotion_sale: int_ge_0
-    total_amount: int_ge_0
-    slot: SlotSchema
-    photo_before_path: str | None
-    photo_after_path: str | None
-
-    @field_serializer("date_add")
-    def serialize_date_add(self, date_add: datetime, _info):
-        return date_add.strftime("%Y-%m-%dT%H:%M")
-
-
-class AllOrderSchema(OrderSchema):
-    user: AllUserSchema
+from src.presentation.api.base.base_schema import BaseSchema, int_ge_0
+from src.presentation.api.schedules.schema import ServiceSchema
 
 
 class TotalAmountSchema(BaseSchema):
@@ -51,14 +18,6 @@ class TotalAmountCreateSchema(BaseSchema):
     point: int_ge_0 | None = 0
     promotion_code: str | None = "0"
     schedule_id: int
-
-
-class OrderReportSchema(BaseSchema):
-    id: int
-    name: str
-    price: int
-    total_count: int_ge_0
-    total_sum: int_ge_0
 
 
 class PromotionAddSchema(BaseSchema):
@@ -78,3 +37,7 @@ class PromotionSchema(BaseSchema):
     day_start: date
     day_end: date
     services: list[ServiceSchema]
+
+
+class UserPointSchema(BaseSchema):
+    count: int

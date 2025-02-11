@@ -6,6 +6,7 @@ from jose import ExpiredSignatureError, JWTError, jwt
 
 from src.domain.schedules.entities import Master
 from src.domain.users.entities import User
+from src.infrastructure.db.config import get_async_engine, get_async_session_factory
 from src.logic.services.order_service import OrderService, PromotionService
 from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService
 from src.logic.services.users_service import UserService
@@ -49,18 +50,23 @@ def get_token_payload(token: str) -> dict:
     return payload
 
 
-def get_sqla_user_uow() -> SQLAlchemyUsersUnitOfWork:
-    uow = SQLAlchemyUsersUnitOfWork()
+def get_async_session_maker():
+    engine = get_async_engine(settings)
+    return get_async_session_factory(engine)
+
+
+def get_sqla_user_uow(async_session_maker=Depends(get_async_session_maker)) -> SQLAlchemyUsersUnitOfWork:
+    uow = SQLAlchemyUsersUnitOfWork(session_factory=async_session_maker)
     return uow
 
 
-def get_sqla_schedule_uow() -> SQLAlchemyScheduleUnitOfWork:
-    uow = SQLAlchemyScheduleUnitOfWork()
+def get_sqla_schedule_uow(async_session_maker=Depends(get_async_session_maker)) -> SQLAlchemyScheduleUnitOfWork:
+    uow = SQLAlchemyScheduleUnitOfWork(session_factory=async_session_maker)
     return uow
 
 
-def get_sqla_order_uow() -> SQLAlchemyOrderUnitOfWork:
-    uow = SQLAlchemyOrderUnitOfWork()
+def get_sqla_order_uow(async_session_maker=Depends(get_async_session_maker)) -> SQLAlchemyOrderUnitOfWork:
+    uow = SQLAlchemyOrderUnitOfWork(session_factory=async_session_maker)
     return uow
 
 

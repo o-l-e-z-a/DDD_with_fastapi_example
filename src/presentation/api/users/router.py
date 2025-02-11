@@ -1,3 +1,4 @@
+from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Depends, Response
 
 from src.domain.users.entities import User
@@ -11,7 +12,8 @@ from src.presentation.api.exceptions import (
     NotFoundHTTPException,
     UserAlreadyExistsException,
 )
-from src.presentation.api.users.schema import AllUserSchema, UserCreateSchema, UserLoginSchema, UserPointSchema
+from src.presentation.api.users.schema import AllUserSchema, UserCreateSchema, UserLoginSchema
+from src.presentation.api.orders.schema import UserPointSchema
 from src.presentation.api.users.utils import (
     ACCESS_TOKEN_COOKIE_FIELD,
     ACCESS_TOKEN_RESPONSE_FIELD,
@@ -20,8 +22,8 @@ from src.presentation.api.users.utils import (
     create_refresh_token,
 )
 
-router_auth = APIRouter(prefix="/auth", tags=["auth"])
-router_users = APIRouter(prefix="/users", tags=["Пользователи"])
+router_auth = APIRouter(route_class=DishkaRoute, prefix="/auth", tags=["auth"])
+router_users = APIRouter(route_class=DishkaRoute, prefix="/users", tags=["Пользователи"])
 
 
 @router_auth.post("/register/", status_code=201)

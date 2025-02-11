@@ -208,7 +208,7 @@ class Schedule(Base):
         with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
         # master = self.master.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
         slots = (
-            [slot.to_domain(with_join=with_join_to_child, child_level=child_level) for slot in self.slots]
+            [slot.to_domain(with_join=False, child_level=child_level) for slot in self.slots]
             if with_join
             else []
         )
@@ -321,6 +321,7 @@ class Order(Base):
             user_id=entity.user_id,
             service_id=entity.service_id,
             photo_before=entity.photo_before_path,
+            date_add=entity.date_add,
             photo_after=entity.photo_after_path,
             status=entity.status.value,
         )

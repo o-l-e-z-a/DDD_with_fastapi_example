@@ -6,7 +6,7 @@ from src.domain.base.values import CountNumber
 from src.domain.users.values import Email, HumanName, Telephone
 
 
-@dataclass()
+@dataclass(kw_only=True)
 class User(BaseEntity):
     email: Email
     hashed_password: str = field(init=False, default="", compare=False)

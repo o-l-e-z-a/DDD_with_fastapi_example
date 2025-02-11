@@ -1,14 +1,18 @@
 from datetime import date
 
+from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi_cache.decorator import cache
 
-from src.domain.schedules.exceptions import SlotOccupiedException
+from src.domain.schedules.exceptions import SlotOccupiedException, OrderNotInProgressException, \
+    OrderNotReceivedException
 from src.infrastructure.db.exceptions import InsertException, UpdateException
 from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PhotoDTO, TotalAmountDTO
 from src.logic.dto.schedule_dto import MasterAddDTO, ScheduleAddDTO
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.exceptions.order_exceptions import NotUserOrderLogicException
+from src.logic.mediator.base import Mediator
 from src.logic.services.order_service import OrderService
 from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService
 from src.presentation.api.dependencies import (
@@ -23,25 +27,36 @@ from src.presentation.api.exceptions import (
     CannotUpdateDataToDatabase,
     NotCorrectDataHTTPException,
     NotFoundHTTPException,
-    NotUserOrderException,
+    NotUserOrderException, OrderNotCorrectStatusException,
 )
-from src.presentation.api.orders.schema import AllOrderSchema, OrderCreateSchema, OrderReportSchema, OrderSchema
 from src.presentation.api.schedules.schema import (
     MasterAddSchema,
     MasterDaysSchema,
     MasterReportSchema,
-    MasterSchema,
+    MasterDetailSchema,
     MasterWithoutServiceSchema,
     ScheduleAddSchema,
     ScheduleSchema,
+    ScheduleDetailSchema,
     ServiceSchema,
     SlotSchema,
     SlotsTimeSchema,
-    SlotUpdateSchema,
+    OrderCreateSchema,
+    OrderDetailSchema,
+    AllOrderDetailSchema,
+    OrderReportSchema,
+    OrderUpdateSchema, MasterSchema, OrderSchema,
+)
+from src.logic.commands.schedule_commands import (
+    AddMasterCommand,
+    AddOrderCommand,
+    AddScheduleCommand,
+    CancelOrderCommand,
+    UpdateOrderCommand, UpdatePhotoOrderCommand, StartOrderCommand,
 )
 from src.presentation.api.users.schema import AllUserSchema
 
-router = APIRouter(prefix="/api", tags=["schedule"])
+router = APIRouter(route_class=DishkaRoute, prefix="/api", tags=["schedule"])
 
 
 @router.get("/services/")
@@ -53,9 +68,9 @@ async def get_services(procedure_service: ProcedureService = Depends(get_procedu
 
 @router.get("/all_masters/")
 @cache(expire=60)
-async def get_all_masters(master_service: MasterService = Depends(get_master_service)) -> list[MasterSchema]:
+async def get_all_masters(master_service: MasterService = Depends(get_master_service)) -> list[MasterDetailSchema]:
     results = await master_service.get_all_masters()
-    master_schemas = [MasterSchema.model_validate(master.to_dict()) for master in results]
+    master_schemas = [MasterDetailSchema.model_validate(master.to_dict()) for master in results]
     return master_schemas
 
 
@@ -73,15 +88,19 @@ async def get_all_user_to_add_masters(
 async def add_master(
     # admin: CurrentAdmin,
     master_data: MasterAddSchema,
-    master_service: MasterService = Depends(get_master_service),
+    mediator: FromDishka[Mediator],
 ) -> MasterSchema:
     services_ids = list(map(int, master_data.services.split(",")))
     try:
-        master = await master_service.add_master(
-            MasterAddDTO(description=master_data.description, user_id=master_data.user_id, services_id=services_ids)
+        master, *_ = await mediator.handle_command(
+            AddMasterCommand(
+                description=master_data.description, user_id=master_data.user_id, services_id=services_ids)
         )
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
+    except InsertException as err:
+        raise NotCorrectDataHTTPException(detail=err.title)
+    print(master.to_dict())
     master_schema = MasterSchema.model_validate(master.to_dict())
     return master_schema
 
@@ -108,9 +127,9 @@ async def get_master_report(
 
 @router.get("/schedules/")
 @cache(expire=60)
-async def get_schedules(schedule_service: ScheduleService = Depends(get_schedule_service)) -> list[ScheduleSchema]:
+async def get_schedules(schedule_service: ScheduleService = Depends(get_schedule_service)) -> list[ScheduleDetailSchema]:
     results = await schedule_service.get_schedules()
-    schedule_schemas = [ScheduleSchema.model_validate(schedule.to_dict()) for schedule in results]
+    schedule_schemas = [ScheduleDetailSchema.model_validate(schedule.to_dict()) for schedule in results]
     return schedule_schemas
 
 
@@ -118,10 +137,10 @@ async def get_schedules(schedule_service: ScheduleService = Depends(get_schedule
 async def add_schedule(
     # admin: CurrentAdmin,
     schedule_data: ScheduleAddSchema,
-    schedule_service: ScheduleService = Depends(get_schedule_service),
+    mediator: FromDishka[Mediator],
 ) -> ScheduleSchema:
     try:
-        schedule = await schedule_service.add_schedule(ScheduleAddDTO(**schedule_data.model_dump(exclude_unset=True)))
+        schedule, *_ = await mediator.handle_command(AddScheduleCommand(**schedule_data.model_dump(exclude_unset=True)))
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
     except InsertException as err:
@@ -170,9 +189,9 @@ async def get_current_master_schedule(
 
 @router.get("/all_orders/", description="все заказы для просмотра мастером")
 @cache(expire=60)
-async def get_all_orders(order_service: OrderService = Depends(get_order_service)) -> list[AllOrderSchema]:
+async def get_all_orders(order_service: OrderService = Depends(get_order_service)) -> list[AllOrderDetailSchema]:
     results = await order_service.get_all_orders()
-    order_schemas = [AllOrderSchema.model_validate(order.to_dict()) for order in results]
+    order_schemas = [AllOrderDetailSchema.model_validate(order.to_dict()) for order in results]
     return order_schemas
 
 
@@ -180,9 +199,9 @@ async def get_all_orders(order_service: OrderService = Depends(get_order_service
 @cache(expire=60)
 async def get_client_orders(
     user: CurrentUser, order_service: OrderService = Depends(get_order_service)
-) -> list[OrderSchema]:
+) -> list[OrderDetailSchema]:
     results = await order_service.get_client_orders(user=user)
-    order_schemas = [OrderSchema.model_validate(order.to_dict()) for order in results]
+    order_schemas = [OrderDetailSchema.model_validate(order.to_dict()) for order in results]
     return order_schemas
 
 
@@ -190,19 +209,15 @@ async def get_client_orders(
 async def add_order(
     order_data: OrderCreateSchema,
     user: CurrentUser,
-    order_service: OrderService = Depends(get_order_service),
+    mediator: FromDishka[Mediator],
 ) -> OrderSchema:
     try:
-        order = await order_service.add_order(
-            order_data=OrderCreateDTO(
-                total_amount=TotalAmountDTO(
-                    schedule_id=order_data.slot.schedule_id,
-                    point=order_data.point,
-                    promotion_code=order_data.promotion_code,
-                ),
-                time_start=order_data.slot.time_start,
+        order, *_ = await mediator.handle_command(
+            AddOrderCommand(
+                slot_id=order_data.slot_id,
+                service_id=order_data.service_id,
+                user_id=user.id,
             ),
-            user=user,
         )
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
@@ -216,18 +231,40 @@ async def add_order(
 @router.put("/order/{order_id}/update/")
 async def update_order(
     order_id: int,
-    slot_data: SlotUpdateSchema,
+    slot_data: OrderUpdateSchema,
     user: CurrentUser,
-    order_service: OrderService = Depends(get_order_service),
+    mediator: FromDishka[Mediator],
 ) -> OrderSchema:
     try:
-        order = await order_service.update_order(
-            order_data=OrderUpdateDTO(**slot_data.model_dump(), order_id=order_id), user=user
+        order, *_ = await mediator.handle_command(
+            UpdateOrderCommand(**slot_data.model_dump(), order_id=order_id, user_id=user.id),
         )
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
     except NotUserOrderLogicException as err:
         raise NotUserOrderException(detail=err.title)
+    except OrderNotReceivedException as err:
+        raise OrderNotCorrectStatusException(detail=err.title)
+    except SlotOccupiedException as err:
+        raise NotCorrectDataHTTPException(detail=err.title)
+    order_schema = OrderSchema.model_validate(order.to_dict())
+    return order_schema
+
+
+@router.put("/order/{order_id}/start/")
+async def start_order(
+    order_id: int,
+    master: CurrentMaster,
+    mediator: FromDishka[Mediator],
+) -> OrderSchema:
+    try:
+        order, *_ = await mediator.handle_command(
+            StartOrderCommand(order_id=order_id),
+        )
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    except OrderNotReceivedException as err:
+        raise OrderNotCorrectStatusException(detail=err.title)
     except SlotOccupiedException as err:
         raise NotCorrectDataHTTPException(detail=err.title)
     order_schema = OrderSchema.model_validate(order.to_dict())
@@ -239,7 +276,8 @@ async def update_photo(
     order_id: int,
     photo_before: UploadFile,
     photo_after: UploadFile,
-    order_service: OrderService = Depends(get_order_service),
+    master: CurrentMaster,
+    mediator: FromDishka[Mediator],
 ) -> OrderSchema:
     photo_before_dto = PhotoDTO(
         file=photo_before.file, filename=photo_before.filename, content_type=photo_before.content_type
@@ -248,31 +286,36 @@ async def update_photo(
         file=photo_after.file, filename=photo_after.filename, content_type=photo_after.content_type
     )
     try:
-        order = await order_service.update_order_photos(
-            order_id=order_id, photo_before=photo_before_dto, photo_after=photo_after_dto
+        order, *_ = await mediator.handle_command(
+            UpdatePhotoOrderCommand(order_id=order_id, photo_before=photo_before_dto, photo_after=photo_after_dto)
         )
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
-    except NotUserOrderLogicException as err:
+    except OrderNotInProgressException as err:
         raise NotUserOrderException(detail=err.title)
     except UpdateException as err:
         raise CannotUpdateDataToDatabase(detail=err.title)
+    print(order.to_dict())
     order_schema = OrderSchema.model_validate(order.to_dict())
     return order_schema
 
 
-@router.delete("/order/{order_id}/cancel/", status_code=status.HTTP_204_NO_CONTENT)
+@router.patch("/order/{order_id}/cancel/")
 async def cancel_order(
     order_id: int,
     user: CurrentUser,
-    order_service: OrderService = Depends(get_order_service),
-):
+    mediator: FromDishka[Mediator],
+) -> OrderSchema:
     try:
-        await order_service.delete_order(order_id=order_id, user=user)
+        order, *_ = await mediator.handle_command(CancelOrderCommand(order_id=order_id, user_id=user.id))
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
+    except OrderNotReceivedException as err:
+        raise OrderNotCorrectStatusException(detail=err.title)
     except NotUserOrderLogicException as err:
         raise NotUserOrderException(detail=err.title)
+    order_schema = OrderSchema.model_validate(order.to_dict())
+    return order_schema
 
 
 @router.post("/service_report/")

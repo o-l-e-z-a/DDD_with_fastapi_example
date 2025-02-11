@@ -45,7 +45,3 @@ class AllUserSchema(BaseSchema):
     # @property
     # def fio(self) -> str:
     #     return f'{self.last_name} {self.first_name}'
-
-
-class UserPointSchema(BaseSchema):
-    count: int

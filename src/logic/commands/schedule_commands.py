@@ -72,7 +72,6 @@ slot_type = Annotated[str, Field(pattern=r"^(?:[01][0-9]|2?[0-3]):[0-5]\d$")]
 
 
 class AddOrderCommand(BaseCommand):
-    # total_amount: TotalAmountDTO
     slot_id: PositiveInt
     service_id: PositiveInt
     user_id: PositiveInt
@@ -102,7 +101,7 @@ class AddOrderCommandHandler(CommandHandler[AddOrderCommand, None]):
                 occupied_slots=occupied_slots,
             )
             order_from_repo = await self.uow.orders.add(order_from_aggregate)
-            # await self.uow.commit()
+            await self.uow.commit()
             events = order_from_aggregate.pull_events()
             print("events", events)
             await self.mediator.publish(events)
