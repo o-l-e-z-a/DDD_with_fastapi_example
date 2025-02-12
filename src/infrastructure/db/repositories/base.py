@@ -9,10 +9,20 @@ from src.infrastructure.db.exceptions import InsertException, UpdateException
 from src.infrastructure.db.models.base import E, T
 
 
-class AbstractRepository(ABC): ...
+class BaseRepository(ABC): ...
 
 
-class GenericSQLAlchemyRepository(Generic[T, E], AbstractRepository):
+class BaseQueryRepository(ABC): ...
+
+
+class GenericSQLAlchemyQueryRepository(Generic[T, E], BaseQueryRepository):
+    model: Type[T]
+
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+
+class GenericSQLAlchemyRepository(Generic[T, E], BaseRepository):
     model: Type[T]
 
     def __init__(self, session: AsyncSession):

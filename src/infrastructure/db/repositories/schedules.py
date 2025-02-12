@@ -4,8 +4,8 @@ from typing import Sequence
 from sqlalchemy import RowMapping, and_, extract, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
-from sqlalchemy_file.exceptions import ContentTypeValidationError
 from sqlalchemy_file import File
+from sqlalchemy_file.exceptions import ContentTypeValidationError
 
 from src.domain.schedules import entities
 from src.domain.schedules.entities import OrderStatus
@@ -13,16 +13,9 @@ from src.domain.users import entities as user_entities
 from src.infrastructure.db.exceptions import InsertException, UpdateException
 from src.infrastructure.db.models.schedules import Master, Order, Schedule, Service, Slot
 from src.infrastructure.db.models.users import Users
-from src.infrastructure.db.repositories.base import GenericSQLAlchemyRepository
-from src.logic.dto.order_dto import PhotoDTO
-
-#
-# class InventoryRepository(GenericSQLAlchemyRepository[Inventory, entities.Inventory]):
-#     model = Inventory
-#
-#
-# class ConsumablesRepository(GenericSQLAlchemyRepository[Consumables, entities.Consumable]):
-#     model = Consumables
+from src.infrastructure.db.repositories.base import GenericSQLAlchemyQueryRepository, GenericSQLAlchemyRepository
+from src.logic.commands.schedule_commands import PhotoType
+from src.logic.dto.schedule_dto import ServiceDTO
 
 
 class ServiceRepository(GenericSQLAlchemyRepository[Service, entities.Service]):
@@ -32,18 +25,6 @@ class ServiceRepository(GenericSQLAlchemyRepository[Service, entities.Service]):
         query = select(self.model).where(self.model.id.in_(ids))
         result = await self.session.execute(query)
         return [el.to_domain() for el in result.scalars().all()]
-
-    async def get_service_with_consumable(self, service_id: int) -> entities.Service | None:
-        query = (
-            select(self.model)
-            .options(
-                # selectinload(self.model.consumables).joinedload(Consumables.inventory)
-            )
-            .where(self.model.id == service_id)
-        )
-        result = await self.session.execute(query)
-        scalar = result.scalar_one_or_none()
-        return scalar.to_domain(with_join=True, child_level=2) if scalar else None
 
 
 class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
@@ -327,7 +308,7 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         )
         return query
 
-    async def update_photo(self, entity: entities.Order, photo_after: PhotoDTO, photo_before: PhotoDTO):
+    async def update_photo(self, entity: entities.Order, photo_after: PhotoType, photo_before: PhotoType):
         model = self.model.from_entity(entity)
         model.photo_before = File(  # type: ignore[assignment]
             content=photo_before, content_type=photo_before.content_type, filename=photo_before.filename
@@ -342,3 +323,19 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
             # print(err.msg)
             raise UpdateException(detail=err.msg, entity=entity)
         return model.to_domain()
+
+
+class ServiceQueryRepository(GenericSQLAlchemyQueryRepository[Service]):
+    async def find_one_or_none(self, **filter_by) -> E | None:
+        query = select(self.model).filter_by(**filter_by)
+        result = await self.session.execute(query)
+        scalar = result.scalar_one_or_none()
+        return scalar.to_domain() if scalar else None
+
+    async def find_all(self, **filter_by) -> list[E]:
+        query = select(Service).filter_by(**filter_by)
+        result = await self.session.execute(query)
+        return [
+            ServiceDTO(id=el.id, name=el.name, description=el.description, price=el.price)
+            for el in result.scalars().all()
+        ]

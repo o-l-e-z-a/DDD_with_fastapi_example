@@ -1,15 +1,10 @@
-from typing import Sequence
-
-from sqlalchemy import RowMapping, func, select
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
 from src.domain.orders import entities
-from src.infrastructure.db.exceptions import UpdateException
-from src.infrastructure.db.models.orders import Promotion
-from src.infrastructure.db.models.schedules import Master, Schedule, Service, Slot, Order
-from src.infrastructure.db.models.orders import UserPoint
+from src.infrastructure.db.models.orders import Promotion, UserPoint
+from src.infrastructure.db.models.schedules import Service
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyRepository
-from src.logic.dto.order_dto import PhotoDTO
 
 
 class PromotionRepository(GenericSQLAlchemyRepository[Promotion, entities.Promotion]):
