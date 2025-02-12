@@ -7,8 +7,8 @@ from jose import ExpiredSignatureError, JWTError, jwt
 from src.domain.schedules.entities import Master
 from src.domain.users.entities import User
 from src.infrastructure.db.config import get_async_engine, get_async_session_factory
-from src.logic.services.order_service import OrderService, PromotionService
-from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService
+from src.logic.services.order_service import PromotionService
+from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService, OrderService
 from src.logic.services.users_service import UserService
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork

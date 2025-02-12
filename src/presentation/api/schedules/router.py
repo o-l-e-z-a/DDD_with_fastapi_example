@@ -5,16 +5,16 @@ from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi_cache.decorator import cache
 
-from src.domain.schedules.exceptions import SlotOccupiedException, OrderNotInProgressException, \
-    OrderNotReceivedException
+from src.domain.schedules.exceptions import (
+    SlotOccupiedException,
+    OrderNotInProgressException,
+    OrderNotReceivedException,
+)
 from src.infrastructure.db.exceptions import InsertException, UpdateException
-from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PhotoDTO, TotalAmountDTO
-from src.logic.dto.schedule_dto import MasterAddDTO, ScheduleAddDTO
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.exceptions.order_exceptions import NotUserOrderLogicException
 from src.logic.mediator.base import Mediator
-from src.logic.services.order_service import OrderService
-from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService
+from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService, OrderService
 from src.presentation.api.dependencies import (
     CurrentMaster,
     CurrentUser,
@@ -27,7 +27,8 @@ from src.presentation.api.exceptions import (
     CannotUpdateDataToDatabase,
     NotCorrectDataHTTPException,
     NotFoundHTTPException,
-    NotUserOrderException, OrderNotCorrectStatusException,
+    NotUserOrderException,
+    OrderNotCorrectStatusException,
 )
 from src.presentation.api.schedules.schema import (
     MasterAddSchema,
@@ -45,14 +46,19 @@ from src.presentation.api.schedules.schema import (
     OrderDetailSchema,
     AllOrderDetailSchema,
     OrderReportSchema,
-    OrderUpdateSchema, MasterSchema, OrderSchema,
+    OrderUpdateSchema,
+    MasterSchema,
+    OrderSchema,
 )
 from src.logic.commands.schedule_commands import (
     AddMasterCommand,
     AddOrderCommand,
     AddScheduleCommand,
     CancelOrderCommand,
-    UpdateOrderCommand, UpdatePhotoOrderCommand, StartOrderCommand,
+    UpdateOrderCommand,
+    UpdatePhotoOrderCommand,
+    StartOrderCommand,
+    PhotoType,
 )
 from src.presentation.api.users.schema import AllUserSchema
 
@@ -60,7 +66,10 @@ router = APIRouter(route_class=DishkaRoute, prefix="/api", tags=["schedule"])
 
 
 @router.get("/services/")
-async def get_services(procedure_service: ProcedureService = Depends(get_procedure_service)):
+@cache(expire=60)
+async def get_services(
+    procedure_service: ProcedureService = Depends(get_procedure_service)
+):
     results = await procedure_service.get_services()
     service_schemas = [ServiceSchema.model_validate(service.to_dict()) for service in results]
     return service_schemas
@@ -68,7 +77,9 @@ async def get_services(procedure_service: ProcedureService = Depends(get_procedu
 
 @router.get("/all_masters/")
 @cache(expire=60)
-async def get_all_masters(master_service: MasterService = Depends(get_master_service)) -> list[MasterDetailSchema]:
+async def get_all_masters(
+    master_service: MasterService = Depends(get_master_service)
+) -> list[MasterDetailSchema]:
     results = await master_service.get_all_masters()
     master_schemas = [MasterDetailSchema.model_validate(master.to_dict()) for master in results]
     return master_schemas
@@ -84,34 +95,87 @@ async def get_all_user_to_add_masters(
     return user_schemas
 
 
-@router.post("/master/add/", status_code=status.HTTP_201_CREATED)
-async def add_master(
-    # admin: CurrentAdmin,
-    master_data: MasterAddSchema,
-    mediator: FromDishka[Mediator],
-) -> MasterSchema:
-    services_ids = list(map(int, master_data.services.split(",")))
-    try:
-        master, *_ = await mediator.handle_command(
-            AddMasterCommand(
-                description=master_data.description, user_id=master_data.user_id, services_id=services_ids)
-        )
-    except NotFoundLogicException as err:
-        raise NotFoundHTTPException(detail=err.title)
-    except InsertException as err:
-        raise NotCorrectDataHTTPException(detail=err.title)
-    print(master.to_dict())
-    master_schema = MasterSchema.model_validate(master.to_dict())
-    return master_schema
+@router.get("/schedules/")
+@cache(expire=60)
+async def get_schedules(
+    schedule_service: ScheduleService = Depends(get_schedule_service)
+) -> list[ScheduleDetailSchema]:
+    results = await schedule_service.get_schedules()
+    schedule_schemas = [ScheduleDetailSchema.model_validate(schedule.to_dict()) for schedule in results]
+    return schedule_schemas
+
+
+@router.get("/all_orders/", description="все заказы для просмотра мастером")
+@cache(expire=60)
+async def get_all_orders(
+    order_service: OrderService = Depends(get_order_service)
+) -> list[AllOrderDetailSchema]:
+    results = await order_service.get_all_orders()
+    order_schemas = [AllOrderDetailSchema.model_validate(order.to_dict()) for order in results]
+    return order_schemas
+
+
+@router.get("/master_days/")
+@cache(expire=60)
+async def get_master_days(
+    master: CurrentMaster,
+    schedule_service: ScheduleService = Depends(get_schedule_service)
+) -> MasterDaysSchema:
+    days = await schedule_service.get_master_days(master_id=master.id)
+    return MasterDaysSchema(days=days)
 
 
 @router.get("/service/{service_pk}/masters/", description="master_for_service")
 async def get_masters_for_service(
-    service_pk: int, master_service: MasterService = Depends(get_master_service)
+    service_pk: int,
+    master_service: MasterService = Depends(get_master_service)
 ) -> list[MasterWithoutServiceSchema]:
-    results = await master_service.get_masters_for_service(service_int=service_pk)
+    results = await master_service.get_masters_for_service(service_id=service_pk)
     master_schemas = [MasterWithoutServiceSchema.model_validate(master.to_dict()) for master in results]
     return master_schemas
+
+
+# @router.get("/master/{master_pk}/service/{service_pk}/schedules/", description="day_for_master")
+# async def get_day_for_master(
+#     master_pk: int, service_pk: int, schedule_service: ScheduleService = Depends(get_schedule_service)
+# ) -> MasterDaysSchema:
+#     days = await schedule_service.get_day_for_master(master_id=master_pk, service_id=service_pk)
+#     return MasterDaysSchema(days=days)
+
+
+@router.get("/slots/{schedule_pk}/", description="slot_for_day")
+@cache(expire=60)
+async def get_slot_for_day(
+    schedule_pk: int,
+    schedule_service: ScheduleService = Depends(get_schedule_service)
+) -> SlotsTimeSchema:
+    try:
+        all_day_slots = await schedule_service.get_slot_for_day(schedule_id=schedule_pk)
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    return SlotsTimeSchema(slots=[slot_time.as_generic_type() for slot_time in all_day_slots])
+
+
+@router.get("/master_schedule/{day}/", description="current_master_schedule")
+async def get_current_master_schedule(
+    day: date,
+    master: CurrentMaster,
+    schedule_service: ScheduleService = Depends(get_schedule_service)
+) -> list[SlotSchema]:
+    slots = await schedule_service.get_current_master_slots(day=day, master_id=master.id)
+    slot_schemas = [SlotSchema.model_validate(slot.to_dict()) for slot in slots]
+    return slot_schemas
+
+
+@router.get("/orders/", description="все заказы клиента")
+@cache(expire=60)
+async def get_client_orders(
+    user: CurrentUser,
+    order_service: OrderService = Depends(get_order_service)
+) -> list[OrderDetailSchema]:
+    results = await order_service.get_client_orders(user=user)
+    order_schemas = [OrderDetailSchema.model_validate(order.to_dict()) for order in results]
+    return order_schemas
 
 
 @router.get("/master_report/")
@@ -125,18 +189,20 @@ async def get_master_report(
     return master_schemas
 
 
-@router.get("/schedules/")
-@cache(expire=60)
-async def get_schedules(schedule_service: ScheduleService = Depends(get_schedule_service)) -> list[ScheduleDetailSchema]:
-    results = await schedule_service.get_schedules()
-    schedule_schemas = [ScheduleDetailSchema.model_validate(schedule.to_dict()) for schedule in results]
-    return schedule_schemas
+@router.post("/service_report/")
+async def get_service_report(
+    # admin: CurrentAdmin,
+    order_service: OrderService = Depends(get_order_service)
+) -> list[OrderReportSchema]:
+    report_results = await order_service.get_service_report()
+    order_schema = [OrderReportSchema.model_validate(report) for report in report_results]
+    return order_schema
 
 
 @router.post("/schedule/add/", status_code=status.HTTP_201_CREATED)
 async def add_schedule(
-    # admin: CurrentAdmin,
     schedule_data: ScheduleAddSchema,
+    # admin: CurrentAdmin,
     mediator: FromDishka[Mediator],
 ) -> ScheduleSchema:
     try:
@@ -147,62 +213,6 @@ async def add_schedule(
         raise NotCorrectDataHTTPException(detail=err.title)
     schedule_schema = ScheduleSchema.model_validate(schedule.to_dict())
     return schedule_schema
-
-
-@router.get("/master_days/")
-@cache(expire=60)
-async def get_master_days(
-    master: CurrentMaster, schedule_service: ScheduleService = Depends(get_schedule_service)
-) -> MasterDaysSchema:
-    days = await schedule_service.get_master_days(master_id=master.id)
-    return MasterDaysSchema(days=days)
-
-
-@router.get("/master/{master_pk}/service/{service_pk}/schedules/", description="day_for_master")
-async def get_day_for_master(
-    master_pk: int, service_pk: int, schedule_service: ScheduleService = Depends(get_schedule_service)
-) -> MasterDaysSchema:
-    days = await schedule_service.get_day_for_master(master_id=master_pk, service_id=service_pk)
-    return MasterDaysSchema(days=days)
-
-
-@router.get("/slots/{schedule_pk}/", description="slot_for_day")
-@cache(expire=60)
-async def get_slot_for_day(
-    schedule_pk: int, schedule_service: ScheduleService = Depends(get_schedule_service)
-) -> SlotsTimeSchema:
-    try:
-        all_day_slots = await schedule_service.get_slot_for_day(schedule_id=schedule_pk)
-    except NotFoundLogicException as err:
-        raise NotFoundHTTPException(detail=err.title)
-    return SlotsTimeSchema(slots=[slot_time.as_generic_type() for slot_time in all_day_slots])
-
-
-@router.get("/master_schedule/{day}/", description="current_master_schedule")
-async def get_current_master_schedule(
-    day: date, master: CurrentMaster, schedule_service: ScheduleService = Depends(get_schedule_service)
-) -> list[SlotSchema]:
-    slots = await schedule_service.get_current_master_slots(day=day, master_id=master.id)
-    slot_schemas = [SlotSchema.model_validate(slot.to_dict()) for slot in slots]
-    return slot_schemas
-
-
-@router.get("/all_orders/", description="все заказы для просмотра мастером")
-@cache(expire=60)
-async def get_all_orders(order_service: OrderService = Depends(get_order_service)) -> list[AllOrderDetailSchema]:
-    results = await order_service.get_all_orders()
-    order_schemas = [AllOrderDetailSchema.model_validate(order.to_dict()) for order in results]
-    return order_schemas
-
-
-@router.get("/orders/", description="все заказы клиента")
-@cache(expire=60)
-async def get_client_orders(
-    user: CurrentUser, order_service: OrderService = Depends(get_order_service)
-) -> list[OrderDetailSchema]:
-    results = await order_service.get_client_orders(user=user)
-    order_schemas = [OrderDetailSchema.model_validate(order.to_dict()) for order in results]
-    return order_schemas
 
 
 @router.post("/order/add/", status_code=status.HTTP_201_CREATED)
@@ -279,10 +289,10 @@ async def update_photo(
     master: CurrentMaster,
     mediator: FromDishka[Mediator],
 ) -> OrderSchema:
-    photo_before_dto = PhotoDTO(
+    photo_before_dto = PhotoType(
         file=photo_before.file, filename=photo_before.filename, content_type=photo_before.content_type
     )
-    photo_after_dto = PhotoDTO(
+    photo_after_dto = PhotoType(
         file=photo_after.file, filename=photo_after.filename, content_type=photo_after.content_type
     )
     try:
@@ -318,8 +328,22 @@ async def cancel_order(
     return order_schema
 
 
-@router.post("/service_report/")
-async def get_service_report(order_service: OrderService = Depends(get_order_service)) -> list[OrderReportSchema]:
-    report_results = await order_service.get_service_report()
-    order_schema = [OrderReportSchema.model_validate(report) for report in report_results]
-    return order_schema
+@router.post("/master/add/", status_code=status.HTTP_201_CREATED)
+async def add_master(
+    master_data: MasterAddSchema,
+    # admin: CurrentAdmin,
+    mediator: FromDishka[Mediator],
+) -> MasterSchema:
+    services_ids = list(map(int, master_data.services.split(",")))
+    try:
+        master, *_ = await mediator.handle_command(
+            AddMasterCommand(
+                description=master_data.description, user_id=master_data.user_id, services_id=services_ids)
+        )
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    except InsertException as err:
+        raise NotCorrectDataHTTPException(detail=err.title)
+    print(master.to_dict())
+    master_schema = MasterSchema.model_validate(master.to_dict())
+    return master_schema

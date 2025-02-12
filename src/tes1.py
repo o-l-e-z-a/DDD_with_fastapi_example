@@ -12,8 +12,8 @@ from src.infrastructure.db.repositories.users import UserRepository
 from src.logic.dto.order_dto import OrderCreateDTO, OrderUpdateDTO, PromotionAddDTO, PromotionUpdateDTO, TotalAmountDTO
 from src.logic.dto.schedule_dto import InventoryAddDTO, InventoryUpdateDTO, MasterAddDTO, ScheduleAddDTO
 from src.logic.dto.user_dto import UserCreateDTO
-from src.logic.services.order_service import OrderService, PromotionService
-from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService
+from src.logic.services.order_service import PromotionService
+from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService, OrderService
 from src.logic.services.users_service import UserService
 from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork

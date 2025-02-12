@@ -4,7 +4,6 @@ from functools import wraps
 from unittest import mock
 
 import httpx
-import pytest
 import pytest_asyncio
 
 from httpx import AsyncClient
@@ -32,7 +31,6 @@ from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
 from src.presentation.api.schedules.schema import SlotCreateSchema, OrderCreateSchema
 from src.presentation.api.settings import settings
-from tests.unit.domain.conftest import *
 from tests.unit.logic.conftest import *
 
 

@@ -15,7 +15,6 @@ from src.presentation.api.exceptions import (
     NotFoundHTTPException,
     UserAlreadyExistsException,
 )
-from src.presentation.api.orders.schema import UserPointSchema
 from src.presentation.api.users.schema import AllUserSchema, UserCreateSchema, UserLoginSchema
 from src.presentation.api.users.utils import (
     ACCESS_TOKEN_COOKIE_FIELD,
@@ -77,13 +76,3 @@ async def logout_user(response: Response):
 @router_users.get("/me/")
 async def read_users_me(current_user: CurrentUser) -> AllUserSchema:
     return AllUserSchema.model_validate(current_user.to_dict())
-
-
-@router_users.get("/user_point/")
-async def get_user_point(user: CurrentUser, user_service: UserService = Depends(get_user_service)) -> UserPointSchema:
-    try:
-        user_point = await user_service.get_user_point(user=user)
-    except NotFoundLogicException as err:
-        raise NotFoundHTTPException(detail=err.title)
-    user_point_schema = UserPointSchema.model_validate(user_point.to_dict())
-    return user_point_schema

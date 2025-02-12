@@ -1,13 +1,9 @@
 from passlib.context import CryptContext
 
-# from src.domain.orders.entities import UserPoint
 from src.domain.users.entities import User
-from src.domain.users.values import Email, HumanName, Telephone
-from src.logic.dto.user_dto import UserCreateDTO, UserLoginDTO
+from src.logic.dto.user_dto import UserLoginDTO
 from src.logic.exceptions.user_exceptions import (
     IncorrectEmailOrPasswordLogicException,
-    UserAlreadyExistsLogicException,
-    UserPointNotFoundLogicException,
 )
 from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
 
@@ -26,27 +22,6 @@ class UserService:
     def __init__(self, uow: SQLAlchemyUsersUnitOfWork):
         self.uow = uow
 
-    async def add_user(self, user_data: UserCreateDTO) -> User:
-        async with self.uow:
-            existing_user = await self.uow.users.find_duplicate_user(
-                email=user_data.email, telephone=user_data.telephone
-            )
-            if existing_user:
-                raise UserAlreadyExistsLogicException(email=user_data.email, telephone=user_data.telephone)
-            password_hash = get_password_hash(user_data.password)
-            user = User(
-                email=Email(user_data.email),
-                first_name=HumanName(user_data.first_name),
-                last_name=HumanName(user_data.last_name),
-                telephone=Telephone(user_data.telephone),
-                date_birthday=user_data.date_birthday,
-            )
-            user.hashed_password = password_hash
-            user_from_repo = await self.uow.users.add(entity=user)
-            # user_point = UserPoint(user=user_from_repo)
-            # await self.uow.user_points.add(entity=user_point)
-            await self.uow.commit()
-            return user_from_repo
 
     async def check_login_and_verify_password(self, user_login_data: UserLoginDTO):
         async with self.uow:

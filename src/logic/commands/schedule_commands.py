@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import Annotated
+from tempfile import SpooledTemporaryFile
+from typing import Annotated, BinaryIO
 
-from pydantic import Field, PositiveInt
+from pydantic import Field, PositiveInt, BaseModel
 
 from src.domain.schedules.entities import Master, Order, Schedule
 from src.logic.commands.base import BaseCommand, CommandHandler
-from src.logic.dto.order_dto import PhotoDTO
 from src.logic.exceptions.order_exceptions import NotUserOrderLogicException, OrderNotFoundLogicException
 from src.logic.exceptions.schedule_exceptions import (
     MasterNotFoundLogicException,
@@ -157,10 +157,19 @@ class StartOrderCommandHandler(CommandHandler[StartOrderCommand, None]):
             return order
 
 
+class PhotoType(BaseModel):
+    file: BinaryIO | SpooledTemporaryFile
+    filename: str
+    content_type: str
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 class UpdatePhotoOrderCommand(BaseCommand):
     order_id: PositiveInt
-    photo_before: PhotoDTO
-    photo_after: PhotoDTO
+    photo_before: PhotoType
+    photo_after: PhotoType
 
 
 @dataclass(frozen=True)

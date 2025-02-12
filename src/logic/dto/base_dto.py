@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from dataclasses import dataclass
 
 
-class BaseDTO(BaseModel):
-    class Config:
-        from_attributes = True
+@dataclass(frozen=True)
+class BaseDTO:
+    ...
