@@ -45,26 +45,41 @@ class DatabaseConfig(BaseSettings):
                f"/{self.TEST_DB_NAME}"
 
 
-class Settings(BaseSettings):
+class RedisConfig(BaseSettings):
     model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
 
-    MODE: Literal["DEV", "TEST", "PROD"]
-    # LOG_LEVEL: str
-    db: DatabaseConfig = DatabaseConfig()
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_DB: int
+
+
+class EmailConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
 
     EMAIL_USER: str
     EMAIL_HOST: str
     EMAIL_PASSWORD: str
     EMAIL_PORT: int
 
+
+class AuthConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
+
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
 
-    REDIS_HOST: str
-    REDIS_PORT: int
-    REDIS_DB: int
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
+
+    MODE: Literal["DEV", "TEST", "PROD"]
+    # LOG_LEVEL: str
+    db: DatabaseConfig = DatabaseConfig()
+    redis: RedisConfig = RedisConfig()
+    email: EmailConfig = EmailConfig()
+    auth: AuthConfig = AuthConfig()
 
     # model_config = SettingsConfigDict(env_file=".env.docker")
     # model_config = SettingsConfigDict()

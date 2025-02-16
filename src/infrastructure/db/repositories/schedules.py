@@ -15,7 +15,8 @@ from src.infrastructure.db.models.schedules import Master, Order, Schedule, Serv
 from src.infrastructure.db.models.users import Users
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyQueryRepository, GenericSQLAlchemyRepository
 from src.logic.commands.schedule_commands import PhotoType
-from src.logic.dto.schedule_dto import ServiceDTO
+from src.logic.dto.schedule_dto import MasterDetailDTO, ServiceDTO
+from src.logic.dto.user_dto import UserDetailDTO
 
 
 class ServiceRepository(GenericSQLAlchemyRepository[Service, entities.Service]):
@@ -129,9 +130,6 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
             .options(
                 joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
             )
-            # .options(joinedload(self.model.service)
-            # .options(selectinload(Service.consumables))
-            # )
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
@@ -143,9 +141,6 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
             .options(
                 joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
             )
-            # .options(joinedload(self.model.service)
-            # .options(selectinload(Service.consumables))
-            # )
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
@@ -156,19 +151,8 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         query = (
             select(self.model)
             .options(
-                joinedload(self.model.master)
-                .options(
-                    selectinload(Master.services)
-                    # .selectinload(Service.consumables)
-                )
-                .options(joinedload(Master.user))
+                joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
             )
-            # .options(
-            #     joinedload(self.model.service)
-            # .options(
-            #     selectinload(Service.consumables).joinedload(Consumables.inventory)
-            # )
-            # )
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
@@ -326,16 +310,49 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
 
 
 class ServiceQueryRepository(GenericSQLAlchemyQueryRepository[Service]):
-    async def find_one_or_none(self, **filter_by) -> E | None:
-        query = select(self.model).filter_by(**filter_by)
-        result = await self.session.execute(query)
-        scalar = result.scalar_one_or_none()
-        return scalar.to_domain() if scalar else None
-
-    async def find_all(self, **filter_by) -> list[E]:
+    async def find_all(self, **filter_by) -> list[ServiceDTO]:
         query = select(Service).filter_by(**filter_by)
         result = await self.session.execute(query)
         return [
             ServiceDTO(id=el.id, name=el.name, description=el.description, price=el.price)
             for el in result.scalars().all()
         ]
+
+
+class MasterQueryRepository(GenericSQLAlchemyQueryRepository[Master]):
+    async def find_all(self, **filter_by) -> list[MasterDetailDTO]:
+        query = select(Master).filter_by(**filter_by)
+        result = await self.session.execute(query)
+        return [
+            MasterDetailDTO(
+                id=el.id,
+                user=UserDetailDTO(*el.user),
+                description=el.description,
+                services=[ServiceDTO(*service) for service in el.services],
+            )
+            for el in result.scalars().all()
+        ]
+
+    async def get_all_user_to_add_masters(self):
+        query = select(Users).where(~Users.master.has())
+        result = await self.session.execute(query)
+        return [UserDetailDTO(*el) for el in result.scalars().all()]
+
+
+class ScheduleQueryRepository(GenericSQLAlchemyQueryRepository[Schedule]):
+    async def find_all(self, **filter_by) -> list[ServiceDTO]:
+        query = (
+            select(Service)
+            .options(
+                joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
+            )
+            .filter_by(**filter_by)
+        )
+        result = await self.session.execute(query)
+        return [
+            ServiceDTO(id=el.id, name=el.name, description=el.description, price=el.price)
+            for el in result.scalars().all()
+        ]
+
+
+class OrderQueryRepository(GenericSQLAlchemyQueryRepository[Order]): ...

@@ -14,15 +14,15 @@ REFRESH_TOKEN_RESPONSE_FIELD = "refresh_token"
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(UTC) + timedelta(minutes=settings.auth.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire, TOKEN_TYPE_FIELD: ACCESS_TOKEN_TYPE})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, settings.ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.auth.SECRET_KEY, settings.auth.ALGORITHM)
     return encoded_jwt
 
 
 def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(UTC) + timedelta(days=settings.auth.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, TOKEN_TYPE_FIELD: REFRESH_TOKEN_TYPE})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, settings.ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.auth.SECRET_KEY, settings.auth.ALGORITHM)
     return encoded_jwt

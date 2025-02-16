@@ -14,9 +14,9 @@ logger = init_logger(__name__)
 class RedisConnector:
     def __init__(
         self,
-        host: str = settings.REDIS_HOST,
-        port: int = settings.REDIS_PORT,
-        db: int = settings.REDIS_DB,
+        host: str = settings.redis.REDIS_HOST,
+        port: int = settings.redis.REDIS_PORT,
+        db: int = settings.redis.REDIS_DB,
         decode_responses: Literal[False, True] = True,
     ):
         self.host = host
@@ -51,9 +51,9 @@ class RedisConnectorFactory:
     @classmethod
     def create(
         cls,
-        host: str | None = settings.REDIS_HOST,
-        port: int | None = settings.REDIS_PORT,
-        db: int | None = settings.REDIS_DB,
+        host: str | None = settings.redis.REDIS_HOST,
+        port: int | None = settings.redis.REDIS_PORT,
+        db: int | None = settings.redis.REDIS_DB,
         decode_responses: Literal[False, True] = True,
     ):
         return RedisConnector(host=host, port=port, db=db, decode_responses=decode_responses)
