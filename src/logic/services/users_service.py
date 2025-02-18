@@ -5,7 +5,7 @@ from src.logic.dto.user_dto import UserLoginDTO
 from src.logic.exceptions.user_exceptions import (
     IncorrectEmailOrPasswordLogicException,
 )
-from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
+from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersUnitOfWork
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

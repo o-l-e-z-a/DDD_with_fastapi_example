@@ -26,9 +26,9 @@ from src.infrastructure.db.repositories.users import UserRepository
 from src.logic.services.order_service import PromotionService
 from src.logic.services.schedule_service import MasterService, ProcedureService
 from src.logic.services.users_service import get_password_hash
-from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
-from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
-from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
+from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
+from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
+from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersUnitOfWork
 from src.presentation.api.schedules.schema import SlotCreateSchema, OrderCreateSchema
 from src.presentation.api.settings import settings
 from tests.unit.logic.conftest import *

@@ -14,7 +14,7 @@ from src.logic.exceptions.schedule_exceptions import (
     SlotNotFoundLogicException,
 )
 from src.logic.exceptions.user_exceptions import UserNotFoundLogicException
-from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
+from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 
 
 class AddMasterCommand(BaseCommand):
@@ -24,7 +24,7 @@ class AddMasterCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class AddMasterCommandHandler(CommandHandler[AddMasterCommand, None]):
+class AddMasterCommandHandler(CommandHandler[AddMasterCommand, Master]):
     uow: SQLAlchemyScheduleUnitOfWork
 
     async def handle(self, command: AddMasterCommand) -> Master:
@@ -53,7 +53,7 @@ class AddScheduleCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class AddScheduleCommandHandler(CommandHandler[AddScheduleCommand, None]):
+class AddScheduleCommandHandler(CommandHandler[AddScheduleCommand, Schedule]):
     uow: SQLAlchemyScheduleUnitOfWork
 
     async def handle(self, command: AddScheduleCommand) -> Schedule:
@@ -78,7 +78,7 @@ class AddOrderCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class AddOrderCommandHandler(CommandHandler[AddOrderCommand, None]):
+class AddOrderCommandHandler(CommandHandler[AddOrderCommand, Order]):
     uow: SQLAlchemyScheduleUnitOfWork
 
     async def handle(self, command: AddOrderCommand) -> Order:
@@ -115,10 +115,10 @@ class UpdateOrderCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class UpdateOrderCommandHandler(CommandHandler[UpdateOrderCommand, None]):
+class UpdateOrderCommandHandler(CommandHandler[UpdateOrderCommand, Order]):
     uow: SQLAlchemyScheduleUnitOfWork
 
-    async def handle(self, command: UpdateOrderCommand) -> None:
+    async def handle(self, command: UpdateOrderCommand) -> Order:
         async with self.uow:
             order = await self.uow.orders.find_one_or_none(id=command.order_id)
             if not order:
@@ -143,10 +143,10 @@ class StartOrderCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class StartOrderCommandHandler(CommandHandler[StartOrderCommand, None]):
+class StartOrderCommandHandler(CommandHandler[StartOrderCommand, Order]):
     uow: SQLAlchemyScheduleUnitOfWork
 
-    async def handle(self, command: StartOrderCommand) -> None:
+    async def handle(self, command: StartOrderCommand) -> Order:
         async with self.uow:
             order = await self.uow.orders.find_one_or_none(id=command.order_id)
             if not order:
@@ -173,10 +173,10 @@ class UpdatePhotoOrderCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class UpdatePhotoOrderCommandHandler(CommandHandler[UpdatePhotoOrderCommand, None]):
+class UpdatePhotoOrderCommandHandler(CommandHandler[UpdatePhotoOrderCommand, Order]):
     uow: SQLAlchemyScheduleUnitOfWork
 
-    async def handle(self, command: UpdatePhotoOrderCommand) -> None:
+    async def handle(self, command: UpdatePhotoOrderCommand) -> Order:
         async with self.uow:
             order = await self.uow.orders.find_one_or_none(id=command.order_id)
             if not order:
@@ -197,10 +197,10 @@ class CancelOrderCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class CancelOrderCommandHandler(CommandHandler[CancelOrderCommand, None]):
+class CancelOrderCommandHandler(CommandHandler[CancelOrderCommand, Order]):
     uow: SQLAlchemyScheduleUnitOfWork
 
-    async def handle(self, command: CancelOrderCommand) -> None:
+    async def handle(self, command: CancelOrderCommand) -> Order:
         async with self.uow:
             order = await self.uow.orders.find_one_or_none(id=command.order_id)
             if not order:

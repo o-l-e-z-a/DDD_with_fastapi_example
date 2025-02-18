@@ -7,7 +7,7 @@ from src.logic.dto.order_dto import (
 )
 from src.logic.exceptions.schedule_exceptions import ScheduleNotFoundLogicException
 from src.logic.exceptions.user_exceptions import UserPointNotFoundLogicException
-from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
+from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
 
 
 class TotalAmountService:

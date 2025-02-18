@@ -23,6 +23,11 @@ from src.logic.commands.schedule_commands import (
 from src.logic.commands.user_commands import AddUserCommand, AddUserCommandHandler
 from src.logic.events.order_handlers import OrderCreatedEmailEventHandler, OrderCreatedPointIncreaseEventHandler
 from src.logic.mediator.base import Mediator
+from src.logic.queries.schedule_queries import GetAllServiceQuery, GetAllMasterQuery, GetAllSchedulesQuery, \
+    GetAllOrdersQuery, GetAllUsersToAddMasterQuery, GetMasterReportQuery, GetServiceReportQuery, \
+    GetMasterForServiceQuery, GetMasterDaysQuery, GetScheduleSlotsQuery, GetMasterScheduleDaysQuery, GetUserOrdersQuery, \
+    GetAllServiceQueryHandler, GetAllMasterQueryHandler, GetAllSchedulesQueryHandler, GetAllOrdersQueryHandler, \
+    GetAllUsersToAddMasterQueryHandler
 
 
 class LogicProvider(Provider):
@@ -57,6 +62,20 @@ class LogicProvider(Provider):
         )
         mediator.register_command(StartOrderCommand, [StartOrderCommandHandler(mediator=mediator, uow=schedule_uow)])
         mediator.register_command(CancelOrderCommand, [CancelOrderCommandHandler(mediator=mediator, uow=schedule_uow)])
+
+        mediator.register_query(GetAllServiceQuery, GetAllServiceQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetAllMasterQuery, GetAllMasterQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetAllSchedulesQuery, GetAllSchedulesQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetAllOrdersQuery, GetAllOrdersQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetAllUsersToAddMasterQuery, GetAllUsersToAddMasterQueryHandler(uow=schedule_query_uow))
+
+        # mediator.register_query(GetMasterReportQuery, )
+        # mediator.register_query(GetServiceReportQuery, )
+        # mediator.register_query(GetMasterForServiceQuery)
+        # mediator.register_query(GetMasterDaysQuery)
+        # mediator.register_query(GetScheduleSlotsQuery)
+        # mediator.register_query(GetMasterScheduleDaysQuery)
+        # mediator.register_query(GetUserOrdersQuery)
 
         mediator.register_event(
             OrderCreatedEvent,

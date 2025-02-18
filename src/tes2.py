@@ -5,13 +5,10 @@ import sys
 from pprint import pprint
 
 from src.domain.base.values import CountNumber, Name
-from src.domain.schedules.entities import Inventory
 from src.domain.users.entities import User
 from src.domain.users.values import Email, HumanName, Telephone
-from src.infrastructure.db.config import AsyncSessionFactory
-from src.infrastructure.db.repositories.schedules import InventoryRepository
-from src.infrastructure.db.repositories.users import UserPointRepository, UserRepository
-from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
+from src.infrastructure.db.repositories.users import UserRepository
+from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 

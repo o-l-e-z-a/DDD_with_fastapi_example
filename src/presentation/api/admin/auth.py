@@ -10,7 +10,7 @@ from src.infrastructure.db.provider import DBProvider
 from src.logic.dto.user_dto import UserLoginDTO
 from src.logic.provider import LogicProvider
 from src.logic.services.users_service import UserService
-from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
+from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersUnitOfWork
 from src.presentation.api.dependencies import get_current_user
 from src.presentation.api.settings import Settings, settings
 from src.presentation.api.users.utils import create_access_token

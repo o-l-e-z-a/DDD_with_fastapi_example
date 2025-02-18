@@ -14,7 +14,7 @@ from src.infrastructure.db.repositories.schedules import (
     OrderRepository
 )
 from src.infrastructure.db.repositories.users import UserRepository
-from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
+from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersUnitOfWork
 
 
 def to_generic_type(element: Any):

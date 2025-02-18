@@ -15,9 +15,9 @@ from src.logic.dto.user_dto import UserCreateDTO
 from src.logic.services.order_service import PromotionService
 from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService, OrderService
 from src.logic.services.users_service import UserService
-from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
-from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
-from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
+from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
+from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
+from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersUnitOfWork
 
 
 async def add_user():

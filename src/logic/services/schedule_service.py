@@ -9,8 +9,8 @@ from src.domain.users.entities import User
 from src.logic.exceptions.schedule_exceptions import (
     ScheduleNotFoundLogicException,
 )
-from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
-from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
+from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
+from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 
 
 class ProcedureService:

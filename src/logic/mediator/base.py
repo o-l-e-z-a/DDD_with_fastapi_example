@@ -56,4 +56,5 @@ class Mediator(EventMediator, CommandMediator):
         return [await handler.handle(command) for handler in handlers]
 
     async def handle_query(self, query: BaseQuery) -> QR:
-        return await self.queries_map[query.__class__].handle(query=query)
+        query_type = query.__class__
+        return await self.queries_map[query_type].handle(query=query)

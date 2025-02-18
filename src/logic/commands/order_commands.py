@@ -9,15 +9,9 @@ from src.domain.orders.entities import Promotion
 from src.logic.commands.base import BaseCommand, CommandHandler
 from src.logic.exceptions.order_exceptions import PromotionNotFoundLogicException
 from src.logic.exceptions.schedule_exceptions import ServiceNotFoundLogicException
-from src.logic.uows.order_uow import SQLAlchemyOrderUnitOfWork
+from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
 
 int_ge_0 = Annotated[int, Field(ge=0)]
-
-
-class TotalAmountDTO(BaseCommand):
-    schedule_id: int
-    point: int_ge_0 | None = 0
-    promotion_code: str | None = "0"
 
 
 class AddPromotionCommand(BaseCommand):

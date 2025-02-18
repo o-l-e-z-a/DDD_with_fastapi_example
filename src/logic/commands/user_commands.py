@@ -8,7 +8,7 @@ from src.domain.users.values import Email, HumanName, Telephone
 from src.logic.commands.base import BaseCommand, CommandHandler
 from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException
 from src.logic.services.users_service import get_password_hash
-from src.logic.uows.users_uow import SQLAlchemyUsersUnitOfWork
+from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersUnitOfWork
 
 
 class AddUserCommand(BaseCommand):

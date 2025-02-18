@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from src.domain.orders.events import OrderCreatedEvent
 from src.logic.events.base import EventHandler
-from src.logic.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
+from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 
 
 @dataclass

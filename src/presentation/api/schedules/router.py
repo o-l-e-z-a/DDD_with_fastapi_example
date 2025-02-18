@@ -14,6 +14,13 @@ from src.infrastructure.db.exceptions import InsertException, UpdateException
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.exceptions.order_exceptions import NotUserOrderLogicException
 from src.logic.mediator.base import Mediator
+from src.logic.queries.schedule_queries import (
+    GetAllServiceQuery,
+    GetAllMasterQuery,
+    GetAllOrdersQuery,
+    GetAllSchedulesQuery,
+    GetMasterDaysQuery
+)
 from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService, OrderService
 from src.presentation.api.dependencies import (
     CurrentMaster,
@@ -68,9 +75,9 @@ router = APIRouter(route_class=DishkaRoute, prefix="/api", tags=["schedule"])
 @router.get("/services/")
 @cache(expire=60)
 async def get_services(
-    procedure_service: ProcedureService = Depends(get_procedure_service)
+    mediator: FromDishka[Mediator],
 ):
-    results = await procedure_service.get_services()
+    results = await mediator.handle_query(GetAllServiceQuery())
     service_schemas = [ServiceSchema.model_validate(service.to_dict()) for service in results]
     return service_schemas
 
