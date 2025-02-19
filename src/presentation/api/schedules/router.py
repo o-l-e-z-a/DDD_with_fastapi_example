@@ -21,7 +21,7 @@ from src.logic.queries.schedule_queries import (
     GetAllUsersToAddMasterQuery,
     GetAllOrdersQuery,
     GetAllSchedulesQuery,
-    GetMasterDaysQuery
+    GetMasterDaysQuery, GetMasterForServiceQuery, GetDaysForMasterAndServiceQuery
 )
 from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService, OrderService
 from src.presentation.api.dependencies import (
@@ -29,7 +29,6 @@ from src.presentation.api.dependencies import (
     CurrentUser,
     get_master_service,
     get_order_service,
-    get_procedure_service,
     get_schedule_service,
 )
 from src.presentation.api.exceptions import (
@@ -137,19 +136,21 @@ async def get_master_days(
 @router.get("/service/{service_pk}/masters/", description="master_for_service")
 async def get_masters_for_service(
     service_pk: int,
-    master_service: MasterService = Depends(get_master_service)
+    mediator: FromDishka[Mediator],
 ) -> list[MasterWithoutServiceSchema]:
-    results = await master_service.get_masters_for_service(service_id=service_pk)
-    master_schemas = [MasterWithoutServiceSchema.model_validate(master.to_dict()) for master in results]
+    results = await mediator.handle_query(GetMasterForServiceQuery(service_id=service_pk))
+    master_schemas = [MasterWithoutServiceSchema.model_validate(master) for master in results]
     return master_schemas
 
 
-# @router.get("/master/{master_pk}/service/{service_pk}/schedules/", description="day_for_master")
-# async def get_day_for_master(
-#     master_pk: int, service_pk: int, schedule_service: ScheduleService = Depends(get_schedule_service)
-# ) -> MasterDaysSchema:
-#     days = await schedule_service.get_day_for_master(master_id=master_pk, service_id=service_pk)
-#     return MasterDaysSchema(days=days)
+@router.get("/master/{master_pk}/service/{service_pk}/schedules/", description="schedule days for service and master")
+async def get_schedules_for_master_and_service(
+    master_pk: int,
+    service_pk: int,
+    mediator: FromDishka[Mediator],
+) -> MasterDaysSchema:
+    results = await mediator.handle_query(GetDaysForMasterAndServiceQuery(master_id=master_pk, service_id=service_pk))
+    return MasterDaysSchema(days=results)
 
 
 @router.get("/slots/{schedule_pk}/", description="slot_for_day")

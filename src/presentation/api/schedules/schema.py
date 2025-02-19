@@ -92,6 +92,7 @@ class SlotsTimeSchema(BaseSchema):
 
 
 class ScheduleDay(BaseSchema):
+    id: int
     day: date
 
 

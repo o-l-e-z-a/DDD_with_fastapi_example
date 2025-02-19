@@ -25,9 +25,10 @@ from src.logic.events.order_handlers import OrderCreatedEmailEventHandler, Order
 from src.logic.mediator.base import Mediator
 from src.logic.queries.schedule_queries import GetAllServiceQuery, GetAllMasterQuery, GetAllSchedulesQuery, \
     GetAllOrdersQuery, GetAllUsersToAddMasterQuery, GetMasterReportQuery, GetServiceReportQuery, \
-    GetMasterForServiceQuery, GetMasterDaysQuery, GetScheduleSlotsQuery, GetMasterScheduleDaysQuery, GetUserOrdersQuery, \
+    GetMasterForServiceQuery, GetMasterDaysQuery, GetScheduleSlotsQuery, GetDaysForMasterAndServiceQuery, GetUserOrdersQuery, \
     GetAllServiceQueryHandler, GetAllMasterQueryHandler, GetAllSchedulesQueryHandler, GetAllOrdersQueryHandler, \
-    GetAllUsersToAddMasterQueryHandler
+    GetAllUsersToAddMasterQueryHandler, GetMasterDaysQueryHandler, GetMasterForServiceQueryHandler, \
+    GetDaysForMasterAndServiceQueryHandler
 
 
 class LogicProvider(Provider):
@@ -68,14 +69,9 @@ class LogicProvider(Provider):
         mediator.register_query(GetAllSchedulesQuery, GetAllSchedulesQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetAllOrdersQuery, GetAllOrdersQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetAllUsersToAddMasterQuery, GetAllUsersToAddMasterQueryHandler(uow=schedule_query_uow))
-
-        # mediator.register_query(GetMasterReportQuery, )
-        # mediator.register_query(GetServiceReportQuery, )
-        # mediator.register_query(GetMasterForServiceQuery)
-        # mediator.register_query(GetMasterDaysQuery)
-        # mediator.register_query(GetScheduleSlotsQuery)
-        # mediator.register_query(GetMasterScheduleDaysQuery)
-        # mediator.register_query(GetUserOrdersQuery)
+        mediator.register_query(GetMasterDaysQuery, GetMasterDaysQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetMasterForServiceQuery, GetMasterForServiceQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetDaysForMasterAndServiceQuery, GetDaysForMasterAndServiceQueryHandler(uow=schedule_query_uow))
 
         mediator.register_event(
             OrderCreatedEvent,

@@ -42,7 +42,7 @@ def get_token(request: Request) -> str:
 
 def get_token_payload(token: str) -> dict:
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, settings.ALGORITHM)
+        payload = jwt.decode(token, settings.auth.SECRET_KEY, settings.auth.ALGORITHM)
     except ExpiredSignatureError:
         raise TokenExpiredException
     except JWTError:

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import date
 
 from pydantic import PositiveInt
 
@@ -48,8 +49,8 @@ class GetScheduleSlotsQuery(BaseQuery):
     schedule_id: PositiveInt
 
 
-class GetMasterScheduleDaysQuery(BaseQuery):
-    schedule_id: PositiveInt
+class GetDaysForMasterAndServiceQuery(BaseQuery):
+    service_id: PositiveInt
     master_id: PositiveInt
 
 
@@ -108,30 +109,30 @@ class GetAllUsersToAddMasterQueryHandler(QueryHandler[GetAllUsersToAddMasterQuer
 
 
 @dataclass(frozen=True)
-class GetMasterDaysQueryHandler(QueryHandler[GetMasterDaysQuery, list[ServiceDTO]]):
+class GetMasterDaysQueryHandler(QueryHandler[GetMasterDaysQuery, list[date]]):
     uow: SQLAlchemyScheduleQueryUnitOfWork
 
-    async def handle(self, query: GetMasterDaysQuery) -> list[ScheduleShortDTO]:
+    async def handle(self, query: GetMasterDaysQuery) -> list[date]:
         async with self.uow:
-            services = await self.uow.schedules.get_day_for_master(master_id=query.master_id)
-        return services
-#
-#
-# @dataclass(frozen=True)
-# class GetAllServiceQueryHandler(QueryHandler[GetAllServiceQuery, list[ServiceDTO]]):
-#     uow: SQLAlchemyScheduleQueryUnitOfWork
-#
-#     async def handle(self, query: GetAllServiceQuery) -> list[ServiceDTO]:
-#         async with self.uow:
-#             services = await self.uow.services.find_all()
-#         return services
-#
-#
-# @dataclass(frozen=True)
-# class GetAllServiceQueryHandler(QueryHandler[GetAllServiceQuery, list[ServiceDTO]]):
-#     uow: SQLAlchemyScheduleQueryUnitOfWork
-#
-#     async def handle(self, query: GetAllServiceQuery) -> list[ServiceDTO]:
-#         async with self.uow:
-#             services = await self.uow.services.find_all()
-#         return services
+            days = await self.uow.schedules.get_day_for_master(master_id=query.master_id)
+        return days
+
+
+@dataclass(frozen=True)
+class GetMasterForServiceQueryHandler(QueryHandler[GetMasterForServiceQuery, list[MasterDetailDTO]]):
+    uow: SQLAlchemyScheduleQueryUnitOfWork
+
+    async def handle(self, query: GetMasterForServiceQuery) -> list[MasterDetailDTO]:
+        async with self.uow:
+            masters = await self.uow.masters.filter_by_service(service_id=query.service_id)
+        return masters
+
+
+@dataclass(frozen=True)
+class GetDaysForMasterAndServiceQueryHandler(QueryHandler[GetDaysForMasterAndServiceQuery, list[date]]):
+    uow: SQLAlchemyScheduleQueryUnitOfWork
+
+    async def handle(self, query: GetDaysForMasterAndServiceQuery) -> list[date]:
+        async with self.uow:
+            days = await self.uow.schedules.get_day_for_master(master_id=query.master_id, service_id=query.service_id)
+        return days

@@ -327,14 +327,22 @@ class MasterQueryRepository(GenericSQLAlchemyQueryRepository[Master]):
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
-        return [
-            master_to_detail_dto_mapper(el) for el in result.scalars().all()
-        ]
+        return [master_to_detail_dto_mapper(el) for el in result.scalars().all()]
 
-    async def get_all_user_to_add_masters(self):
+    async def get_all_user_to_add_masters(self) -> list[UserDetailDTO]:
         query = select(Users).where(~Users.master.has())
         result = await self.session.execute(query)
         return [user_to_detail_dto_mapper(el) for el in result.scalars().all()]
+
+    async def filter_by_service(self, service_id: int) -> list[MasterDetailDTO]:
+        query = (
+            select(Master)
+            .options(joinedload(Master.user))
+            .options(selectinload(Master.services))
+            .where(Service.id == service_id)
+        )
+        result = await self.session.execute(query)
+        return [master_to_detail_dto_mapper(el) for el in result.scalars().all()]
 
 
 class ScheduleQueryRepository(GenericSQLAlchemyQueryRepository[Schedule]):
@@ -354,7 +362,7 @@ class ScheduleQueryRepository(GenericSQLAlchemyQueryRepository[Schedule]):
         ]
 
     async def get_day_for_master(self, master_id: int) -> list[date]:
-        query = select(self.model.day.distinct()).filter_by(master_id=master_id).order_by(self.model.day)
+        query = select(Schedule.day.distinct()).filter_by(master_id=master_id).order_by(Schedule.day)
         execute_result = await self.session.execute(query)
         result = execute_result.scalars().all()
         return list(result)
