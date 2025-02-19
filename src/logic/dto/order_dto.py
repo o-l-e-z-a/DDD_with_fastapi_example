@@ -11,7 +11,7 @@ int_ge_0 = Annotated[int, Field(ge=0)]
 slot_type = Annotated[str, Field(pattern=r"^(?:[01][0-9]|2?[0-3]):[0-5]\d$")]
 
 
-@dataclass
+@dataclass(frozen=True)
 class TotalAmountDTO(BaseDTO):
     schedule_id: int
     point: int_ge_0 | None = 0

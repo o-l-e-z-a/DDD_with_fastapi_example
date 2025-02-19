@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
 from src.domain.base.events import BaseEvent
-from src.infrastructure.db.uow import AbstractUnitOfWork
+from src.infrastructure.db.uows.base import AbstractUnitOfWork
 
 ET = TypeVar("ET", bound=BaseEvent)
 ER = TypeVar("ER", bound=Any)

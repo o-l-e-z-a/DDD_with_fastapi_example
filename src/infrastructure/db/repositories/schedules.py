@@ -14,8 +14,9 @@ from src.infrastructure.db.exceptions import InsertException, UpdateException
 from src.infrastructure.db.models.schedules import Master, Order, Schedule, Service, Slot
 from src.infrastructure.db.models.users import Users
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyQueryRepository, GenericSQLAlchemyRepository
-from src.logic.commands.schedule_commands import PhotoType
-from src.logic.dto.schedule_dto import MasterDetailDTO, ServiceDTO
+from src.logic.dto.mappers import user_to_detail_dto_mapper, service_to_detail_dto_mapper, master_to_detail_dto_mapper, \
+    schedule_to_detail_dto_mapper, order_to_detail_dto_mapper
+from src.logic.dto.schedule_dto import MasterDetailDTO, ServiceDTO, ScheduleDetailDTO, OrderDetailDTO
 from src.logic.dto.user_dto import UserDetailDTO
 
 
@@ -292,7 +293,7 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
         )
         return query
 
-    async def update_photo(self, entity: entities.Order, photo_after: PhotoType, photo_before: PhotoType):
+    async def update_photo(self, entity: entities.Order, photo_after, photo_before):
         model = self.model.from_entity(entity)
         model.photo_before = File(  # type: ignore[assignment]
             content=photo_before, content_type=photo_before.content_type, filename=photo_before.filename
@@ -314,45 +315,61 @@ class ServiceQueryRepository(GenericSQLAlchemyQueryRepository[Service]):
         query = select(Service).filter_by(**filter_by)
         result = await self.session.execute(query)
         return [
-            ServiceDTO(id=el.id, name=el.name, description=el.description, price=el.price)
-            for el in result.scalars().all()
+            service_to_detail_dto_mapper(el) for el in result.scalars().all()
         ]
 
 
 class MasterQueryRepository(GenericSQLAlchemyQueryRepository[Master]):
     async def find_all(self, **filter_by) -> list[MasterDetailDTO]:
-        query = select(Master).filter_by(**filter_by)
+        query = (
+            select(Master)
+            .options(selectinload(Master.services)).options(joinedload(Master.user))
+            .filter_by(**filter_by)
+        )
         result = await self.session.execute(query)
         return [
-            MasterDetailDTO(
-                id=el.id,
-                user=UserDetailDTO(*el.user),
-                description=el.description,
-                services=[ServiceDTO(*service) for service in el.services],
-            )
-            for el in result.scalars().all()
+            master_to_detail_dto_mapper(el) for el in result.scalars().all()
         ]
 
     async def get_all_user_to_add_masters(self):
         query = select(Users).where(~Users.master.has())
         result = await self.session.execute(query)
-        return [UserDetailDTO(*el) for el in result.scalars().all()]
+        return [user_to_detail_dto_mapper(el) for el in result.scalars().all()]
 
 
 class ScheduleQueryRepository(GenericSQLAlchemyQueryRepository[Schedule]):
-    async def find_all(self, **filter_by) -> list[ServiceDTO]:
+    async def find_all(self, **filter_by) -> list[ScheduleDetailDTO]:
         query = (
-            select(Service)
+            select(Schedule)
             .options(
-                joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
+                joinedload(Schedule.master)
+                .options(selectinload(Master.services))
+                .options(joinedload(Master.user))
             )
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
         return [
-            ServiceDTO(id=el.id, name=el.name, description=el.description, price=el.price)
-            for el in result.scalars().all()
+            schedule_to_detail_dto_mapper(el) for el in result.scalars().all()
         ]
 
 
-class OrderQueryRepository(GenericSQLAlchemyQueryRepository[Order]): ...
+class OrderQueryRepository(GenericSQLAlchemyQueryRepository[Order]):
+    async def find_all(self, **filter_by) -> list[OrderDetailDTO]:
+        query = (
+            select(Order)
+            .options(
+                joinedload(Order.slot, innerjoin=True)
+                .joinedload(Slot.schedule, innerjoin=True)
+                .options(
+                    joinedload(Schedule.master, innerjoin=True)
+                    .options(joinedload(Master.user, innerjoin=True))
+                    .options(selectinload(Master.services))
+                )
+            )
+            .options(joinedload(Order.service, innerjoin=True))
+            .options(joinedload(Order.user, innerjoin=True))
+            .filter_by(**filter_by)
+        )
+        result = await self.session.execute(query)
+        return [order_to_detail_dto_mapper(el) for el in result.scalars().all()]

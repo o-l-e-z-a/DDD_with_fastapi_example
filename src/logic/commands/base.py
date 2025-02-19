@@ -4,7 +4,7 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 
-from src.infrastructure.db.uow import AbstractUnitOfWork
+from src.infrastructure.db.uows.base import AbstractUnitOfWork
 from src.logic.mediator.event import EventMediator
 
 

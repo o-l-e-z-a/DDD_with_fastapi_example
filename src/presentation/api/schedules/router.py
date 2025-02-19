@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from datetime import date
 
 from dishka import FromDishka
@@ -17,6 +18,7 @@ from src.logic.mediator.base import Mediator
 from src.logic.queries.schedule_queries import (
     GetAllServiceQuery,
     GetAllMasterQuery,
+    GetAllUsersToAddMasterQuery,
     GetAllOrdersQuery,
     GetAllSchedulesQuery,
     GetMasterDaysQuery
@@ -73,57 +75,57 @@ router = APIRouter(route_class=DishkaRoute, prefix="/api", tags=["schedule"])
 
 
 @router.get("/services/")
-@cache(expire=60)
+# @cache(expire=60)
 async def get_services(
     mediator: FromDishka[Mediator],
 ):
     results = await mediator.handle_query(GetAllServiceQuery())
-    service_schemas = [ServiceSchema.model_validate(service.to_dict()) for service in results]
+    service_schemas = [ServiceSchema.model_validate(service) for service in results]
     return service_schemas
 
 
 @router.get("/all_masters/")
-@cache(expire=60)
+# @cache(expire=60)
 async def get_all_masters(
-    master_service: MasterService = Depends(get_master_service)
+    mediator: FromDishka[Mediator],
 ) -> list[MasterDetailSchema]:
-    results = await master_service.get_all_masters()
-    master_schemas = [MasterDetailSchema.model_validate(master.to_dict()) for master in results]
+    results = await mediator.handle_query(GetAllMasterQuery())
+    master_schemas = [MasterDetailSchema.model_validate(master) for master in results]
     return master_schemas
 
 
 @router.get("/all_user_to_add_masters/")
 async def get_all_user_to_add_masters(
     # admin: CurrentAdmin,
-    master_service: MasterService = Depends(get_master_service),
+    mediator: FromDishka[Mediator],
 ) -> list[AllUserSchema]:
-    results = await master_service.get_all_user_to_add_masters()
-    user_schemas = [AllUserSchema.model_validate(user.to_dict()) for user in results]
+    results = await mediator.handle_query(GetAllUsersToAddMasterQuery())
+    user_schemas = [AllUserSchema.model_validate(user) for user in results]
     return user_schemas
 
 
 @router.get("/schedules/")
-@cache(expire=60)
+# @cache(expire=60)
 async def get_schedules(
-    schedule_service: ScheduleService = Depends(get_schedule_service)
+    mediator: FromDishka[Mediator],
 ) -> list[ScheduleDetailSchema]:
-    results = await schedule_service.get_schedules()
-    schedule_schemas = [ScheduleDetailSchema.model_validate(schedule.to_dict()) for schedule in results]
+    results = await mediator.handle_query(GetAllSchedulesQuery())
+    schedule_schemas = [ScheduleDetailSchema.model_validate(schedule) for schedule in results]
     return schedule_schemas
 
 
 @router.get("/all_orders/", description="все заказы для просмотра мастером")
-@cache(expire=60)
+# @cache(expire=60)
 async def get_all_orders(
-    order_service: OrderService = Depends(get_order_service)
+    mediator: FromDishka[Mediator],
 ) -> list[AllOrderDetailSchema]:
-    results = await order_service.get_all_orders()
-    order_schemas = [AllOrderDetailSchema.model_validate(order.to_dict()) for order in results]
+    results = await mediator.handle_query(GetAllOrdersQuery())
+    order_schemas = [AllOrderDetailSchema.model_validate(order) for order in results]
     return order_schemas
 
 
 @router.get("/master_days/")
-@cache(expire=60)
+# @cache(expire=60)
 async def get_master_days(
     master: CurrentMaster,
     schedule_service: ScheduleService = Depends(get_schedule_service)
@@ -151,7 +153,7 @@ async def get_masters_for_service(
 
 
 @router.get("/slots/{schedule_pk}/", description="slot_for_day")
-@cache(expire=60)
+# @cache(expire=60)
 async def get_slot_for_day(
     schedule_pk: int,
     schedule_service: ScheduleService = Depends(get_schedule_service)
@@ -175,7 +177,7 @@ async def get_current_master_schedule(
 
 
 @router.get("/orders/", description="все заказы клиента")
-@cache(expire=60)
+# @cache(expire=60)
 async def get_client_orders(
     user: CurrentUser,
     order_service: OrderService = Depends(get_order_service)
@@ -186,7 +188,7 @@ async def get_client_orders(
 
 
 @router.get("/master_report/")
-@cache(expire=60)
+# @cache(expire=60)
 async def get_master_report(
     # admin: CurrentAdmin,
     master_service: MasterService = Depends(get_master_service),

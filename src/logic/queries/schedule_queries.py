@@ -103,7 +103,7 @@ class GetAllUsersToAddMasterQueryHandler(QueryHandler[GetAllUsersToAddMasterQuer
 
     async def handle(self, query: GetAllUsersToAddMasterQuery) -> list[UserDetailDTO]:
         async with self.uow:
-            services = await self.uow.services.find_all()
+            services = await self.uow.masters.get_all_user_to_add_masters()
         return services
 
 

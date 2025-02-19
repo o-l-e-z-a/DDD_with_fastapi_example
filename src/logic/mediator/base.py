@@ -9,7 +9,7 @@ from src.logic.events.base import ER, ET, EventHandler
 from src.logic.exceptions.mediator_exceptions import CommandHandlersNotRegisteredException
 from src.logic.mediator.command import CommandMediator
 from src.logic.mediator.event import EventMediator
-from src.logic.queries.base import QR, QT, BaseQuery, BaseQueryHandler
+from src.logic.queries.base import QR, QT, BaseQuery, QueryHandler
 
 
 @dataclass(eq=False)
@@ -22,7 +22,7 @@ class Mediator(EventMediator, CommandMediator):
         default_factory=lambda: defaultdict(list),
         kw_only=True,
     )
-    queries_map: dict[Type[QT], BaseQueryHandler] = field(
+    queries_map: dict[Type[QT], QueryHandler] = field(
         default_factory=dict,
         kw_only=True,
     )
@@ -33,7 +33,7 @@ class Mediator(EventMediator, CommandMediator):
     def register_command(self, command: Type[CT], command_handlers: Iterable[CommandHandler[CT, CR]]):
         self.commands_map[command].extend(command_handlers)
 
-    def register_query(self, query: Type[QT], query_handler: BaseQueryHandler[QT, QR]):
+    def register_query(self, query: Type[QT], query_handler: QueryHandler[QT, QR]):
         self.queries_map[query] = query_handler
 
     async def publish(self, events: Iterable[BaseEvent]) -> Iterable[ER]:

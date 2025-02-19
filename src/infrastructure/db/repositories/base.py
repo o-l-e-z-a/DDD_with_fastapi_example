@@ -15,7 +15,7 @@ class BaseRepository(ABC): ...
 class BaseQueryRepository(ABC): ...
 
 
-class GenericSQLAlchemyQueryRepository(Generic[T, E], BaseQueryRepository):
+class GenericSQLAlchemyQueryRepository(Generic[T], BaseQueryRepository):
     model: Type[T]
 
     def __init__(self, session: AsyncSession):
