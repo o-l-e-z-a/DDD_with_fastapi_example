@@ -15,8 +15,8 @@ from src.infrastructure.db.models.schedules import Master, Order, Schedule, Serv
 from src.infrastructure.db.models.users import Users
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyQueryRepository, GenericSQLAlchemyRepository
 from src.logic.dto.mappers import user_to_detail_dto_mapper, service_to_detail_dto_mapper, master_to_detail_dto_mapper, \
-    schedule_to_detail_dto_mapper, order_to_detail_dto_mapper
-from src.logic.dto.schedule_dto import MasterDetailDTO, ServiceDTO, ScheduleDetailDTO, OrderDetailDTO
+    schedule_to_detail_dto_mapper, order_to_detail_dto_mapper, schedule_to_short_dto_mapper
+from src.logic.dto.schedule_dto import MasterDetailDTO, ServiceDTO, ScheduleDetailDTO, OrderDetailDTO, ScheduleShortDTO
 from src.logic.dto.user_dto import UserDetailDTO
 
 
@@ -352,6 +352,12 @@ class ScheduleQueryRepository(GenericSQLAlchemyQueryRepository[Schedule]):
         return [
             schedule_to_detail_dto_mapper(el) for el in result.scalars().all()
         ]
+
+    async def get_day_for_master(self, master_id: int) -> list[date]:
+        query = select(self.model.day.distinct()).filter_by(master_id=master_id).order_by(self.model.day)
+        execute_result = await self.session.execute(query)
+        result = execute_result.scalars().all()
+        return list(result)
 
 
 class OrderQueryRepository(GenericSQLAlchemyQueryRepository[Order]):

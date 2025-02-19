@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pydantic import PositiveInt
 
 from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleQueryUnitOfWork
-from src.logic.dto.schedule_dto import ServiceDTO, MasterDetailDTO, ScheduleDetailDTO, OrderDetailDTO
+from src.logic.dto.schedule_dto import ServiceDTO, MasterDetailDTO, ScheduleDetailDTO, OrderDetailDTO, ScheduleShortDTO
 from src.logic.dto.user_dto import UserDetailDTO
 from src.logic.queries.base import BaseQuery, QueryHandler
 
@@ -107,14 +107,14 @@ class GetAllUsersToAddMasterQueryHandler(QueryHandler[GetAllUsersToAddMasterQuer
         return services
 
 
-# @dataclass(frozen=True)
-# class GetAllServiceQueryHandler(QueryHandler[GetAllServiceQuery, list[ServiceDTO]]):
-#     uow: SQLAlchemyScheduleQueryUnitOfWork
-#
-#     async def handle(self, query: GetAllServiceQuery) -> list[ServiceDTO]:
-#         async with self.uow:
-#             services = await self.uow.services.find_all()
-#         return services
+@dataclass(frozen=True)
+class GetMasterDaysQueryHandler(QueryHandler[GetMasterDaysQuery, list[ServiceDTO]]):
+    uow: SQLAlchemyScheduleQueryUnitOfWork
+
+    async def handle(self, query: GetMasterDaysQuery) -> list[ScheduleShortDTO]:
+        async with self.uow:
+            services = await self.uow.schedules.get_day_for_master(master_id=query.master_id)
+        return services
 #
 #
 # @dataclass(frozen=True)

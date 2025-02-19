@@ -1,6 +1,7 @@
 from src.infrastructure.db.models.schedules import Service, Master, Schedule, Order, Slot
 from src.infrastructure.db.models.users import Users
-from src.logic.dto.schedule_dto import ServiceDTO, ScheduleDetailDTO, MasterDetailDTO, OrderDetailDTO, SlotDetailDTO
+from src.logic.dto.schedule_dto import ServiceDTO, ScheduleDetailDTO, MasterDetailDTO, OrderDetailDTO, SlotDetailDTO, \
+    ScheduleShortDTO
 from src.logic.dto.user_dto import UserDetailDTO
 
 
@@ -39,6 +40,13 @@ def schedule_to_detail_dto_mapper(schedule: Schedule) -> ScheduleDetailDTO:
         id=schedule.id,
         day=schedule.day,
         master=master_to_detail_dto_mapper(schedule.master)
+    )
+
+
+def schedule_to_short_dto_mapper(schedule: Schedule) -> ScheduleShortDTO:
+    return ScheduleShortDTO(
+        id=schedule.id,
+        day=schedule.day,
     )
 
 

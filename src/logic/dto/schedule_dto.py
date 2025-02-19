@@ -22,6 +22,12 @@ class MasterDetailDTO(BaseDTO):
 
 
 @dataclass(frozen=True)
+class ScheduleShortDTO(BaseDTO):
+    id: int
+    day: date
+
+
+@dataclass(frozen=True)
 class ScheduleDetailDTO(BaseDTO):
     id: int
     day: date

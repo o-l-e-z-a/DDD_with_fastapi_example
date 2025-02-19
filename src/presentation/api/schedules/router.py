@@ -128,10 +128,10 @@ async def get_all_orders(
 # @cache(expire=60)
 async def get_master_days(
     master: CurrentMaster,
-    schedule_service: ScheduleService = Depends(get_schedule_service)
+    mediator: FromDishka[Mediator],
 ) -> MasterDaysSchema:
-    days = await schedule_service.get_master_days(master_id=master.id)
-    return MasterDaysSchema(days=days)
+    results = await mediator.handle_query(GetMasterDaysQuery(master_id=master.id))
+    return MasterDaysSchema(days=results)
 
 
 @router.get("/service/{service_pk}/masters/", description="master_for_service")
