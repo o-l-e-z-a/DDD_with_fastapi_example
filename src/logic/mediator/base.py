@@ -50,7 +50,7 @@ class Mediator(EventMediator, CommandMediator, QueryMediator):
 
         return result
 
-    async def handle_command(self, command: BaseCommand) -> Iterable[CR]:
+    async def handle_command(self, command: BaseCommand) -> list[CR]:
         command_type = command.__class__
         handlers = self.commands_map.get(command_type)
 
