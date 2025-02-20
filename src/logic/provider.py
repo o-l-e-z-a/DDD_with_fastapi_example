@@ -23,12 +23,32 @@ from src.logic.commands.schedule_commands import (
 from src.logic.commands.user_commands import AddUserCommand, AddUserCommandHandler
 from src.logic.events.order_handlers import OrderCreatedEmailEventHandler, OrderCreatedPointIncreaseEventHandler
 from src.logic.mediator.base import Mediator
-from src.logic.queries.schedule_queries import GetAllServiceQuery, GetAllMasterQuery, GetAllSchedulesQuery, \
-    GetAllOrdersQuery, GetAllUsersToAddMasterQuery, GetMasterReportQuery, GetServiceReportQuery, \
-    GetMasterForServiceQuery, GetMasterDaysQuery, GetScheduleSlotsQuery, GetDaysForMasterAndServiceQuery, GetUserOrdersQuery, \
-    GetAllServiceQueryHandler, GetAllMasterQueryHandler, GetAllSchedulesQueryHandler, GetAllOrdersQueryHandler, \
-    GetAllUsersToAddMasterQueryHandler, GetMasterDaysQueryHandler, GetMasterForServiceQueryHandler, \
-    GetDaysForMasterAndServiceQueryHandler
+from src.logic.queries.schedule_queries import (
+    GetAllMasterQuery,
+    GetAllMasterQueryHandler,
+    GetAllOrdersQuery,
+    GetAllOrdersQueryHandler,
+    GetAllSchedulesQuery,
+    GetAllSchedulesQueryHandler,
+    GetAllServiceQuery,
+    GetAllServiceQueryHandler,
+    GetAllUsersToAddMasterQuery,
+    GetAllUsersToAddMasterQueryHandler,
+    GetMasterForServiceQuery,
+    GetMasterForServiceQueryHandler,
+    GetMasterReportQuery,
+    GetMasterReportQueryHandler,
+    GetMasterScheduleQuery,
+    GetMasterScheduleQueryHandler,
+    GetScheduleSlotsQuery,
+    GetScheduleSlotsQueryHandler,
+    GetServiceForMasterQuery,
+    GetServiceForMasterQueryHandler,
+    GetServiceReportQuery,
+    GetServiceReportQueryHandler,
+    GetUserOrdersQuery,
+    GetUserOrdersQueryHandler,
+)
 
 
 class LogicProvider(Provider):
@@ -69,9 +89,13 @@ class LogicProvider(Provider):
         mediator.register_query(GetAllSchedulesQuery, GetAllSchedulesQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetAllOrdersQuery, GetAllOrdersQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetAllUsersToAddMasterQuery, GetAllUsersToAddMasterQueryHandler(uow=schedule_query_uow))
-        mediator.register_query(GetMasterDaysQuery, GetMasterDaysQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetMasterScheduleQuery, GetMasterScheduleQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetMasterForServiceQuery, GetMasterForServiceQueryHandler(uow=schedule_query_uow))
-        mediator.register_query(GetDaysForMasterAndServiceQuery, GetDaysForMasterAndServiceQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetServiceForMasterQuery, GetServiceForMasterQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetScheduleSlotsQuery, GetScheduleSlotsQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetUserOrdersQuery, GetUserOrdersQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetMasterReportQuery, GetMasterReportQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetServiceReportQuery, GetServiceReportQueryHandler(uow=schedule_query_uow))
 
         mediator.register_event(
             OrderCreatedEvent,

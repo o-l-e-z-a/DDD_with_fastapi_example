@@ -19,7 +19,8 @@ from src.presentation.api.users.utils import create_access_token
 class AdminAuth(AuthenticationBackend):
     async def login(self, request: Request) -> bool:
         form = await request.form()
-        email, password = form["username"], form["password"]
+        email: str = form["username"]  # type: ignore[assignment]
+        password: str = form["password"]  # type: ignore[assignment]
         session_maker = await container.get(async_sessionmaker)
         sql_user_uow = SQLAlchemyUsersUnitOfWork(session_maker)
         user_service = UserService(sql_user_uow)

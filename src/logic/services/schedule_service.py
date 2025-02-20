@@ -3,14 +3,12 @@ from typing import Sequence
 
 from sqlalchemy import RowMapping
 
-from src.domain.schedules.entities import Master, Schedule, Service, Slot, SlotsForSchedule, Order
+from src.domain.schedules.entities import Master, Order, Schedule, Service, Slot, SlotsForSchedule
 from src.domain.schedules.values import SlotTime
 from src.domain.users.entities import User
-from src.logic.exceptions.schedule_exceptions import (
-    ScheduleNotFoundLogicException,
-)
 from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
+from src.logic.exceptions.schedule_exceptions import ScheduleNotFoundLogicException
 
 
 class ProcedureService:
@@ -64,15 +62,15 @@ class ScheduleService:
 
     async def get_master_days(self, master_id: int) -> list[date]:
         async with self.uow:
-            days = await self.uow.schedules.get_day_for_master(master_id=master_id)
+            days = await self.uow.schedules.get_schedule_for_master(master_id=master_id)
         return days
 
     async def get_day_for_master(self, master_id: int, service_id: int) -> list[date]:
         async with self.uow:
-            days = await self.uow.schedules.get_day_for_master(master_id=master_id, service_id=service_id)
+            days = await self.uow.schedules.get_schedule_for_master(master_id=master_id, service_id=service_id)
         return days
 
-    async def get_slot_for_day(self, schedule_id: int) -> list[SlotTime]:
+    async def get_slot_for_schedule(self, schedule_id: int) -> list[SlotTime]:
         async with self.uow:
             schedule = await self.uow.schedules.find_one_or_none(id=schedule_id)
             if not schedule:

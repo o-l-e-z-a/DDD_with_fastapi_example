@@ -19,3 +19,12 @@ class CommandHandlersNotRegisteredException(LogicException):
     @property
     def message(self):
         return f"Не удалось найти обработчики для команды: {self.command_type}"
+
+
+@dataclass(eq=False)
+class QueryHandlersNotRegisteredException(LogicException):
+    query_type: type
+
+    @property
+    def message(self):
+        return f"Не удалось найти обработчики для команды: {self.query_type}"

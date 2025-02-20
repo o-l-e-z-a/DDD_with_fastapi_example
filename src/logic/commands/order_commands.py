@@ -24,10 +24,10 @@ class AddPromotionCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class AddPromotionCommandCommandHandler(CommandHandler[AddPromotionCommand, None]):
+class AddPromotionCommandCommandHandler(CommandHandler[AddPromotionCommand, Promotion]):
     uow: SQLAlchemyOrderUnitOfWork
 
-    async def handle(self, command: AddPromotionCommand) -> None:
+    async def handle(self, command: AddPromotionCommand) -> Promotion:
         async with self.uow:
             services = await self.uow.services.get_services_by_ids(command.services_id)
             if not services:
@@ -50,10 +50,10 @@ class UpdatePromotionCommand(AddPromotionCommand):
 
 
 @dataclass(frozen=True)
-class UpdatePromotionCommandCommandHandler(CommandHandler[UpdatePromotionCommand, None]):
+class UpdatePromotionCommandCommandHandler(CommandHandler[UpdatePromotionCommand, Promotion]):
     uow: SQLAlchemyOrderUnitOfWork
 
-    async def handle(self, command: UpdatePromotionCommand) -> None:
+    async def handle(self, command: UpdatePromotionCommand) -> Promotion:
         async with self.uow:
             promotion = await self.uow.promotions.find_one_or_none(id=command.promotion_id)
             if not promotion:
@@ -77,7 +77,7 @@ class DeletePromotionCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class DeletePromotionCommandCommandHandler(CommandHandler[DeletePromotionCommand, None]):
+class DeletePromotionCommandCommandHandler(CommandHandler[DeletePromotionCommand, Promotion]):
     uow: SQLAlchemyOrderUnitOfWork
 
     async def handle(self, command: DeletePromotionCommand) -> None:

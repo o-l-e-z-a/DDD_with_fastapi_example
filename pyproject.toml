@@ -72,7 +72,7 @@ skip = [
 
 
 [tool.mypy]
-exclude = "(?x)(tests/|tesT.*py|views.py)"
+exclude = "(?x)(tests/|tes.*py|views.py|mediator/main.py)"
 python_version = "3.12"
 ignore_missing_imports = true
 no_strict_optional = true

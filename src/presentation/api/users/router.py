@@ -34,7 +34,7 @@ async def register_user(
     mediator: FromDishka[Mediator],
 ):
     try:
-        user, *_ = mediator.handle_command(AddUserCommand(**user_data.model_dump()))
+        user, *_ = await mediator.handle_command(AddUserCommand(**user_data.model_dump()))
     except UserAlreadyExistsLogicException as err:
         raise UserAlreadyExistsException(err.title)
     return AllUserSchema.model_validate(user.to_dict())

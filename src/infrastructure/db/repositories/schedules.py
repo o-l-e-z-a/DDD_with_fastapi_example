@@ -14,9 +14,25 @@ from src.infrastructure.db.exceptions import InsertException, UpdateException
 from src.infrastructure.db.models.schedules import Master, Order, Schedule, Service, Slot
 from src.infrastructure.db.models.users import Users
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyQueryRepository, GenericSQLAlchemyRepository
-from src.logic.dto.mappers import user_to_detail_dto_mapper, service_to_detail_dto_mapper, master_to_detail_dto_mapper, \
-    schedule_to_detail_dto_mapper, order_to_detail_dto_mapper, schedule_to_short_dto_mapper
-from src.logic.dto.schedule_dto import MasterDetailDTO, ServiceDTO, ScheduleDetailDTO, OrderDetailDTO, ScheduleShortDTO
+from src.logic.dto.mappers import (
+    master_to_detail_dto_mapper,
+    order_to_detail_dto_mapper,
+    schedule_to_detail_dto_mapper,
+    schedule_to_short_dto_mapper,
+    service_to_detail_dto_mapper,
+    slot_to_short_dto_mapper,
+    user_to_detail_dto_mapper,
+)
+from src.logic.dto.schedule_dto import (
+    MasterDetailDTO,
+    MasterReportDTO,
+    OrderDetailDTO,
+    ScheduleDetailDTO,
+    ScheduleShortDTO,
+    ServiceDTO,
+    ServiceReportDTO,
+    SlotShortDTO,
+)
 from src.logic.dto.user_dto import UserDetailDTO
 
 
@@ -185,7 +201,7 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         query = select(Service.id).join(Service.masters).join(Master.schedules).where(Schedule.id == schedule_id)
         result = await self.session.execute(query)
         # return [el.to_domain(with_join=True) for el in result.scalars().all()]
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def find_one_or_none_slot(self, slot_id: int) -> entities.Slot | None:
         query = select(Slot).filter_by(id=slot_id)
@@ -193,7 +209,7 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         scalar = result.scalar_one_or_none()
         return scalar.to_domain(with_join=True) if scalar else None
 
-    async def find_occupied_slots(self, schedule_id: int) -> list[Slot]:
+    async def find_occupied_slots(self, schedule_id: int) -> list[entities.Slot]:
         query = (
             select(Slot)
             .join(Slot.orders)
@@ -314,16 +330,20 @@ class ServiceQueryRepository(GenericSQLAlchemyQueryRepository[Service]):
     async def find_all(self, **filter_by) -> list[ServiceDTO]:
         query = select(Service).filter_by(**filter_by)
         result = await self.session.execute(query)
-        return [
-            service_to_detail_dto_mapper(el) for el in result.scalars().all()
-        ]
+        return [service_to_detail_dto_mapper(el) for el in result.scalars().all()]
+
+    async def get_services_by_master(self, master_id: int) -> list[ServiceDTO]:
+        query = select(Service).join(Service.masters).where(Master.id == master_id)
+        result = await self.session.execute(query)
+        return [service_to_detail_dto_mapper(el) for el in result.scalars().all()]
 
 
 class MasterQueryRepository(GenericSQLAlchemyQueryRepository[Master]):
     async def find_all(self, **filter_by) -> list[MasterDetailDTO]:
         query = (
             select(Master)
-            .options(selectinload(Master.services)).options(joinedload(Master.user))
+            .options(selectinload(Master.services))
+            .options(joinedload(Master.user))
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
@@ -344,28 +364,68 @@ class MasterQueryRepository(GenericSQLAlchemyQueryRepository[Master]):
         result = await self.session.execute(query)
         return [master_to_detail_dto_mapper(el) for el in result.scalars().all()]
 
+    async def get_order_report_by_master(self, month: int | None = None) -> list[MasterReportDTO]:
+        month = month if month else date.today().month
+        master_with_reports = (
+            select(
+                Master.id,
+                Master.user_id,
+                func.count(Master.id).label("total_count"),
+                # func.sum(Order.total_amount).label("total_sum"),
+            )
+            .join(Schedule)
+            .join(Slot)
+            .join(Order)
+            .join(Service)
+            .where(extract("month", Order.date_add) == month)
+            .group_by(Master.id)
+            .cte("master_with_reports")
+        )
+        query = (
+            select(
+                Users.last_name,
+                Users.first_name,
+                master_with_reports.c.total_count,
+                # master_with_reports.c.total_sum,
+                master_with_reports.c.id,
+            )
+            .select_from(Users)
+            .join(master_with_reports, master_with_reports.c.user_id == Users.id)
+        )
+        result = await self.session.execute(query)
+        return [MasterReportDTO(**el) for el in result.mappings().all()]
+
 
 class ScheduleQueryRepository(GenericSQLAlchemyQueryRepository[Schedule]):
     async def find_all(self, **filter_by) -> list[ScheduleDetailDTO]:
         query = (
             select(Schedule)
             .options(
-                joinedload(Schedule.master)
-                .options(selectinload(Master.services))
-                .options(joinedload(Master.user))
+                joinedload(Schedule.master).options(selectinload(Master.services)).options(joinedload(Master.user))
             )
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
-        return [
-            schedule_to_detail_dto_mapper(el) for el in result.scalars().all()
-        ]
+        return [schedule_to_detail_dto_mapper(el) for el in result.scalars().all()]
 
-    async def get_day_for_master(self, master_id: int) -> list[date]:
-        query = select(Schedule.day.distinct()).filter_by(master_id=master_id).order_by(Schedule.day)
-        execute_result = await self.session.execute(query)
-        result = execute_result.scalars().all()
-        return list(result)
+    async def find_occupied_slots(self, schedule_id: int) -> list[SlotShortDTO]:
+        query = (
+            select(Slot)
+            .join(Slot.orders)
+            .where(
+                and_(
+                    Slot.schedule_id == schedule_id,
+                    or_(Order.status != OrderStatus.CANCELLED.value, Order.status == None),
+                )
+            )
+        )
+        result = await self.session.execute(query)
+        return [slot_to_short_dto_mapper(el) for el in result.scalars().all()]
+
+    async def get_schedule_for_master(self, master_id: int) -> list[ScheduleShortDTO]:
+        query = select(Schedule).filter_by(master_id=master_id).order_by(Schedule.day)
+        result = await self.session.execute(query)
+        return [schedule_to_short_dto_mapper(el) for el in result.scalars().all()]
 
 
 class OrderQueryRepository(GenericSQLAlchemyQueryRepository[Order]):
@@ -387,3 +447,18 @@ class OrderQueryRepository(GenericSQLAlchemyQueryRepository[Order]):
         )
         result = await self.session.execute(query)
         return [order_to_detail_dto_mapper(el) for el in result.scalars().all()]
+
+    async def get_order_report_by_service(self) -> list[ServiceReportDTO]:
+        query = (
+            select(
+                Service.id,
+                Service.name,
+                Service.price,
+                func.count(Service.id).label("total_count"),
+                # func.sum(Order.total_amount).label("total_sum"),
+            )
+            .join(Order)
+            .group_by(Service.id)
+        )
+        result = await self.session.execute(query)
+        return [ServiceReportDTO(**el) for el in result.mappings().all()]

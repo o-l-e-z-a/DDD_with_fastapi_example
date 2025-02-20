@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date, time, datetime
+from datetime import date, datetime, time
 
 from src.logic.dto.base_dto import BaseDTO
 from src.logic.dto.user_dto import UserDetailDTO
@@ -32,6 +32,12 @@ class ScheduleDetailDTO(BaseDTO):
     id: int
     day: date
     master: MasterDetailDTO
+
+
+@dataclass(frozen=True)
+class SlotShortDTO(BaseDTO):
+    id: int
+    time_start: time
 
 
 @dataclass(frozen=True)
@@ -68,7 +74,7 @@ class MasterReportDTO(BaseDTO):
     last_name: str
     first_name: str
     total_count: int
-    total_sum: int
+    # total_sum: int
 
 
 @dataclass(frozen=True)
@@ -77,4 +83,4 @@ class ServiceReportDTO(BaseDTO):
     name: str
     price: int
     total_count: int
-    total_sum: int
+    # total_sum: int

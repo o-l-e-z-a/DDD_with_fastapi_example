@@ -6,23 +6,27 @@ from typing import Type
 from src.domain.base.events import BaseEvent
 from src.logic.commands.base import CR, CT, BaseCommand, CommandHandler
 from src.logic.events.base import ER, ET, EventHandler
-from src.logic.exceptions.mediator_exceptions import CommandHandlersNotRegisteredException
+from src.logic.exceptions.mediator_exceptions import (
+    CommandHandlersNotRegisteredException,
+    QueryHandlersNotRegisteredException,
+)
 from src.logic.mediator.command import CommandMediator
 from src.logic.mediator.event import EventMediator
+from src.logic.mediator.query import QueryMediator
 from src.logic.queries.base import QR, QT, BaseQuery, QueryHandler
 
 
 @dataclass(eq=False)
-class Mediator(EventMediator, CommandMediator):
-    events_map: dict[Type[ET], list[EventHandler]] = field(
+class Mediator(EventMediator, CommandMediator, QueryMediator):
+    events_map: dict[Type[BaseEvent], list[EventHandler]] = field(
         default_factory=lambda: defaultdict(list),
         kw_only=True,
     )
-    commands_map: dict[Type[CT], list[CommandHandler]] = field(
+    commands_map: dict[Type[BaseCommand], list[CommandHandler]] = field(
         default_factory=lambda: defaultdict(list),
         kw_only=True,
     )
-    queries_map: dict[Type[QT], QueryHandler] = field(
+    queries_map: dict[Type[BaseQuery], QueryHandler] = field(
         default_factory=dict,
         kw_only=True,
     )
@@ -57,4 +61,8 @@ class Mediator(EventMediator, CommandMediator):
 
     async def handle_query(self, query: BaseQuery) -> QR:
         query_type = query.__class__
-        return await self.queries_map[query_type].handle(query=query)
+        handler = self.queries_map.get(query_type)
+
+        if not handler:
+            raise QueryHandlersNotRegisteredException(query_type)
+        return await handler.handle(query=query)

@@ -12,6 +12,7 @@ class OrderCreatedEmailEventHandler(EventHandler[OrderCreatedEvent, None]):
 
     async def handle(self, event: OrderCreatedEvent) -> None:
         print(f"{self.__class__.__name__}, event: {event}")
+        return None
 
 
 @dataclass
@@ -20,3 +21,4 @@ class OrderCreatedPointIncreaseEventHandler(EventHandler[OrderCreatedEvent, None
 
     async def handle(self, event: OrderCreatedEvent) -> None:
         print(f"{self.__class__.__name__}, event: {event}")
+        return None

@@ -10,7 +10,6 @@ from sqlalchemy_file import ImageField
 
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders import entities
-from src.domain.orders.entities import UserPoint
 from src.infrastructure.db.models.base import Base, get_child_join_and_level, int_pk
 
 if TYPE_CHECKING:

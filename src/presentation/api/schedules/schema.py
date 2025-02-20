@@ -1,12 +1,11 @@
-from datetime import date, time, datetime
-from typing import Annotated
+from datetime import date, datetime, time
 
-from pydantic import Field, field_serializer, PositiveInt
+from pydantic import PositiveInt, field_serializer
 
 from src.presentation.api.base.base_schema import BaseSchema, int_ge_0
 from src.presentation.api.users.schema import AllUserSchema
 
-slot_type = Annotated[str, Field(pattern=r"^(?:[01][0-9]|2?[0-3]):[0-5]{1}\d{1}$")]
+# slot_type = Annotated[str, Field(pattern=r"^(?:[01][0-9]|2?[0-3]):[0-5]{1}\d{1}$")]
 
 
 # class InventoryAddSchema(BaseSchema):
@@ -63,7 +62,7 @@ class MasterReportSchema(BaseSchema):
     last_name: str
     first_name: str
     total_count: int
-    total_sum: int
+    # total_sum: int
 
 
 class ScheduleAddSchema(BaseSchema):
@@ -87,8 +86,9 @@ class MasterDaysSchema(BaseSchema):
     days: list[date]
 
 
-class SlotsTimeSchema(BaseSchema):
-    slots: list[slot_type]
+class SlotTimeSchema(BaseSchema):
+    id: int
+    time_start: time
 
 
 class ScheduleDay(BaseSchema):
@@ -104,11 +104,6 @@ class SlotSchema(BaseSchema):
     @field_serializer("time_start")
     def serialize_time_start(self, time_start: time, _info):
         return time_start.strftime("%H:%M")
-
-
-class SlotCreateSchema(BaseSchema):
-    time_start: slot_type
-    schedule_id: int
 
 
 class OrderUpdateSchema(BaseSchema):
@@ -163,4 +158,4 @@ class OrderReportSchema(BaseSchema):
     name: str
     price: int
     total_count: int_ge_0
-    total_sum: int_ge_0
+    # total_sum: int_ge_0

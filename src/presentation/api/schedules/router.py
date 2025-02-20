@@ -1,35 +1,43 @@
-from dataclasses import asdict
-from datetime import date
-
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, Depends, UploadFile, status
-from fastapi_cache.decorator import cache
+from fastapi import APIRouter, UploadFile, status
 
 from src.domain.schedules.exceptions import (
-    SlotOccupiedException,
     OrderNotInProgressException,
     OrderNotReceivedException,
+    SlotOccupiedException,
 )
 from src.infrastructure.db.exceptions import InsertException, UpdateException
+from src.logic.commands.schedule_commands import (
+    AddMasterCommand,
+    AddOrderCommand,
+    AddScheduleCommand,
+    CancelOrderCommand,
+    PhotoType,
+    StartOrderCommand,
+    UpdateOrderCommand,
+    UpdatePhotoOrderCommand,
+)
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.exceptions.order_exceptions import NotUserOrderLogicException
 from src.logic.mediator.base import Mediator
 from src.logic.queries.schedule_queries import (
-    GetAllServiceQuery,
     GetAllMasterQuery,
-    GetAllUsersToAddMasterQuery,
     GetAllOrdersQuery,
     GetAllSchedulesQuery,
-    GetMasterDaysQuery, GetMasterForServiceQuery, GetDaysForMasterAndServiceQuery
+    GetAllServiceQuery,
+    GetAllUsersToAddMasterQuery,
+    GetMasterForServiceQuery,
+    GetMasterReportQuery,
+    GetMasterScheduleQuery,
+    GetScheduleSlotsQuery,
+    GetServiceForMasterQuery,
+    GetServiceReportQuery,
+    GetUserOrdersQuery,
 )
-from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService, OrderService
 from src.presentation.api.dependencies import (
     CurrentMaster,
     CurrentUser,
-    get_master_service,
-    get_order_service,
-    get_schedule_service,
 )
 from src.presentation.api.exceptions import (
     CannotUpdateDataToDatabase,
@@ -39,34 +47,23 @@ from src.presentation.api.exceptions import (
     OrderNotCorrectStatusException,
 )
 from src.presentation.api.schedules.schema import (
+    AllOrderDetailSchema,
     MasterAddSchema,
-    MasterDaysSchema,
-    MasterReportSchema,
     MasterDetailSchema,
+    MasterReportSchema,
+    MasterSchema,
     MasterWithoutServiceSchema,
-    ScheduleAddSchema,
-    ScheduleSchema,
-    ScheduleDetailSchema,
-    ServiceSchema,
-    SlotSchema,
-    SlotsTimeSchema,
     OrderCreateSchema,
     OrderDetailSchema,
-    AllOrderDetailSchema,
     OrderReportSchema,
-    OrderUpdateSchema,
-    MasterSchema,
     OrderSchema,
-)
-from src.logic.commands.schedule_commands import (
-    AddMasterCommand,
-    AddOrderCommand,
-    AddScheduleCommand,
-    CancelOrderCommand,
-    UpdateOrderCommand,
-    UpdatePhotoOrderCommand,
-    StartOrderCommand,
-    PhotoType,
+    OrderUpdateSchema,
+    ScheduleAddSchema,
+    ScheduleDay,
+    ScheduleDetailSchema,
+    ScheduleSchema,
+    ServiceSchema,
+    SlotTimeSchema,
 )
 from src.presentation.api.users.schema import AllUserSchema
 
@@ -79,7 +76,7 @@ async def get_services(
     mediator: FromDishka[Mediator],
 ):
     results = await mediator.handle_query(GetAllServiceQuery())
-    service_schemas = [ServiceSchema.model_validate(service) for service in results]
+    service_schemas = [ServiceSchema.model_validate(result) for result in results]
     return service_schemas
 
 
@@ -89,7 +86,7 @@ async def get_all_masters(
     mediator: FromDishka[Mediator],
 ) -> list[MasterDetailSchema]:
     results = await mediator.handle_query(GetAllMasterQuery())
-    master_schemas = [MasterDetailSchema.model_validate(master) for master in results]
+    master_schemas = [MasterDetailSchema.model_validate(result) for result in results]
     return master_schemas
 
 
@@ -99,7 +96,7 @@ async def get_all_user_to_add_masters(
     mediator: FromDishka[Mediator],
 ) -> list[AllUserSchema]:
     results = await mediator.handle_query(GetAllUsersToAddMasterQuery())
-    user_schemas = [AllUserSchema.model_validate(user) for user in results]
+    user_schemas = [AllUserSchema.model_validate(result) for result in results]
     return user_schemas
 
 
@@ -109,7 +106,7 @@ async def get_schedules(
     mediator: FromDishka[Mediator],
 ) -> list[ScheduleDetailSchema]:
     results = await mediator.handle_query(GetAllSchedulesQuery())
-    schedule_schemas = [ScheduleDetailSchema.model_validate(schedule) for schedule in results]
+    schedule_schemas = [ScheduleDetailSchema.model_validate(result) for result in results]
     return schedule_schemas
 
 
@@ -119,18 +116,19 @@ async def get_all_orders(
     mediator: FromDishka[Mediator],
 ) -> list[AllOrderDetailSchema]:
     results = await mediator.handle_query(GetAllOrdersQuery())
-    order_schemas = [AllOrderDetailSchema.model_validate(order) for order in results]
+    order_schemas = [AllOrderDetailSchema.model_validate(result) for result in results]
     return order_schemas
 
 
-@router.get("/master_days/")
+@router.get("/master_schedules/")
 # @cache(expire=60)
-async def get_master_days(
+async def get_master_schedules(
     master: CurrentMaster,
     mediator: FromDishka[Mediator],
-) -> MasterDaysSchema:
-    results = await mediator.handle_query(GetMasterDaysQuery(master_id=master.id))
-    return MasterDaysSchema(days=results)
+) -> list[ScheduleDay]:
+    results = await mediator.handle_query(GetMasterScheduleQuery(master_id=master.id))
+    schedule_schemas = [ScheduleDay.model_validate(result) for result in results]
+    return schedule_schemas
 
 
 @router.get("/service/{service_pk}/masters/", description="master_for_service")
@@ -139,41 +137,38 @@ async def get_masters_for_service(
     mediator: FromDishka[Mediator],
 ) -> list[MasterWithoutServiceSchema]:
     results = await mediator.handle_query(GetMasterForServiceQuery(service_id=service_pk))
-    master_schemas = [MasterWithoutServiceSchema.model_validate(master) for master in results]
+    master_schemas = [MasterWithoutServiceSchema.model_validate(result) for result in results]
     return master_schemas
 
 
-@router.get("/master/{master_pk}/service/{service_pk}/schedules/", description="schedule days for service and master")
-async def get_schedules_for_master_and_service(
+@router.get("/masters/{master_pk}/services", description="service_for_master")
+async def get_service_for_masters(
     master_pk: int,
-    service_pk: int,
     mediator: FromDishka[Mediator],
-) -> MasterDaysSchema:
-    results = await mediator.handle_query(GetDaysForMasterAndServiceQuery(master_id=master_pk, service_id=service_pk))
-    return MasterDaysSchema(days=results)
+) -> list[ServiceSchema]:
+    results = await mediator.handle_query(GetServiceForMasterQuery(master_id=master_pk))
+    service_schemas = [ServiceSchema.model_validate(result) for result in results]
+    return service_schemas
 
 
-@router.get("/slots/{schedule_pk}/", description="slot_for_day")
+@router.get("/master/{master_pk}/schedules/", description="schedule days for service and master")
+async def get_schedules_for_master(
+    master_pk: int,
+    mediator: FromDishka[Mediator],
+) -> list[ScheduleDay]:
+    results = await mediator.handle_query(GetMasterScheduleQuery(master_id=master_pk))
+    schedule_schemas = [ScheduleDay.model_validate(result) for result in results]
+    return schedule_schemas
+
+
+@router.get("/slots/{schedule_pk}/", description="Все свободное время на день")
 # @cache(expire=60)
 async def get_slot_for_day(
     schedule_pk: int,
-    schedule_service: ScheduleService = Depends(get_schedule_service)
-) -> SlotsTimeSchema:
-    try:
-        all_day_slots = await schedule_service.get_slot_for_day(schedule_id=schedule_pk)
-    except NotFoundLogicException as err:
-        raise NotFoundHTTPException(detail=err.title)
-    return SlotsTimeSchema(slots=[slot_time.as_generic_type() for slot_time in all_day_slots])
-
-
-@router.get("/master_schedule/{day}/", description="current_master_schedule")
-async def get_current_master_schedule(
-    day: date,
-    master: CurrentMaster,
-    schedule_service: ScheduleService = Depends(get_schedule_service)
-) -> list[SlotSchema]:
-    slots = await schedule_service.get_current_master_slots(day=day, master_id=master.id)
-    slot_schemas = [SlotSchema.model_validate(slot.to_dict()) for slot in slots]
+    mediator: FromDishka[Mediator],
+) -> list[SlotTimeSchema]:
+    results = await mediator.handle_query(GetScheduleSlotsQuery(schedule_id=schedule_pk))
+    slot_schemas = [SlotTimeSchema.model_validate(result) for result in results]
     return slot_schemas
 
 
@@ -181,10 +176,10 @@ async def get_current_master_schedule(
 # @cache(expire=60)
 async def get_client_orders(
     user: CurrentUser,
-    order_service: OrderService = Depends(get_order_service)
+    mediator: FromDishka[Mediator],
 ) -> list[OrderDetailSchema]:
-    results = await order_service.get_client_orders(user=user)
-    order_schemas = [OrderDetailSchema.model_validate(order.to_dict()) for order in results]
+    results = await mediator.handle_query(GetUserOrdersQuery(user_id=user.id))
+    order_schemas = [OrderDetailSchema.model_validate(result) for result in results]
     return order_schemas
 
 
@@ -192,20 +187,21 @@ async def get_client_orders(
 # @cache(expire=60)
 async def get_master_report(
     # admin: CurrentAdmin,
-    master_service: MasterService = Depends(get_master_service),
+    mediator: FromDishka[Mediator],
 ) -> list[MasterReportSchema]:
-    results = await master_service.get_master_report()
-    master_schemas = [MasterReportSchema.model_validate(master) for master in results]
+    results = await mediator.handle_query(GetMasterReportQuery())
+    master_schemas = [MasterReportSchema.model_validate(result) for result in results]
     return master_schemas
 
 
-@router.post("/service_report/")
+@router.get("/service_report/")
+# @cache(expire=60)
 async def get_service_report(
     # admin: CurrentAdmin,
-    order_service: OrderService = Depends(get_order_service)
+    mediator: FromDishka[Mediator],
 ) -> list[OrderReportSchema]:
-    report_results = await order_service.get_service_report()
-    order_schema = [OrderReportSchema.model_validate(report) for report in report_results]
+    results = await mediator.handle_query(GetServiceReportQuery())
+    order_schema = [OrderReportSchema.model_validate(result) for result in results]
     return order_schema
 
 
@@ -347,8 +343,7 @@ async def add_master(
     services_ids = list(map(int, master_data.services.split(",")))
     try:
         master, *_ = await mediator.handle_command(
-            AddMasterCommand(
-                description=master_data.description, user_id=master_data.user_id, services_id=services_ids)
+            AddMasterCommand(description=master_data.description, user_id=master_data.user_id, services_id=services_ids)
         )
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
