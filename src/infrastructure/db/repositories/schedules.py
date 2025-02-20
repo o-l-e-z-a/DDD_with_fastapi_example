@@ -339,6 +339,17 @@ class ServiceQueryRepository(GenericSQLAlchemyQueryRepository[Service]):
 
 
 class MasterQueryRepository(GenericSQLAlchemyQueryRepository[Master]):
+    async def find_one_or_none(self, **filter_by) -> MasterDetailDTO | None:
+        query = (
+            select(self.model)
+            .options(joinedload(self.model.user))
+            .options(selectinload(self.model.services))
+            .filter_by(**filter_by)
+        )
+        result = await self.session.execute(query)
+        scalar = result.scalar_one_or_none()
+        return master_to_detail_dto_mapper(scalar) if scalar else None
+
     async def find_all(self, **filter_by) -> list[MasterDetailDTO]:
         query = (
             select(Master)

@@ -57,6 +57,10 @@ class GetUserOrdersQuery(BaseQuery):
     user_id: PositiveInt
 
 
+class GetMasterByUserQuery(BaseQuery):
+    user_id: PositiveInt
+
+
 @dataclass(frozen=True)
 class GetAllServiceQueryHandler(QueryHandler[GetAllServiceQuery, list[ServiceDTO]]):
     uow: SQLAlchemyScheduleQueryUnitOfWork
@@ -153,8 +157,8 @@ class GetUserOrdersQueryHandler(QueryHandler[GetUserOrdersQuery, list[OrderDetai
 
     async def handle(self, query: GetUserOrdersQuery) -> list[OrderDetailDTO]:
         async with self.uow:
-            orders = await self.uow.orders.find_all(user_id=query.user_id)
-        return orders
+            results = await self.uow.orders.find_all(user_id=query.user_id)
+        return results
 
 
 @dataclass(frozen=True)
@@ -163,8 +167,8 @@ class GetMasterReportQueryHandler(QueryHandler[GetMasterReportQuery, list[Master
 
     async def handle(self, query: GetMasterReportQuery) -> list[MasterReportDTO]:
         async with self.uow:
-            orders = await self.uow.masters.get_order_report_by_master(month=1)
-        return orders
+            results = await self.uow.masters.get_order_report_by_master(month=1)
+        return results
 
 
 @dataclass(frozen=True)
@@ -173,5 +177,15 @@ class GetServiceReportQueryHandler(QueryHandler[GetServiceReportQuery, list[Serv
 
     async def handle(self, query: GetServiceReportQuery) -> list[ServiceReportDTO]:
         async with self.uow:
-            orders = await self.uow.orders.get_order_report_by_service()
-        return orders
+            results = await self.uow.orders.get_order_report_by_service()
+        return results
+
+
+@dataclass(frozen=True)
+class GetMasterByUserQueryHandler(QueryHandler[GetMasterByUserQuery, MasterDetailDTO | None]):
+    uow: SQLAlchemyScheduleQueryUnitOfWork
+
+    async def handle(self, query: GetMasterByUserQuery) -> MasterDetailDTO | None:
+        async with self.uow:
+            results = await self.uow.masters.find_one_or_none(user_id=query.user_id)
+        return results

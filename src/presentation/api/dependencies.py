@@ -1,5 +1,7 @@
 from typing import Annotated
 
+from dishka import FromDishka
+from dishka.integrations.fastapi import inject
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import ExpiredSignatureError, JWTError, jwt
@@ -7,9 +9,11 @@ from jose import ExpiredSignatureError, JWTError, jwt
 from src.domain.schedules.entities import Master
 from src.domain.users.entities import User
 from src.infrastructure.db.config import get_async_engine, get_async_session_factory
+from src.logic.mediator.base import Mediator
+from src.logic.queries.schedule_queries import GetMasterByUserQuery
+from src.logic.queries.user_queries import GetUserByIdQuery
 from src.logic.services.order_service import PromotionService
-from src.logic.services.schedule_service import MasterService, ProcedureService, ScheduleService, OrderService
-from src.logic.services.users_service import UserService
+from src.logic.services.schedule_service import OrderService
 from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersUnitOfWork
@@ -70,22 +74,6 @@ def get_sqla_order_uow(async_session_maker=Depends(get_async_session_maker)) -> 
     return uow
 
 
-def get_user_service(sql_user_uow: SQLAlchemyUsersUnitOfWork = Depends(get_sqla_user_uow)) -> UserService:
-    return UserService(sql_user_uow)
-
-
-def get_schedule_service(
-    sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow),
-) -> ScheduleService:
-    return ScheduleService(sql_user_uow)
-
-
-def get_procedure_service(
-    sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow),
-) -> ProcedureService:
-    return ProcedureService(sql_user_uow)
-
-
 def get_order_service(sql_user_uow: SQLAlchemyOrderUnitOfWork = Depends(get_sqla_order_uow)) -> OrderService:
     return OrderService(sql_user_uow)
 
@@ -94,15 +82,11 @@ def get_promotion_service(sql_user_uow: SQLAlchemyOrderUnitOfWork = Depends(get_
     return PromotionService(sql_user_uow)
 
 
-def get_master_service(sql_user_uow: SQLAlchemyScheduleUnitOfWork = Depends(get_sqla_schedule_uow)) -> MasterService:
-    return MasterService(sql_user_uow)
-
-
-async def get_user_from_payload(payload: dict, user_service: UserService) -> User:
-    user_id: str = payload.get("sub")
-    if not user_id:
-        raise UserIsNotPresentException
-    user = await user_service.get_user_by_id(user_id=int(user_id))
+async def get_user_from_payload(
+    user_id: str,
+    mediator: Mediator
+) -> User:
+    user = await mediator.handle_query(GetUserByIdQuery(user_id=int(user_id)))
     if not user:
         raise UserIsNotPresentException
     # elif not user.is_active:
@@ -111,21 +95,28 @@ async def get_user_from_payload(payload: dict, user_service: UserService) -> Use
 
 
 async def get_current_user(
-    token: str = Depends(get_token), user_service: UserService = Depends(get_user_service)
+    mediator: FromDishka[Mediator],
+    token: str = Depends(get_token),
 ) -> User:
     payload = get_token_payload(token)
     if validate_token_type(payload, ACCESS_TOKEN_TYPE):
-        return await get_user_from_payload(payload=payload, user_service=user_service)
+        user_id = payload.get("sub")
+        if not user_id:
+            raise UserIsNotPresentException
+        return await get_user_from_payload(user_id, mediator=mediator)
 
 
 async def get_current_user_for_refresh(
+    mediator: FromDishka[Mediator],
     credentials: HTTPAuthorizationCredentials = Depends(http_bearer),
-    user_service: UserService = Depends(get_user_service),
 ) -> User:
     token = credentials.credentials
     payload = get_token_payload(token)
     if validate_token_type(payload, REFRESH_TOKEN_TYPE):
-        return await get_user_from_payload(payload=payload, user_service=user_service)
+        user_id = payload.get("sub")
+        if not user_id:
+            raise UserIsNotPresentException
+        return await get_user_from_payload(user_id, mediator=mediator)
 
 
 def validate_token_type(payload: dict, token_type: str):
@@ -138,8 +129,12 @@ def validate_token_type(payload: dict, token_type: str):
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-async def get_current_master(user: CurrentUser, master_service: MasterService = Depends(get_master_service)) -> Master:
-    master = await master_service.get_master_by_user(user=user)
+@inject
+async def get_current_master(
+    user: CurrentUser,
+    mediator: FromDishka[Mediator],
+) -> Master:
+    master = await mediator.handle_query(GetMasterByUserQuery(user_id=user.id))
     if master:
         return master
     raise UserIsNotMasterException

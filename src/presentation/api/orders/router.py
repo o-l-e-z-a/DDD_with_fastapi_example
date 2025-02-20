@@ -11,8 +11,7 @@ from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.mediator.base import Mediator
 from src.logic.services.order_service import PromotionService
 from src.logic.services.schedule_service import OrderService
-from src.logic.services.users_service import UserService
-from src.presentation.api.dependencies import CurrentUser, get_order_service, get_promotion_service, get_user_service
+from src.presentation.api.dependencies import CurrentUser, get_order_service, get_promotion_service
 from src.presentation.api.exceptions import NotFoundHTTPException
 from src.presentation.api.orders.schema import (
     PromotionAddSchema,
@@ -25,19 +24,19 @@ from src.presentation.api.orders.schema import (
 router = APIRouter(route_class=DishkaRoute, prefix="/api", tags=["order"])
 
 
-@router.post("/total_amount/")
-async def get_total_amount(
-    total_amount_data: TotalAmountCreateSchema,
-    user: CurrentUser,
-    order_service: OrderService = Depends(get_order_service),
-) -> TotalAmountSchema:
-    try:
-        total_amount = await order_service.get_total_amount(
-            total_amount_dto=TotalAmountDTO(**total_amount_data.model_dump()), user=user
-        )
-    except NotFoundLogicException as err:
-        raise NotFoundHTTPException(detail=err.title)
-    return TotalAmountSchema(**asdict(total_amount))
+# @router.post("/total_amount/")
+# async def get_total_amount(
+#     total_amount_data: TotalAmountCreateSchema,
+#     user: CurrentUser,
+#     order_service: OrderService = Depends(get_order_service),
+# ) -> TotalAmountSchema:
+#     try:
+#         total_amount = await order_service.get_total_amount(
+#             total_amount_dto=TotalAmountDTO(**total_amount_data.model_dump()), user=user
+#         )
+#     except NotFoundLogicException as err:
+#         raise NotFoundHTTPException(detail=err.title)
+#     return TotalAmountSchema(**asdict(total_amount))
 
 
 @router.get("/promotions/")
@@ -47,14 +46,14 @@ async def get_promotions(promotion_service: PromotionService = Depends(get_promo
     return promotion_schemas
 
 
-@router.get("/user_point/")
-async def get_user_point(user: CurrentUser, user_service: UserService = Depends(get_user_service)) -> UserPointSchema:
-    try:
-        user_point = await user_service.get_user_point(user=user)
-    except NotFoundLogicException as err:
-        raise NotFoundHTTPException(detail=err.title)
-    user_point_schema = UserPointSchema.model_validate(user_point.to_dict())
-    return user_point_schema
+# @router.get("/user_point/")
+# async def get_user_point(user: CurrentUser, user_service: UserService = Depends(get_user_service)) -> UserPointSchema:
+#     try:
+#         user_point = await user_service.get_user_point(user=user)
+#     except NotFoundLogicException as err:
+#         raise NotFoundHTTPException(detail=err.title)
+#     user_point_schema = UserPointSchema.model_validate(user_point.to_dict())
+#     return user_point_schema
 
 
 @router.post("/promotion/add/", status_code=status.HTTP_201_CREATED)

@@ -20,7 +20,8 @@ from src.logic.commands.schedule_commands import (
     UpdatePhotoOrderCommand,
     UpdatePhotoOrderCommandHandler,
 )
-from src.logic.commands.user_commands import AddUserCommand, AddUserCommandHandler
+from src.logic.commands.user_commands import AddUserCommand, AddUserCommandHandler, VerifyUserCredentialsCommand, \
+    VerifyUserCredentialsCommandHandler
 from src.logic.events.order_handlers import OrderCreatedEmailEventHandler, OrderCreatedPointIncreaseEventHandler
 from src.logic.mediator.base import Mediator
 from src.logic.queries.schedule_queries import (
@@ -47,8 +48,9 @@ from src.logic.queries.schedule_queries import (
     GetServiceReportQuery,
     GetServiceReportQueryHandler,
     GetUserOrdersQuery,
-    GetUserOrdersQueryHandler,
+    GetUserOrdersQueryHandler, GetMasterByUserQueryHandler, GetMasterByUserQuery,
 )
+from src.logic.queries.user_queries import GetUserByIdQuery, GetUserByIdQueryHandler
 
 
 class LogicProvider(Provider):
@@ -74,6 +76,9 @@ class LogicProvider(Provider):
     ) -> Mediator:
         mediator = Mediator()
         mediator.register_command(AddUserCommand, [AddUserCommandHandler(mediator=mediator, uow=user_uow)])
+        mediator.register_command(
+            VerifyUserCredentialsCommand, [VerifyUserCredentialsCommandHandler(mediator=mediator, uow=user_uow)]
+        )
         mediator.register_command(AddMasterCommand, [AddMasterCommandHandler(mediator=mediator, uow=schedule_uow)])
         mediator.register_command(AddScheduleCommand, [AddScheduleCommandHandler(mediator=mediator, uow=schedule_uow)])
         mediator.register_command(AddOrderCommand, [AddOrderCommandHandler(mediator=mediator, uow=schedule_uow)])
@@ -84,6 +89,7 @@ class LogicProvider(Provider):
         mediator.register_command(StartOrderCommand, [StartOrderCommandHandler(mediator=mediator, uow=schedule_uow)])
         mediator.register_command(CancelOrderCommand, [CancelOrderCommandHandler(mediator=mediator, uow=schedule_uow)])
 
+        mediator.register_query(GetUserByIdQuery, GetUserByIdQueryHandler(uow=user_query_uow))
         mediator.register_query(GetAllServiceQuery, GetAllServiceQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetAllMasterQuery, GetAllMasterQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetAllSchedulesQuery, GetAllSchedulesQueryHandler(uow=schedule_query_uow))
@@ -96,6 +102,7 @@ class LogicProvider(Provider):
         mediator.register_query(GetUserOrdersQuery, GetUserOrdersQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetMasterReportQuery, GetMasterReportQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetServiceReportQuery, GetServiceReportQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetMasterByUserQuery, GetMasterByUserQueryHandler(uow=schedule_query_uow))
 
         mediator.register_event(
             OrderCreatedEvent,

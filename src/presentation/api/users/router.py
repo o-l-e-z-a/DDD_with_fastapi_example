@@ -3,12 +3,10 @@ from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Depends, Response
 
 from src.domain.users.entities import User
-from src.logic.commands.user_commands import AddUserCommand
-from src.logic.dto.user_dto import UserLoginDTO
+from src.logic.commands.user_commands import AddUserCommand, VerifyUserCredentialsCommand
 from src.logic.exceptions.user_exceptions import IncorrectEmailOrPasswordLogicException, UserAlreadyExistsLogicException
 from src.logic.mediator.base import Mediator
-from src.logic.services.users_service import UserService
-from src.presentation.api.dependencies import CurrentUser, get_current_user_for_refresh, get_user_service
+from src.presentation.api.dependencies import CurrentUser, get_current_user_for_refresh
 from src.presentation.api.exceptions import IncorrectEmailOrPasswordException, UserAlreadyExistsException
 from src.presentation.api.users.schema import AllUserSchema, UserCreateSchema, UserLoginSchema
 from src.presentation.api.users.utils import (
@@ -39,12 +37,12 @@ async def register_user(
 async def login_user(
     response: Response,
     user_data: UserLoginSchema,
-    user_service: UserService = Depends(get_user_service),
+    mediator: FromDishka[Mediator],
 ):
     try:
-        user = await user_service.check_login_and_verify_password(
-            user_login_data=UserLoginDTO(**user_data.model_dump())
-        )
+        user = (await mediator.handle_command(
+            VerifyUserCredentialsCommand(**user_data.model_dump())
+        ))[0]
     except IncorrectEmailOrPasswordLogicException as err:
         raise IncorrectEmailOrPasswordException(err.title)
     access_token = create_access_token({"sub": str(user.id)})

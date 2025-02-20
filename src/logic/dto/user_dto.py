@@ -1,14 +1,12 @@
 from dataclasses import dataclass
 from datetime import date
 
-from pydantic import EmailStr
-
 from src.logic.dto.base_dto import BaseDTO
 
 
 @dataclass(frozen=True)
 class UserLoginDTO(BaseDTO):
-    email: EmailStr
+    email: str
     password: str
 
 

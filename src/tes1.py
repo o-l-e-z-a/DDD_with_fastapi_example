@@ -86,7 +86,7 @@ async def add_schedule():
     print(inventory)
 
     print(await u_s.get_schedules())
-    print(await u_s.get_slot_for_day(1))
+    print(await u_s.get_slot_for_schedule(1))
     print(
         await u_s.get_day_for_master(
             service_id=service_id,
