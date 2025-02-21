@@ -3,18 +3,17 @@ from __future__ import annotations
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, Date, ForeignKey, Integer
+from sqlalchemy import Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy_utils import EmailType
 
-from src.domain.base.values import CountNumber
 from src.domain.users import entities
 from src.domain.users.values import Email, HumanName, Telephone
-from src.infrastructure.db.models.base import Base, created_at, get_child_join_and_level, int_pk, updated_at
+from src.infrastructure.db.models.base import Base, created_at, int_pk, updated_at
 
 if TYPE_CHECKING:
-    from src.infrastructure.db.models.schedules import Master
     from src.infrastructure.db.models.orders import UserPoint
+    from src.infrastructure.db.models.schedules import Master
 
 
 class Users(Base[entities.User]):
@@ -37,14 +36,14 @@ class Users(Base[entities.User]):
     )
     points: Mapped[list["UserPoint"]] = relationship(back_populates="user")
 
-    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.User:
+    def to_domain(self) -> entities.User:
         user = entities.User(
             email=Email(self.email),
             first_name=HumanName(self.first_name),
             last_name=HumanName(self.last_name),
             telephone=Telephone(self.telephone),
             date_birthday=self.date_birthday,
-            is_admin=self.is_superuser
+            is_admin=self.is_superuser,
         )
         user.hashed_password = self.hashed_password
         user.id = self.id

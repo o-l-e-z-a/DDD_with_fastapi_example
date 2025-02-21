@@ -1,15 +1,13 @@
 from datetime import date
-from typing import Sequence
 
-from sqlalchemy import RowMapping, and_, extract, func, or_, select
+from sqlalchemy import and_, extract, func, or_, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy_file import File
 from sqlalchemy_file.exceptions import ContentTypeValidationError
 
 from src.domain.schedules import entities
 from src.domain.schedules.entities import OrderStatus
-from src.domain.users import entities as user_entities
 from src.infrastructure.db.exceptions import InsertException, UpdateException
 from src.infrastructure.db.models.schedules import Master, Order, Schedule, Service, Slot
 from src.infrastructure.db.models.users import Users
@@ -57,74 +55,13 @@ class MasterRepository(GenericSQLAlchemyRepository[Master, entities.Master]):
             await self.session.flush()
         except IntegrityError as err:
             raise InsertException(entity=entity, detail=str(err.args))
-        return model.to_domain(with_join=True)
-
-    async def get_users_to_masters(self) -> list[user_entities.User]:
-        query = select(Users).where(~Users.master.has())
-        result = await self.session.execute(query)
-        return [el.to_domain() for el in result.scalars().all()]
-
-    async def find_all(self, **filter_by) -> list[entities.Master]:
-        query = (
-            select(self.model)
-            .options(joinedload(self.model.user))
-            .options(selectinload(self.model.services))
-            .filter_by(**filter_by)
-        )
-        result = await self.session.execute(query)
-        return [el.to_domain(with_join=True) for el in result.scalars().all()]
+        return model.to_domain()
 
     async def find_one_or_none(self, **filter_by) -> entities.Master | None:
-        query = (
-            select(self.model)
-            .options(joinedload(self.model.user))
-            .options(selectinload(self.model.services))
-            .filter_by(**filter_by)
-        )
+        query = select(self.model).options(selectinload(self.model.services)).filter_by(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain(with_join=True) if scalar else None
-
-    async def filter_by_service(self, service_id: int) -> list[entities.Master]:
-        query = (
-            select(self.model)
-            .options(joinedload(self.model.user))
-            .options(selectinload(self.model.services))
-            .where(Service.id == service_id)
-        )
-        result = await self.session.execute(query)
-        return [el.to_domain(with_join=True) for el in result.scalars().all()]
-
-    async def get_order_report_by_master(self, month: int | None = None):
-        month = month if month else date.today().month
-        master_with_reports = (
-            select(
-                Master.id,
-                Master.user_id,
-                func.count(Master.id).label("total_count"),
-                # func.sum(Order.total_amount).label("total_sum"),
-            )
-            .join(Schedule)
-            .join(Slot)
-            .join(Order)
-            .join(Service)
-            .where(extract("month", Order.date_add) == month)
-            .group_by(Master.id)
-            .cte("master_with_reports")
-        )
-        query = (
-            select(
-                Users.last_name,
-                Users.first_name,
-                master_with_reports.c.total_count,
-                # master_with_reports.c.total_sum,
-                master_with_reports.c.id,
-            )
-            .select_from(Users)
-            .join(master_with_reports, master_with_reports.c.user_id == Users.id)
-        )
-        result = await self.session.execute(query)
-        return result.mappings().all()
+        return scalar.to_domain() if scalar else None
 
 
 class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule]):
@@ -139,63 +76,7 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
             await self.session.flush()
         except IntegrityError as err:
             raise InsertException(entity=entity, detail=str(err.args))
-        return model.to_domain(with_join=True)
-
-    async def find_all(self, **filter_by) -> list[entities.Schedule]:
-        query = (
-            select(self.model)
-            .options(
-                joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
-            )
-            .filter_by(**filter_by)
-        )
-        result = await self.session.execute(query)
-        return [el.to_domain(with_join=True, child_level=2) for el in result.scalars().all()]
-
-    async def find_one_or_none(self, **filter_by) -> entities.Schedule | None:
-        query = (
-            select(self.model)
-            .options(
-                joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
-            )
-            .filter_by(**filter_by)
-        )
-        result = await self.session.execute(query)
-        scalar = result.scalar_one_or_none()
-        return scalar.to_domain(with_join=True, child_level=2) if scalar else None
-
-    async def find_one_with_consumables(self, **filter_by):
-        query = (
-            select(self.model)
-            .options(
-                joinedload(self.model.master).options(selectinload(Master.services)).options(joinedload(Master.user))
-            )
-            .filter_by(**filter_by)
-        )
-        result = await self.session.execute(query)
-        scalar = result.scalar_one_or_none()
-        return scalar.to_domain(with_join=True, child_level=3) if scalar else None
-
-    async def get_day_for_master(self, **filter_by) -> list[date]:
-        query = select(self.model.day.distinct()).filter_by(**filter_by).order_by(self.model.day)
-        execute_result = await self.session.execute(query)
-        result = execute_result.scalars().all()
-        return list(result)
-
-    # query = (
-    #         select(Order)
-    #         .join(Slot).join(Schedule).join(Service).join(Master)
-    #         .join(user_1, Master.user_id == user_1.id)
-    #         .join(user_2, Order.user_id == user_2.id)
-    #         .options(
-    #             contains_eager(Order.slot)
-    #             .contains_eager(Slot.schedule)
-    #             .options(contains_eager(Schedule.service))
-    #             .options(contains_eager(Schedule.master).contains_eager(Master.user.of_type(user_1)))
-    #         )
-    #         .options(contains_eager(Order.user.of_type(user_2)))
-    #         .where(Schedule.day == day)
-    #     )
+        return model.to_domain()
 
     async def find_master_services_by_schedule(self, schedule_id: int) -> list[int]:
         query = select(Service.id).join(Service.masters).join(Master.schedules).where(Schedule.id == schedule_id)
@@ -207,7 +88,7 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         query = select(Slot).filter_by(id=slot_id)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain(with_join=True) if scalar else None
+        return scalar.to_domain() if scalar else None
 
     async def find_occupied_slots(self, schedule_id: int) -> list[entities.Slot]:
         query = (
@@ -224,89 +105,17 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
         return [el.to_domain() for el in result.scalars().all()]
 
 
-class SlotRepository(GenericSQLAlchemyRepository[Slot, entities.Slot]):
-    model = Slot
-
-    async def find_one_or_none(self, **filter_by) -> entities.Slot | None:
-        query = select(self.model).options(joinedload(self.model.schedule)).filter_by(**filter_by)
-        result = await self.session.execute(query)
-        scalar = result.scalar_one_or_none()
-        return scalar.to_domain(with_join=True) if scalar else None
-
-    async def find_all(self, **filter_by) -> list[entities.Slot]:
-        # query = select(self.model).options(joinedload(Slot.schedule)).filter_by(**filter_by)
-        # query = select(self.model).join(Slot.schedule).filter_by(**filter_by)
-        query = select(self.model).join(Slot.schedule).options(contains_eager(Slot.schedule)).filter_by(**filter_by)
-        result = await self.session.execute(query)
-        return [el.to_domain(with_join=True) for el in result.scalars().all()]
-
-
 class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
     model = Order
-
-    async def get_order_report_by_service(self) -> Sequence[RowMapping]:
-        query = (
-            select(
-                Service.id,
-                Service.name,
-                Service.price,
-                func.count(Service.id).label("total_count"),
-                func.sum(Order.total_amount).label("total_sum"),
-            )
-            .join(Schedule)
-            .join(Slot)
-            .join(Order)
-            .group_by(Service.id)
-        )
-        result = await self.session.execute(query)
-        return result.mappings().all()
 
     async def find_one_or_none(self, **filter_by) -> entities.Order | None:
         query = self.get_query_to_find_all(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain(with_join=True, child_level=4) if scalar else None
-
-    async def find_all(self, **filter_by) -> list[entities.Order]:
-        query = self.get_query_to_find_all(**filter_by)
-        result = await self.session.execute(query)
-        return [el.to_domain(with_join=True, child_level=4) for el in result.scalars().all()]
-
-    # def find_order_by_day(self, day):
-    #     user_2 = aliased(Users)
-    #     user_1 = aliased(Users)
-    #     query = (
-    #         select(Order)
-    #         .join(Slot).join(Schedule).join(Service).join(Master)
-    #         .join(user_1, Master.user_id == user_1.id)
-    #         .join(user_2, Order.user_id == user_2.id)
-    #         .options(
-    #             contains_eager(Order.slot)
-    #             .contains_eager(Slot.schedule)
-    #             .options(contains_eager(Schedule.service))
-    #             .options(contains_eager(Schedule.master).contains_eager(Master.user.of_type(user_1)))
-    #         )
-    #         .options(contains_eager(Order.user.of_type(user_2)))
-    #         .where(Schedule.day == day)
-    #     )
-    #     result = self.session.execute(query)
-    #     return result.scalars().all()
+        return scalar.to_domain() if scalar else None
 
     def get_query_to_find_all(self, **filter_by):
-        query = (
-            select(self.model)
-            .options(
-                joinedload(self.model.slot, innerjoin=True)
-                .joinedload(Slot.schedule, innerjoin=True)
-                .options(
-                    joinedload(Schedule.master, innerjoin=True)
-                    .options(joinedload(Master.user, innerjoin=True))
-                    .options(selectinload(Master.services))
-                )
-            )
-            .options(joinedload(self.model.user, innerjoin=True))
-            .filter_by(**filter_by)
-        )
+        query = select(self.model).options(joinedload(self.model.user, innerjoin=True)).filter_by(**filter_by)
         return query
 
     async def update_photo(self, entity: entities.Order, photo_after, photo_before):

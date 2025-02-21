@@ -6,10 +6,10 @@ from pydantic import Field, PositiveInt
 
 from src.domain.base.values import Name, PositiveIntNumber
 from src.domain.orders.entities import Promotion
+from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.logic.commands.base import BaseCommand, CommandHandler
 from src.logic.exceptions.order_exceptions import PromotionNotFoundLogicException
 from src.logic.exceptions.schedule_exceptions import ServiceNotFoundLogicException
-from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
 
 int_ge_0 = Annotated[int, Field(ge=0)]
 
@@ -24,7 +24,7 @@ class AddPromotionCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class AddPromotionCommandCommandHandler(CommandHandler[AddPromotionCommand, Promotion]):
+class AddPromotionCommandHandler(CommandHandler[AddPromotionCommand, Promotion]):
     uow: SQLAlchemyOrderUnitOfWork
 
     async def handle(self, command: AddPromotionCommand) -> Promotion:
@@ -50,7 +50,7 @@ class UpdatePromotionCommand(AddPromotionCommand):
 
 
 @dataclass(frozen=True)
-class UpdatePromotionCommandCommandHandler(CommandHandler[UpdatePromotionCommand, Promotion]):
+class UpdatePromotionCommandHandler(CommandHandler[UpdatePromotionCommand, Promotion]):
     uow: SQLAlchemyOrderUnitOfWork
 
     async def handle(self, command: UpdatePromotionCommand) -> Promotion:
@@ -77,7 +77,7 @@ class DeletePromotionCommand(BaseCommand):
 
 
 @dataclass(frozen=True)
-class DeletePromotionCommandCommandHandler(CommandHandler[DeletePromotionCommand, Promotion]):
+class DeletePromotionCommandHandler(CommandHandler[DeletePromotionCommand, Promotion]):
     uow: SQLAlchemyOrderUnitOfWork
 
     async def handle(self, command: DeletePromotionCommand) -> None:

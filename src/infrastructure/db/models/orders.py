@@ -3,17 +3,15 @@ from __future__ import annotations
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, Column, ForeignKey, String, Integer
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy_file import ImageField
 
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders import entities
-from src.infrastructure.db.models.base import Base, get_child_join_and_level, int_pk
+from src.infrastructure.db.models.base import Base, int_pk
 
 if TYPE_CHECKING:
-    from src.infrastructure.db.models.schedules import Service, Slot
+    from src.infrastructure.db.models.schedules import Service
     from src.infrastructure.db.models.users import Users
 
 
@@ -46,13 +44,8 @@ class Promotion(Base[entities.Promotion]):
 
     __table_args__ = (CheckConstraint("sale > 0 AND sale < 100", name="check_sale_percent"),)
 
-    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.Promotion:
-        with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
-        services = (
-            [service.to_domain(with_join=with_join_to_child, child_level=child_level).id for service in self.services]
-            if with_join
-            else []
-        )
+    def to_domain(self) -> entities.Promotion:
+        services = [service.id for service in self.services]
         promotion = entities.Promotion(
             code=Name(self.code),
             sale=PositiveIntNumber(self.sale),
@@ -87,9 +80,7 @@ class UserPoint(Base[entities.UserPoint]):
 
     __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
 
-    def to_domain(self, with_join: bool = False, child_level: int = 0) -> entities.UserPoint:
-        with_join_to_child, child_level = get_child_join_and_level(with_join=with_join, child_level=child_level)
-        user = self.user.to_domain(with_join=with_join_to_child, child_level=child_level) if with_join else None
+    def to_domain(self) -> entities.UserPoint:
         user_point = entities.UserPoint(
             count=CountNumber(self.count),
             user_id=self.user_id,
@@ -99,9 +90,4 @@ class UserPoint(Base[entities.UserPoint]):
 
     @classmethod
     def from_entity(cls, entity: entities.UserPoint) -> UserPoint:
-        return cls(
-            id=getattr(entity, "id", None),
-            count=entity.count.as_generic_type(),
-            user_id=entity.user_id
-        )
-
+        return cls(id=getattr(entity, "id", None), count=entity.count.as_generic_type(), user_id=entity.user_id)

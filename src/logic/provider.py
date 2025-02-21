@@ -4,6 +4,14 @@ from src.domain.orders.events import OrderCreatedEvent
 from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderQueryUnitOfWork, SQLAlchemyOrderUnitOfWork
 from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleQueryUnitOfWork, SQLAlchemyScheduleUnitOfWork
 from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersQueryUnitOfWork, SQLAlchemyUsersUnitOfWork
+from src.logic.commands.order_commands import (
+    AddPromotionCommand,
+    AddPromotionCommandHandler,
+    DeletePromotionCommand,
+    DeletePromotionCommandHandler,
+    UpdatePromotionCommand,
+    UpdatePromotionCommandHandler,
+)
 from src.logic.commands.schedule_commands import (
     AddMasterCommand,
     AddMasterCommandHandler,
@@ -20,10 +28,15 @@ from src.logic.commands.schedule_commands import (
     UpdatePhotoOrderCommand,
     UpdatePhotoOrderCommandHandler,
 )
-from src.logic.commands.user_commands import AddUserCommand, AddUserCommandHandler, VerifyUserCredentialsCommand, \
-    VerifyUserCredentialsCommandHandler
+from src.logic.commands.user_commands import (
+    AddUserCommand,
+    AddUserCommandHandler,
+    VerifyUserCredentialsCommand,
+    VerifyUserCredentialsCommandHandler,
+)
 from src.logic.events.order_handlers import OrderCreatedEmailEventHandler, OrderCreatedPointIncreaseEventHandler
 from src.logic.mediator.base import Mediator
+from src.logic.queries.order_queries import GetAllPromotionsQuery, GetAllPromotionsQueryHandler
 from src.logic.queries.schedule_queries import (
     GetAllMasterQuery,
     GetAllMasterQueryHandler,
@@ -35,6 +48,8 @@ from src.logic.queries.schedule_queries import (
     GetAllServiceQueryHandler,
     GetAllUsersToAddMasterQuery,
     GetAllUsersToAddMasterQueryHandler,
+    GetMasterByUserQuery,
+    GetMasterByUserQueryHandler,
     GetMasterForServiceQuery,
     GetMasterForServiceQueryHandler,
     GetMasterReportQuery,
@@ -48,7 +63,7 @@ from src.logic.queries.schedule_queries import (
     GetServiceReportQuery,
     GetServiceReportQueryHandler,
     GetUserOrdersQuery,
-    GetUserOrdersQueryHandler, GetMasterByUserQueryHandler, GetMasterByUserQuery,
+    GetUserOrdersQueryHandler,
 )
 from src.logic.queries.user_queries import GetUserByIdQuery, GetUserByIdQueryHandler
 
@@ -88,6 +103,13 @@ class LogicProvider(Provider):
         )
         mediator.register_command(StartOrderCommand, [StartOrderCommandHandler(mediator=mediator, uow=schedule_uow)])
         mediator.register_command(CancelOrderCommand, [CancelOrderCommandHandler(mediator=mediator, uow=schedule_uow)])
+        mediator.register_command(AddPromotionCommand, [AddPromotionCommandHandler(mediator=mediator, uow=order_uow)])
+        mediator.register_command(
+            UpdatePromotionCommand, [UpdatePromotionCommandHandler(mediator=mediator, uow=order_uow)]
+        )
+        mediator.register_command(
+            DeletePromotionCommand, [DeletePromotionCommandHandler(mediator=mediator, uow=order_uow)]
+        )
 
         mediator.register_query(GetUserByIdQuery, GetUserByIdQueryHandler(uow=user_query_uow))
         mediator.register_query(GetAllServiceQuery, GetAllServiceQueryHandler(uow=schedule_query_uow))
@@ -103,6 +125,7 @@ class LogicProvider(Provider):
         mediator.register_query(GetMasterReportQuery, GetMasterReportQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetServiceReportQuery, GetServiceReportQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetMasterByUserQuery, GetMasterByUserQueryHandler(uow=schedule_query_uow))
+        mediator.register_query(GetAllPromotionsQuery, GetAllPromotionsQueryHandler(uow=order_query_uow))
 
         mediator.register_event(
             OrderCreatedEvent,

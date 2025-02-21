@@ -1,5 +1,4 @@
 from datetime import date
-from typing import Annotated
 
 from pydantic import Field
 
@@ -29,7 +28,15 @@ class PromotionAddSchema(BaseSchema):
     services_id: list[int]
 
 
-class PromotionSchema(BaseSchema):
+class PromotionSchema(PromotionAddSchema):
+    id: int
+
+
+class UserPointSchema(BaseSchema):
+    count: int
+
+
+class PromotionDetailSchema(BaseSchema):
     id: int
     code: str = Field(..., max_length=15)
     sale: int = Field(..., ge=0, lt=100)
@@ -37,7 +44,3 @@ class PromotionSchema(BaseSchema):
     day_start: date
     day_end: date
     services: list[ServiceSchema]
-
-
-class UserPointSchema(BaseSchema):
-    count: int
