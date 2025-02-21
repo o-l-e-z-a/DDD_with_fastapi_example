@@ -9,9 +9,8 @@ from src.infrastructure.db.provider import DBProvider
 from src.logic.commands.user_commands import VerifyUserCredentialsCommand
 from src.logic.mediator.base import Mediator
 from src.logic.provider import LogicProvider
-from src.presentation.api.dependencies import get_current_user
 from src.presentation.api.settings import Settings, settings
-from src.presentation.api.users.utils import create_access_token
+from src.presentation.api.users.utils import create_access_token, get_current_user
 
 
 class AdminAuth(AuthenticationBackend):
@@ -20,9 +19,7 @@ class AdminAuth(AuthenticationBackend):
         email: str = form["username"]  # type: ignore[assignment]
         password: str = form["password"]  # type: ignore[assignment]
         mediator = await container.get(Mediator)
-        user = (await mediator.handle_command(
-            VerifyUserCredentialsCommand(email=email, password=password)
-        ))[0]
+        user = (await mediator.handle_command(VerifyUserCredentialsCommand(email=email, password=password)))[0]
         if user:
             access_token = create_access_token({"sub": str(user.id)})
             request.session.update({"token": access_token})

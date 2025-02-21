@@ -27,6 +27,7 @@ from src.presentation.api.admin.views import (
     UserPointAdmin,
     UsersAdmin,
 )
+from src.presentation.api.dependencies import MyFastapiProvider
 from src.presentation.api.orders.router import router as order_router
 from src.presentation.api.schedules.router import router as schedule_router
 from src.presentation.api.settings import Settings, settings
@@ -75,6 +76,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = create_fastapi_app()
-container = make_async_container(LogicProvider(), DBProvider(), context={Settings: settings})
+container = make_async_container(LogicProvider(), DBProvider(), MyFastapiProvider(), context={Settings: settings})
 setup_dishka(container, app)
 app.mount("/media", StaticFiles(directory=media_dir), name="media")

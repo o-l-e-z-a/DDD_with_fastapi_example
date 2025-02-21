@@ -1,12 +1,12 @@
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Response
 
 from src.domain.users.entities import User
 from src.logic.commands.user_commands import AddUserCommand, VerifyUserCredentialsCommand
 from src.logic.exceptions.user_exceptions import IncorrectEmailOrPasswordLogicException, UserAlreadyExistsLogicException
 from src.logic.mediator.base import Mediator
-from src.presentation.api.dependencies import CurrentUser, get_current_user_for_refresh
+from src.presentation.api.dependencies import CurrentUser, CurrentUserFromRefresh
 from src.presentation.api.exceptions import IncorrectEmailOrPasswordException, UserAlreadyExistsException
 from src.presentation.api.users.schema import AllUserSchema, UserCreateSchema, UserLoginSchema
 from src.presentation.api.users.utils import (
@@ -40,9 +40,7 @@ async def login_user(
     mediator: FromDishka[Mediator],
 ):
     try:
-        user = (await mediator.handle_command(
-            VerifyUserCredentialsCommand(**user_data.model_dump())
-        ))[0]
+        user = (await mediator.handle_command(VerifyUserCredentialsCommand(**user_data.model_dump())))[0]
     except IncorrectEmailOrPasswordLogicException as err:
         raise IncorrectEmailOrPasswordException(err.title)
     access_token = create_access_token({"sub": str(user.id)})
@@ -54,7 +52,7 @@ async def login_user(
 @router_auth.post("/refresh/")
 async def refresh(
     response: Response,
-    user: User = Depends(get_current_user_for_refresh),
+    user: FromDishka[CurrentUserFromRefresh],
 ):
     access_token = create_access_token({"sub": str(user.id)})
     response.set_cookie(ACCESS_TOKEN_COOKIE_FIELD, access_token, httponly=True)
@@ -67,5 +65,5 @@ async def logout_user(response: Response):
 
 
 @router_users.get("/me/")
-async def read_users_me(current_user: CurrentUser) -> AllUserSchema:
-    return AllUserSchema.model_validate(current_user.to_dict())
+async def read_users_me(user: FromDishka[CurrentUser]) -> AllUserSchema:
+    return AllUserSchema.model_validate(user)

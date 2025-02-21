@@ -216,7 +216,7 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
             .where(
                 and_(
                     Slot.schedule_id == schedule_id,
-                    or_(Order.status != OrderStatus.CANCELLED.value, Order.status == None),
+                    or_(Order.status != OrderStatus.CANCELLED.value, Order.status == None),  # noqa: E711
                 )
             )
         )
@@ -341,9 +341,9 @@ class ServiceQueryRepository(GenericSQLAlchemyQueryRepository[Service]):
 class MasterQueryRepository(GenericSQLAlchemyQueryRepository[Master]):
     async def find_one_or_none(self, **filter_by) -> MasterDetailDTO | None:
         query = (
-            select(self.model)
-            .options(joinedload(self.model.user))
-            .options(selectinload(self.model.services))
+            select(Master)
+            .options(joinedload(Master.user))
+            .options(selectinload(Master.services))
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
@@ -426,7 +426,7 @@ class ScheduleQueryRepository(GenericSQLAlchemyQueryRepository[Schedule]):
             .where(
                 and_(
                     Slot.schedule_id == schedule_id,
-                    or_(Order.status != OrderStatus.CANCELLED.value, Order.status == None),
+                    or_(Order.status != OrderStatus.CANCELLED.value, Order.status == None),  # noqa: E711
                 )
             )
         )

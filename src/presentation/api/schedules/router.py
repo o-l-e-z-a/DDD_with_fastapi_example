@@ -132,7 +132,7 @@ async def get_all_orders(
 @router.get("/master_schedules/")
 # @cache(expire=60)
 async def get_master_schedules(
-    master: CurrentMaster,
+    master: FromDishka[CurrentMaster],
     mediator: FromDishka[Mediator],
 ) -> list[ScheduleDay]:
     results: list[ScheduleShortDTO] = await mediator.handle_query(GetMasterScheduleQuery(master_id=master.id))
@@ -184,7 +184,7 @@ async def get_slot_for_day(
 @router.get("/orders/", description="все заказы клиента")
 # @cache(expire=60)
 async def get_client_orders(
-    user: CurrentUser,
+    user: FromDishka[CurrentUser],
     mediator: FromDishka[Mediator],
 ) -> list[OrderDetailSchema]:
     results: list[OrderDetailDTO] = await mediator.handle_query(GetUserOrdersQuery(user_id=user.id))
@@ -235,7 +235,7 @@ async def add_schedule(
 @router.post("/order/add/", status_code=status.HTTP_201_CREATED)
 async def add_order(
     order_data: OrderCreateSchema,
-    user: CurrentUser,
+    user: FromDishka[CurrentUser],
     mediator: FromDishka[Mediator],
 ) -> OrderSchema:
     try:
@@ -261,7 +261,7 @@ async def add_order(
 async def update_order(
     order_id: int,
     slot_data: OrderUpdateSchema,
-    user: CurrentUser,
+    user: FromDishka[CurrentUser],
     mediator: FromDishka[Mediator],
 ) -> OrderSchema:
     try:
@@ -285,7 +285,7 @@ async def update_order(
 @router.put("/order/{order_id}/start/")
 async def start_order(
     order_id: int,
-    master: CurrentMaster,
+    master: FromDishka[CurrentMaster],
     mediator: FromDishka[Mediator],
 ) -> OrderSchema:
     try:
@@ -309,7 +309,7 @@ async def update_photo(
     order_id: int,
     photo_before: UploadFile,
     photo_after: UploadFile,
-    master: CurrentMaster,
+    master: FromDishka[CurrentMaster],
     mediator: FromDishka[Mediator],
 ) -> OrderSchema:
     photo_before_dto = PhotoType(
@@ -338,7 +338,7 @@ async def update_photo(
 @router.patch("/order/{order_id}/cancel/")
 async def cancel_order(
     order_id: int,
-    user: CurrentUser,
+    user: FromDishka[CurrentUser],
     mediator: FromDishka[Mediator],
 ) -> OrderSchema:
     try:
