@@ -5,8 +5,7 @@ from datetime import date
 
 from src.domain.base.entities import BaseEntity
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
-from src.domain.orders.values import LESS_POINT_WARNINGS, MINIMUM_BALANCE, MORE_POINT_WARNINGS
-from src.domain.schedules.entities import Service
+from src.domain.orders.service import TotalAmountDomainService, TotalAmountResult
 
 
 @dataclass()
@@ -26,7 +25,7 @@ class Promotion(BaseEntity):
             "is_active": self.is_active,
             "day_start": self.day_start,
             "day_end": self.day_end,
-            "services_id": [service_id for service_id in self.services_id],
+            "services_id": self.services_id,
         }
 
 
@@ -46,33 +45,35 @@ class UserPoint(BaseEntity):
 @dataclass()
 class OrderPayment(BaseEntity):
     order_id: int
-    point_uses: CountNumber
-    promotion_sale: CountNumber
     total_amount: PositiveIntNumber
+    point_uses: CountNumber = CountNumber(0)
+    promotion_sale: CountNumber = CountNumber(0)
     is_payed: bool = False
 
     @classmethod
-    def add(
-        cls,
-        order_id: int,
-        promotion: Promotion | None,
-        user_point: UserPoint,
-        input_user_point: CountNumber,
-        service: Service
-    ):
-        total_amount_result = TotalAmountDomainService().calculate(
-            promotion=promotion,
-            user_point=user_point,
-            service=service,
-            input_user_point=input_user_point,
-        )
+    def add(cls, order_id: int, service_price: int):
         order_payment = cls(
             order_id=order_id,
-            point_uses=CountNumber(total_amount_result.point_uses),
-            promotion_sale=CountNumber(total_amount_result.promotion_sale),
-            total_amount=PositiveIntNumber(total_amount_result.total_amount),
+            total_amount=PositiveIntNumber(service_price),
         )
         return order_payment
+
+    def calculate_amount(
+        self, promotion_sale: int | None, user_point_count: int | None, input_user_point: int
+    ) -> TotalAmountResult:
+        total_amount_result = TotalAmountDomainService().calculate(
+            promotion_sale=promotion_sale,
+            user_point_count=user_point_count,
+            service_price=self.total_amount.as_generic_type(),
+            input_user_point=input_user_point,
+        )
+        return total_amount_result
+
+    def pay(self, promotion_sale: int | None, user_point_count: int | None, input_user_point: int):
+        total_amount_result = self.calculate_amount(promotion_sale, user_point_count, input_user_point)
+        self.point_uses = CountNumber(total_amount_result.point_uses)
+        self.promotion_sale = CountNumber(total_amount_result.promotion_sale)
+        self.total_amount = PositiveIntNumber(total_amount_result.total_amount)
 
     def to_dict(self) -> dict:
         return {
@@ -82,42 +83,3 @@ class OrderPayment(BaseEntity):
             "total_amount": self.total_amount.as_generic_type(),
             "order_id": self.order_id,
         }
-
-
-@dataclass()
-class TotalAmountResult:
-    total_amount: int
-    point_uses: int
-    promotion_sale: int
-    warnings: list[str] = field(default_factory=list)
-
-
-class TotalAmountDomainService:
-    def calculate(
-        self, promotion: Promotion | None, user_point: UserPoint, service: Service, input_user_point: CountNumber
-    ) -> TotalAmountResult:
-        total_amount = service.price.as_generic_type()
-        point = input_user_point.as_generic_type()
-        warnings = []
-        promotion_sale = 0
-
-        if promotion:
-            promotion_sale = int(service.price * promotion.sale / 100)
-            total_amount -= promotion_sale
-        if user_point.count < point:
-            point = 0
-            warnings.append(LESS_POINT_WARNINGS)
-        elif point >= total_amount:
-            point = total_amount - MINIMUM_BALANCE
-            total_amount = MINIMUM_BALANCE
-            warnings.append(MORE_POINT_WARNINGS)
-        elif 1 < total_amount - point < MINIMUM_BALANCE:
-            diff = point - MINIMUM_BALANCE
-            point -= diff
-            total_amount -= point
-        else:
-            total_amount -= point
-
-        return TotalAmountResult(
-            total_amount=total_amount, point_uses=point, promotion_sale=promotion_sale, warnings=warnings
-        )

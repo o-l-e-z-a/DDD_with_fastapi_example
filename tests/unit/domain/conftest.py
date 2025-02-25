@@ -4,7 +4,7 @@ import pytest
 
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders.entities import Promotion, UserPoint
-from src.domain.schedules.entities import Master, Schedule, Service, Slot, Order
+from src.domain.schedules.entities import Master, Order, Schedule, Service, Slot
 from src.domain.schedules.values import END_HOUR, START_HOUR, SlotTime
 from src.domain.users.entities import User
 from src.domain.users.values import Email, HumanName, Telephone
@@ -184,7 +184,7 @@ def henna_staining_today_14_order(henna_staining_today_14_slot, henna_staining_s
         user_id=user_ivanov,
         service_id=henna_staining_service.id,
         slot_id=henna_staining_today_14_slot.id,
-        occupied_slots=[],
+        occupied_slots_ids=[],
         schedule_master_services=[henna_staining_service, shampooing_service]
         # point_uses=CountNumber(100),
         # promotion_sale=CountNumber(0),
@@ -200,7 +200,7 @@ def henna_staining_today_12_order(henna_staining_today_12_slot, henna_staining_s
         user_id=user_petrov,
         service_id=henna_staining_service.id,
         slot_id=henna_staining_today_12_slot,
-        occupied_slots=[],
+        occupied_slots_ids=[],
         schedule_master_services=[henna_staining_service, shampooing_service]
         # point_uses=CountNumber(0),
         # promotion_sale=CountNumber(0),

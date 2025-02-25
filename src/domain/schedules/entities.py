@@ -74,7 +74,7 @@ class Master(BaseEntity):
             "id": self.id,
             "description": self.description,
             "user_id": self.user_id,
-            "services_id": [service_id for service_id in self.services_id],
+            "services_id": self.services_id,
         }
 
 
@@ -97,7 +97,7 @@ class Schedule(BaseEntity):
         return schedule
 
     def get_free_slots(self, occupied_slots: list[Slot]) -> list[Slot]:
-        occupied_slots_time = {occupied_slot for occupied_slot in occupied_slots}
+        occupied_slots_time = set(occupied_slots)
         difference = set(self.slots).difference(occupied_slots_time)
         return sorted(difference)
 
@@ -164,13 +164,13 @@ class Order(BaseEntity):
         user_id: int,
         service_id: int,
         slot_id: int,
-        schedule_master_services_id: list[int],
-        occupied_slots: list[Slot],
+        schedule_master_services_ids: list[int],
+        occupied_slots_ids: list[int],
     ) -> Order:
-        if slot_id in [slot.id for slot in occupied_slots]:
+        if slot_id in occupied_slots_ids:
             raise SlotOccupiedException()
 
-        if service_id not in schedule_master_services_id:
+        if service_id not in schedule_master_services_ids:
             raise SlotServiceInvalidException()
 
         order = cls(

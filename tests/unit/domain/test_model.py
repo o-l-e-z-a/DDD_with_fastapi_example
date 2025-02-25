@@ -1,10 +1,10 @@
 import pytest
 
 from src.domain.base.values import CountNumber, PositiveIntNumber
-from src.domain.orders.entities import TotalAmountResult, TotalAmountDomainService
 from src.domain.orders.events import OrderCreatedEvent
+from src.domain.orders.service import TotalAmountDomainService, TotalAmountResult
 from src.domain.orders.values import LESS_POINT_WARNINGS, MINIMUM_BALANCE, MORE_POINT_WARNINGS
-from src.domain.schedules.entities import SlotsForSchedule, Order, OrderStatus
+from src.domain.schedules.entities import Order, OrderStatus, SlotsForSchedule
 from src.domain.schedules.exceptions import SlotOccupiedException, SlotServiceInvalidException
 from src.domain.schedules.values import SlotTime
 
@@ -13,7 +13,7 @@ class TestTotalAmount:
     def test_total_amount_with_all_values(self, ivanov_user_point, promotion_20, henna_staining_service):
         input_user_point = CountNumber(150)
         total_amount = TotalAmountDomainService().calculate(
-            promotion=promotion_20, user_point=ivanov_user_point,
+            promotion_sale=promotion_20, user_point_count=ivanov_user_point,
             service=henna_staining_service, input_user_point=input_user_point
         )
         expected_total_amount = int(1500 * 0.8 - 150)
@@ -29,7 +29,7 @@ class TestTotalAmount:
     def test_total_amount_without_promotion(self, ivanov_user_point, promotion_20, henna_staining_service):
         input_user_point = CountNumber(150)
         total_amount = TotalAmountDomainService().calculate(
-            promotion=None, user_point=ivanov_user_point,
+            promotion_sale=None, user_point_count=ivanov_user_point,
             service=henna_staining_service, input_user_point=input_user_point
         )
         expected_total_amount = 1500 - 150
@@ -46,7 +46,7 @@ class TestTotalAmount:
         input_user_point = CountNumber(700)
         henna_staining_service.price = PositiveIntNumber(680)
         total_amount = TotalAmountDomainService().calculate(
-            promotion=promotion_20, user_point=ivanov_user_point,
+            promotion_sale=promotion_20, user_point_count=ivanov_user_point,
             service=henna_staining_service, input_user_point=input_user_point
         )
         expected_total_amount = MINIMUM_BALANCE
@@ -63,7 +63,7 @@ class TestTotalAmount:
         input_user_point = CountNumber(700)
         ivanov_user_point.count = CountNumber(1)
         total_amount = TotalAmountDomainService().calculate(
-            promotion=promotion_20, user_point=ivanov_user_point,
+            promotion_sale=promotion_20, user_point_count=ivanov_user_point,
             service=henna_staining_service, input_user_point=input_user_point
         )
         expected_total_amount = int(1500 * 0.8)
@@ -120,7 +120,7 @@ class TestOrder:
             user_id=user_ivanov.id,
             service_id=henna_staining_service.id,
             slot_id=henna_staining_today_15_slot.id,
-            occupied_slots=[henna_staining_today_12_slot, henna_staining_today_14_slot],
+            occupied_slots_ids=[henna_staining_today_12_slot, henna_staining_today_14_slot],
             schedule_master_services=[henna_staining_service, shampooing_service]
         )
 
@@ -140,7 +140,7 @@ class TestOrder:
             user_id=user_ivanov.id,
             service_id=henna_staining_service.id,
             slot_id=henna_staining_today_15_slot.id,
-            occupied_slots=[henna_staining_today_12_slot, henna_staining_today_14_slot],
+            occupied_slots_ids=[henna_staining_today_12_slot, henna_staining_today_14_slot],
             schedule_master_services=[henna_staining_service, shampooing_service]
         )
         [new_order_event] = new_order.pull_events()
@@ -161,7 +161,7 @@ class TestOrder:
                 user_id=user_ivanov.id,
                 service_id=henna_staining_service.id,
                 slot_id=henna_staining_today_12_slot.id,
-                occupied_slots=[henna_staining_today_12_slot, henna_staining_today_14_slot],
+                occupied_slots_ids=[henna_staining_today_12_slot, henna_staining_today_14_slot],
                 schedule_master_services=[henna_staining_service, shampooing_service]
             )
 
@@ -176,6 +176,6 @@ class TestOrder:
                 user_id=user_ivanov.id,
                 service_id=henna_staining_service.id,
                 slot_id=henna_staining_today_15_slot.id,
-                occupied_slots=[henna_staining_today_12_slot, henna_staining_today_14_slot],
+                occupied_slots_ids=[henna_staining_today_12_slot, henna_staining_today_14_slot],
                 schedule_master_services=[shampooing_service]
             )

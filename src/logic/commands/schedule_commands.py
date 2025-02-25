@@ -3,9 +3,10 @@ from datetime import date
 from tempfile import SpooledTemporaryFile
 from typing import Annotated, BinaryIO
 
-from pydantic import Field, PositiveInt, BaseModel
+from pydantic import BaseModel, Field, PositiveInt
 
 from src.domain.schedules.entities import Master, Order, Schedule
+from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 from src.logic.commands.base import BaseCommand, CommandHandler
 from src.logic.exceptions.order_exceptions import NotUserOrderLogicException, OrderNotFoundLogicException
 from src.logic.exceptions.schedule_exceptions import (
@@ -14,7 +15,6 @@ from src.logic.exceptions.schedule_exceptions import (
     SlotNotFoundLogicException,
 )
 from src.logic.exceptions.user_exceptions import UserNotFoundLogicException
-from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
 
 
 class AddMasterCommand(BaseCommand):
@@ -89,16 +89,17 @@ class AddOrderCommandHandler(CommandHandler[AddOrderCommand, Order]):
             slot = await self.uow.schedules.find_one_or_none_slot(slot_id=command.slot_id)
             if not slot:
                 raise SlotNotFoundLogicException(id=command.slot_id)
-            schedule_master_services = await self.uow.schedules.find_master_services_by_schedule(
+            schedule_master_services_ids = await self.uow.schedules.find_master_services_by_schedule(
                 schedule_id=slot.schedule_id
             )
             occupied_slots = await self.uow.schedules.find_occupied_slots(schedule_id=slot.schedule_id)
+            occupied_slots_ids = [slot.id for slot in occupied_slots]
             order_from_aggregate = Order.add(
                 user_id=command.user_id,
                 service_id=command.service_id,
                 slot_id=command.slot_id,
-                schedule_master_services_id=schedule_master_services,
-                occupied_slots=occupied_slots,
+                schedule_master_services_ids=schedule_master_services_ids,
+                occupied_slots_ids=occupied_slots_ids,
             )
             order_from_repo = await self.uow.orders.add(order_from_aggregate)
             await self.uow.commit()

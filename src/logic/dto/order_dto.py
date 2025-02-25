@@ -13,7 +13,8 @@ slot_type = Annotated[str, Field(pattern=r"^(?:[01][0-9]|2?[0-3]):[0-5]\d$")]
 
 @dataclass(frozen=True)
 class TotalAmountDTO(BaseDTO):
-    schedule_id: int
+    service_id: int
+    user_id: int
     point: int_ge_0 | None = 0
     promotion_code: str | None = "0"
 
@@ -27,3 +28,8 @@ class PromotionDetailDTO(BaseDTO):
     day_start: date
     day_end: date
     services: list[ServiceDTO]
+
+
+@dataclass(frozen=True)
+class UserPointDTO(BaseDTO):
+    count: int

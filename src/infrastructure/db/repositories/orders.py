@@ -7,8 +7,8 @@ from src.infrastructure.db.exceptions import InsertException
 from src.infrastructure.db.models.orders import Promotion, UserPoint
 from src.infrastructure.db.models.schedules import Service
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyQueryRepository, GenericSQLAlchemyRepository
-from src.logic.dto.mappers import promotion_to_detail_dto_mapper
-from src.logic.dto.order_dto import PromotionDetailDTO
+from src.logic.dto.mappers import promotion_to_detail_dto_mapper, user_point_dto_mapper
+from src.logic.dto.order_dto import PromotionDetailDTO, UserPointDTO
 
 
 class PromotionRepository(GenericSQLAlchemyRepository[Promotion, entities.Promotion]):
@@ -65,11 +65,13 @@ class PromotionQueryRepository(GenericSQLAlchemyQueryRepository[Promotion]):
         return [promotion_to_detail_dto_mapper(el) for el in result.scalars().all()]
 
 
-# class UserPointQueryRepository(GenericSQLAlchemyRepository[UserPoint, entities.UserPoint]):
-#     model = UserPoint
-#
-#     async def find_one_or_none(self, **filter_by) -> entities.UserPoint | None:
-#         query = select(UserPoint).options(joinedload(UserPoint.user)).filter_by(**filter_by)
-#         result = await self.session.execute(query)
-#         scalar = result.scalar_one_or_none()
-#         return scalar.to_domain(with_join=True) if scalar else None
+class UserPointQueryRepository(GenericSQLAlchemyQueryRepository[UserPoint]):
+    async def find_one_or_none(self, **filter_by) -> UserPointDTO | None:
+        query = (
+            select(UserPoint)
+            # .options(joinedload(UserPoint.user))
+            .filter_by(**filter_by)
+        )
+        result = await self.session.execute(query)
+        scalar = result.scalar_one_or_none()
+        return user_point_dto_mapper(scalar) if scalar else None

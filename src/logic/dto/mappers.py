@@ -1,7 +1,7 @@
-from src.infrastructure.db.models.orders import Promotion
+from src.infrastructure.db.models.orders import Promotion, UserPoint
 from src.infrastructure.db.models.schedules import Master, Order, Schedule, Service, Slot
 from src.infrastructure.db.models.users import Users
-from src.logic.dto.order_dto import PromotionDetailDTO
+from src.logic.dto.order_dto import PromotionDetailDTO, UserPointDTO
 from src.logic.dto.schedule_dto import (
     MasterDetailDTO,
     OrderDetailDTO,
@@ -87,4 +87,10 @@ def promotion_to_detail_dto_mapper(promotion: Promotion) -> PromotionDetailDTO:
         sale=promotion.sale,
         is_active=promotion.is_active,
         services=[service_to_detail_dto_mapper(service) for service in promotion.services],
+    )
+
+
+def user_point_dto_mapper(user_point: UserPoint) -> UserPointDTO:
+    return UserPointDTO(
+        count=user_point.count,
     )

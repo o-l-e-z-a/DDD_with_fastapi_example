@@ -36,7 +36,12 @@ from src.logic.commands.user_commands import (
 )
 from src.logic.events.order_handlers import OrderCreatedEmailEventHandler, OrderCreatedPointIncreaseEventHandler
 from src.logic.mediator.base import Mediator
-from src.logic.queries.order_queries import GetAllPromotionsQuery, GetAllPromotionsQueryHandler
+from src.logic.queries.order_queries import (
+    GetAllPromotionsQuery,
+    GetAllPromotionsQueryHandler,
+    UserPointQuery,
+    UserPointQueryHandler,
+)
 from src.logic.queries.schedule_queries import (
     GetAllMasterQuery,
     GetAllMasterQueryHandler,
@@ -90,10 +95,13 @@ class LogicProvider(Provider):
         order_query_uow: SQLAlchemyOrderQueryUnitOfWork,
     ) -> Mediator:
         mediator = Mediator()
+
+        # commands
         mediator.register_command(AddUserCommand, [AddUserCommandHandler(mediator=mediator, uow=user_uow)])
         mediator.register_command(
             VerifyUserCredentialsCommand, [VerifyUserCredentialsCommandHandler(mediator=mediator, uow=user_uow)]
         )
+
         mediator.register_command(AddMasterCommand, [AddMasterCommandHandler(mediator=mediator, uow=schedule_uow)])
         mediator.register_command(AddScheduleCommand, [AddScheduleCommandHandler(mediator=mediator, uow=schedule_uow)])
         mediator.register_command(AddOrderCommand, [AddOrderCommandHandler(mediator=mediator, uow=schedule_uow)])
@@ -103,6 +111,7 @@ class LogicProvider(Provider):
         )
         mediator.register_command(StartOrderCommand, [StartOrderCommandHandler(mediator=mediator, uow=schedule_uow)])
         mediator.register_command(CancelOrderCommand, [CancelOrderCommandHandler(mediator=mediator, uow=schedule_uow)])
+
         mediator.register_command(AddPromotionCommand, [AddPromotionCommandHandler(mediator=mediator, uow=order_uow)])
         mediator.register_command(
             UpdatePromotionCommand, [UpdatePromotionCommandHandler(mediator=mediator, uow=order_uow)]
@@ -111,7 +120,9 @@ class LogicProvider(Provider):
             DeletePromotionCommand, [DeletePromotionCommandHandler(mediator=mediator, uow=order_uow)]
         )
 
+        # query
         mediator.register_query(GetUserByIdQuery, GetUserByIdQueryHandler(uow=user_query_uow))
+
         mediator.register_query(GetAllServiceQuery, GetAllServiceQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetAllMasterQuery, GetAllMasterQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetAllSchedulesQuery, GetAllSchedulesQueryHandler(uow=schedule_query_uow))
@@ -125,8 +136,11 @@ class LogicProvider(Provider):
         mediator.register_query(GetMasterReportQuery, GetMasterReportQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetServiceReportQuery, GetServiceReportQueryHandler(uow=schedule_query_uow))
         mediator.register_query(GetMasterByUserQuery, GetMasterByUserQueryHandler(uow=schedule_query_uow))
-        mediator.register_query(GetAllPromotionsQuery, GetAllPromotionsQueryHandler(uow=order_query_uow))
 
+        mediator.register_query(GetAllPromotionsQuery, GetAllPromotionsQueryHandler(uow=order_query_uow))
+        mediator.register_query(UserPointQuery, UserPointQueryHandler(uow=order_query_uow))
+
+        # events
         mediator.register_event(
             OrderCreatedEvent,
             [OrderCreatedPointIncreaseEventHandler(uow=schedule_uow), OrderCreatedEmailEventHandler(uow=schedule_uow)],

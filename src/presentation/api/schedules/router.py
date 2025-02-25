@@ -101,7 +101,7 @@ async def get_all_masters(
 
 @router.get("/all_user_to_add_masters/")
 async def get_all_user_to_add_masters(
-    # admin: CurrentAdmin,
+    # admin: FromDishka[CurrentAdmin],
     mediator: FromDishka[Mediator],
 ) -> list[AllUserSchema]:
     results: list[UserDetailDTO] = await mediator.handle_query(GetAllUsersToAddMasterQuery())
@@ -195,7 +195,7 @@ async def get_client_orders(
 @router.get("/master_report/")
 # @cache(expire=60)
 async def get_master_report(
-    # admin: CurrentAdmin,
+    # admin: FromDishka[CurrentAdmin],
     mediator: FromDishka[Mediator],
 ) -> list[MasterReportSchema]:
     results: list[MasterReportDTO] = await mediator.handle_query(GetMasterReportQuery())
@@ -206,7 +206,7 @@ async def get_master_report(
 @router.get("/service_report/")
 # @cache(expire=60)
 async def get_service_report(
-    # admin: CurrentAdmin,
+    # admin: FromDishka[CurrentAdmin],
     mediator: FromDishka[Mediator],
 ) -> list[OrderReportSchema]:
     results: list[ServiceReportDTO] = await mediator.handle_query(GetServiceReportQuery())
@@ -217,7 +217,7 @@ async def get_service_report(
 @router.post("/schedule/add/", status_code=status.HTTP_201_CREATED)
 async def add_schedule(
     schedule_data: ScheduleAddSchema,
-    # admin: CurrentAdmin,
+    # admin: FromDishka[CurrentAdmin],
     mediator: FromDishka[Mediator],
 ) -> ScheduleSchema:
     try:
@@ -356,7 +356,7 @@ async def cancel_order(
 @router.post("/master/add/", status_code=status.HTTP_201_CREATED)
 async def add_master(
     master_data: MasterAddSchema,
-    # admin: CurrentAdmin,
+    # admin: FromDishka[CurrentAdmin],
     mediator: FromDishka[Mediator],
 ) -> MasterSchema:
     services_ids = list(map(int, master_data.services.split(",")))

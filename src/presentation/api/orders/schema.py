@@ -13,10 +13,9 @@ class TotalAmountSchema(BaseSchema):
     errors: list[str] = Field(default_factory=list)
 
 
-class TotalAmountCreateSchema(BaseSchema):
-    point: int_ge_0 | None = 0
+class TotalAmountInputSchema(BaseSchema):
+    input_point: int_ge_0 | None = 0
     promotion_code: str | None = "0"
-    schedule_id: int
 
 
 class PromotionAddSchema(BaseSchema):

@@ -1,42 +1,43 @@
+from dataclasses import asdict
+
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter
 from starlette import status
 
 from src.domain.orders.entities import Promotion
-from src.logic.commands.order_commands import AddPromotionCommand, DeletePromotionCommand, UpdatePromotionCommand
+from src.logic.commands.order_commands import (
+    AddPromotionCommand,
+    CalculateOrderCommand,
+    DeletePromotionCommand,
+    UpdatePromotionCommand,
+)
 from src.logic.dto.order_dto import PromotionDetailDTO
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.mediator.base import Mediator
-from src.logic.queries.order_queries import GetAllPromotionsQuery
+from src.logic.queries.order_queries import GetAllPromotionsQuery, UserPointQuery
 from src.presentation.api.exceptions import NotFoundHTTPException
-from src.presentation.api.orders.schema import PromotionAddSchema, PromotionDetailSchema, PromotionSchema
+from src.presentation.api.orders.schema import (
+    PromotionAddSchema,
+    PromotionDetailSchema,
+    PromotionSchema,
+    TotalAmountInputSchema,
+    TotalAmountSchema,
+    UserPointSchema,
+)
+from src.presentation.api.users.utils import CurrentUser
 
 router = APIRouter(route_class=DishkaRoute, prefix="/api", tags=["order"])
 
 
-# @router.post("/total_amount/")
-# async def get_total_amount(
-#     total_amount_data: TotalAmountCreateSchema,
-#     user: CurrentUser,
-#     order_service: OrderService = Depends(get_order_service),
-# ) -> TotalAmountSchema:
-#     try:
-#         total_amount = await order_service.get_total_amount(
-#             total_amount_dto=TotalAmountDTO(**total_amount_data.model_dump()), user=user
-#         )
-#     except NotFoundLogicException as err:
-#         raise NotFoundHTTPException(detail=err.title)
-#     return TotalAmountSchema(**asdict(total_amount))
-
-# @router.get("/user_point/")
-# async def get_user_point(user: CurrentUser, user_service: UserService = Depends(get_user_service)) -> UserPointSchema:
-#     try:
-#         user_point = await user_service.get_user_point(user=user)
-#     except NotFoundLogicException as err:
-#         raise NotFoundHTTPException(detail=err.title)
-#     user_point_schema = UserPointSchema.model_validate(user_point.to_dict())
-#     return user_point_schema
+@router.get("/user_point/")
+async def get_user_point(user: FromDishka[CurrentUser], mediator: FromDishka[Mediator]) -> UserPointSchema:
+    try:
+        user_point = await mediator.handle_query(UserPointQuery(user_id=user.id))
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    user_point_schema = UserPointSchema.model_validate(user_point)
+    return user_point_schema
 
 
 @router.get("/promotions/")
@@ -48,10 +49,28 @@ async def get_promotions(
     return promotion_schemas
 
 
+@router.post("/order/{order_pk}/calculate")
+async def calculate_total_amount(
+    order_pk: int,
+    total_amount_data: TotalAmountInputSchema,
+    user: FromDishka[CurrentUser],
+    mediator: FromDishka[Mediator],
+) -> TotalAmountSchema:
+    try:
+        total_amount = (
+            await mediator.handle_command(
+                CalculateOrderCommand(user_id=user.id, order_id=order_pk, **total_amount_data.model_dump())
+            )
+        )[0]
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    return TotalAmountSchema(**asdict(total_amount))
+
+
 @router.post("/promotion/add/", status_code=status.HTTP_201_CREATED)
 async def add_promotion(
     promotion_data: PromotionAddSchema,
-    # admin: CurrentAdmin,
+    # admin: FromDishka[CurrentAdmin],
     mediator: FromDishka[Mediator],
 ) -> PromotionSchema:
     try:
@@ -64,17 +83,17 @@ async def add_promotion(
     return promotion_schema
 
 
-@router.patch("/promotion/{promotion_id}/update/")
+@router.patch("/promotion/{promotion_pk}/update/")
 async def patch_promotion(
-    promotion_id: int,
+    promotion_pk: int,
     promotion_data: PromotionAddSchema,
-    # admin: CurrentAdmin,
+    # admin: FromDishka[CurrentAdmin],
     mediator: FromDishka[Mediator],
 ) -> PromotionSchema:
     try:
         promotion: Promotion = (
             await mediator.handle_command(
-                UpdatePromotionCommand(**promotion_data.model_dump(), promotion_id=promotion_id)
+                UpdatePromotionCommand(**promotion_data.model_dump(), promotion_id=promotion_pk)
             )
         )[0]
     except NotFoundLogicException as err:
@@ -83,13 +102,13 @@ async def patch_promotion(
     return promotion_schema
 
 
-@router.delete("/promotion/{promotion_id}/delete/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/promotion/{promotion_pk}/delete/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_promotion(
-    promotion_id: int,
-    # admin: CurrentAdmin,
+    promotion_pk: int,
+    # admin: FromDishka[CurrentAdmin],
     mediator: FromDishka[Mediator],
 ):
     try:
-        await mediator.handle_command(DeletePromotionCommand(promotion_id=promotion_id))
+        await mediator.handle_command(DeletePromotionCommand(promotion_id=promotion_pk))
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
