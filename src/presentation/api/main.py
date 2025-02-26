@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
@@ -12,9 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy_file.storage import StorageManager
 from starlette.staticfiles import StaticFiles
 
+from src.infrastructure.broker.rabbit.connector import RabbitConnector
 from src.infrastructure.broker.rabbit.consumer import RabbitConsumer
 from src.infrastructure.redis_adapter.redis_connector import RedisConnectorFactory
 from src.logic.event_consumers.orders_consumers import UserCreatedEventConsumer
+from src.logic.mediator.base import Mediator
 from src.presentation.api.admin.auth import authentication_backend
 from src.presentation.api.admin.views import (
     MasterAdmin,
@@ -29,6 +32,7 @@ from src.presentation.api.admin.views import (
 from src.presentation.api.dependencies import setup_container
 from src.presentation.api.orders.router import router as order_router
 from src.presentation.api.schedules.router import router as schedule_router
+from src.presentation.api.settings import Settings
 from src.presentation.api.users.router import router_auth, router_users
 
 media_dir = Path("src/presentation/api/media")
@@ -61,16 +65,20 @@ async def add_sql_admin(app: FastAPI):
     admin.add_view(OrderAdmin)
 
 
-async def start_consumer(app: FastAPI):
-    user_created_consumer = await app.state.dishka_container.get(UserCreatedEventConsumer)
-    base_consumer = await app.state.dishka_container.get(RabbitConsumer)
+async def start_consumer(app: FastAPI, loop=None):
+    settings = await app.state.dishka_container.get(Settings)
+    async with RabbitConnector(settings, loop) as conn:
+        # user_created_consumer = await app.state.dishka_container.get(UserCreatedEventConsumer)
+        mediator = await app.state.dishka_container.get(Mediator)
+        user_created_consumer = UserCreatedEventConsumer(mediator)
+        base_consumer = RabbitConsumer(conn.channel)
 
-    await base_consumer.consume_messages(
-        user_created_consumer,
-        queue_name=user_created_consumer.queue_name,
-        exchange_name=user_created_consumer.exchange_name,
-        routing_key=user_created_consumer.routing_key,
-    )
+        await base_consumer.consume_messages(
+            user_created_consumer,
+            queue_name=user_created_consumer.queue_name,
+            exchange_name=user_created_consumer.exchange_name,
+            routing_key=user_created_consumer.routing_key,
+        )
 
 
 @asynccontextmanager
@@ -79,7 +87,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     redis_connection = await redis_connector.get_async_connection()
     FastAPICache.init(RedisBackend(redis_connection), prefix="cache")
     await add_sql_admin(app)
-    await start_consumer(app)
+    # await start_consumer(app)
+    loop = asyncio.get_running_loop()
+    task = loop.create_task(start_consumer(app, loop))
+    await task
     yield
     if redis_connection:
         await redis_connection.close()

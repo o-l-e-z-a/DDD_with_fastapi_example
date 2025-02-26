@@ -10,10 +10,10 @@ class RabbitProvider(Provider):
 
     settings = from_context(provides=Settings)
 
-    connector = provide(RabbitConnector)
+    # connector = provide(RabbitConnector)
+
     publisher = provide(Producer)
 
-    # @provide()
-    # async def publisher(self, connector: RabbitConnector) -> Publisher:
-    #     async with connector:
-    #         return Publisher(connector.channel)
+    @provide()
+    async def connector(self, settings: Settings) -> RabbitConnector:
+        return RabbitConnector(settings)

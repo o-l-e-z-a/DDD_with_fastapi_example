@@ -80,8 +80,8 @@ from src.logic.queries.user_queries import GetUserByIdQuery, GetUserByIdQueryHan
 class LogicProvider(Provider):
     scope = Scope.APP
 
-    consumer = provide(RabbitConsumer)
-    user_created_consumer = provide(UserCreatedEventConsumer)
+    # consumer = provide(RabbitConsumer)
+    # user_created_consumer = provide(UserCreatedEventConsumer)
 
     @provide(scope=Scope.APP)
     def init_mediator(
