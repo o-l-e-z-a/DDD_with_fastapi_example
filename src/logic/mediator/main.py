@@ -2,10 +2,7 @@ import asyncio
 
 from datetime import date, timedelta
 
-from dishka import make_async_container
-
 from src.infrastructure.db.exceptions import InsertException
-from src.infrastructure.db.provider import DBProvider
 from src.logic.commands.schedule_commands import (
     AddMasterCommand,
     AddOrderCommand,
@@ -15,16 +12,15 @@ from src.logic.commands.schedule_commands import (
 )
 from src.logic.commands.user_commands import AddUserCommand
 from src.logic.mediator.base import Mediator
-from src.logic.provider import LogicProvider
+from src.presentation.api.dependencies import setup_container
 from src.presentation.api.schedules.schema import ScheduleSchema
-from src.presentation.api.settings import Settings, settings
 
 
 async def create_user():
     mediator = await container.get(Mediator)
     await mediator.handle_command(
         AddUserCommand(
-            email="safas@wsefg.com",
+            email="safaasds@wsefg.com",
             first_name="sad",
             last_name="asdas",
             telephone="880055534323",
@@ -85,5 +81,5 @@ async def delete_order():
 
 
 if __name__ == "__main__":
-    container = make_async_container(LogicProvider(), DBProvider(), context={Settings: settings})
-    asyncio.new_event_loop().run_until_complete(add_schedule())
+    container = setup_container()
+    asyncio.new_event_loop().run_until_complete(create_user())

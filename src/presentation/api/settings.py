@@ -53,6 +53,15 @@ class RedisConfig(BaseSettings):
     REDIS_DB: int
 
 
+class RabbitConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
+
+    RABBIT_HOST: str
+    RABBIT_PORT: int
+    RABBIT_USER: str
+    RABBIT_PASS: str
+
+
 class EmailConfig(BaseSettings):
     model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
 
@@ -80,6 +89,7 @@ class Settings(BaseSettings):
     redis: RedisConfig = RedisConfig()
     email: EmailConfig = EmailConfig()
     auth: AuthConfig = AuthConfig()
+    rabbit: RabbitConfig = RabbitConfig()
 
     # model_config = SettingsConfigDict(env_file=".env.docker")
     # model_config = SettingsConfigDict()

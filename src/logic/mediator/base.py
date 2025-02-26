@@ -31,7 +31,7 @@ class Mediator(EventMediator, CommandMediator, QueryMediator):
         kw_only=True,
     )
 
-    def register_event(self, event: Type[ET], event_handlers: Iterable[EventHandler[ET, ER]]):
+    def register_event(self, event: Type[ET], event_handlers: Iterable[EventHandler[ET]]):
         self.events_map[event].extend(event_handlers)
 
     def register_command(self, command: Type[CT], command_handlers: Iterable[CommandHandler[CT, CR]]):

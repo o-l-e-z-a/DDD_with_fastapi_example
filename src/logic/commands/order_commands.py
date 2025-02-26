@@ -5,14 +5,36 @@ from typing import Annotated
 from pydantic import Field, PositiveInt
 
 from src.domain.base.values import Name, PositiveIntNumber
-from src.domain.orders.entities import Promotion
+from src.domain.orders.entities import Promotion, UserPoint
 from src.domain.orders.service import TotalAmountResult
 from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.logic.commands.base import BaseCommand, CommandHandler
 from src.logic.exceptions.order_exceptions import OrderNotFoundLogicException, PromotionNotFoundLogicException
 from src.logic.exceptions.schedule_exceptions import ServiceNotFoundLogicException
+from src.logic.exceptions.user_exceptions import UserNotFoundLogicException
 
 int_ge_0 = Annotated[int, Field(ge=0)]
+
+
+class AdduserPointCommand(BaseCommand):
+    user_id: PositiveInt
+
+
+@dataclass(frozen=True)
+class AdduserPointCommandHandler(CommandHandler[AdduserPointCommand, UserPoint]):
+    uow: SQLAlchemyOrderUnitOfWork
+
+    async def handle(self, command: AdduserPointCommand) -> UserPoint:
+        async with self.uow:
+            user = await self.uow.users.find_one_or_none(id=command.user_id)
+            if not user:
+                raise UserNotFoundLogicException(id=command.user_id)
+            user_point = UserPoint(
+                user_id=command.user_id,
+            )
+            user_point_from_repo = await self.uow.user_points.add(entity=user_point)
+            await self.uow.commit()
+            return user_point_from_repo
 
 
 class AddPromotionCommand(BaseCommand):

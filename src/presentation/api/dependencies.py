@@ -1,9 +1,12 @@
-from dishka import Scope, provide
+from dishka import AsyncContainer, Scope, make_async_container, provide
 from dishka.integrations.fastapi import FastapiProvider
 from fastapi import Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from src.infrastructure.broker.rabbit.provider import RabbitProvider
+from src.infrastructure.db.provider import DBProvider
 from src.logic.mediator.base import Mediator
+from src.logic.provider import LogicProvider
 from src.logic.queries.schedule_queries import GetMasterByUserQuery
 from src.presentation.api.exceptions import (
     TokenAbsentException,
@@ -11,6 +14,7 @@ from src.presentation.api.exceptions import (
     UserIsNotMasterException,
     UserIsNotPresentException,
 )
+from src.presentation.api.settings import Settings, settings
 from src.presentation.api.users.utils import (
     ACCESS_TOKEN_COOKIE_FIELD,
     REFRESH_TOKEN_TYPE,
@@ -80,3 +84,10 @@ class MyFastapiProvider(FastapiProvider):
             if not user_id:
                 raise UserIsNotPresentException
             return await get_user_from_payload(user_id, mediator=mediator)
+
+
+def setup_container() -> AsyncContainer:
+    container = make_async_container(
+        DBProvider(), RabbitProvider(), LogicProvider(), MyFastapiProvider(), context={Settings: settings}
+    )
+    return container

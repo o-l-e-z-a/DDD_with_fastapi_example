@@ -6,10 +6,10 @@ from pydantic import EmailStr
 
 from src.domain.users.entities import User
 from src.domain.users.values import Email, HumanName, Telephone
-from src.logic.commands.base import BaseCommand, CommandHandler
-from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException, IncorrectEmailOrPasswordLogicException
 from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersUnitOfWork
-
+from src.logic.commands.base import BaseCommand, CommandHandler
+from src.logic.events.user_events import UserCreatedEvent
+from src.logic.exceptions.user_exceptions import IncorrectEmailOrPasswordLogicException, UserAlreadyExistsLogicException
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -50,12 +50,17 @@ class AddUserCommandHandler(CommandHandler[AddUserCommand, User]):
             )
             user.hashed_password = password_hash
             user_from_repo = await self.uow.users.add(entity=user)
-            # user_point = UserPoint(user=user_from_repo)
-            # await self.uow.user_points.add(entity=user_point)
-            await self.uow.commit()
             events = user.pull_events()
+            created_event = UserCreatedEvent(
+                user_id=user_from_repo.id,
+                email=user_from_repo.email.as_generic_type(),
+                first_name=user_from_repo.first_name.as_generic_type(),
+                last_name=user_from_repo.last_name.as_generic_type(),
+            )
+            events.append(created_event)
             print(events)
             await self.mediator.publish(events)
+            await self.uow.commit()
             return user_from_repo
 
 

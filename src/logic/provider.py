@@ -1,12 +1,15 @@
 from dishka import Provider, Scope, provide
 
-from src.domain.orders.events import OrderCreatedEvent
+from src.infrastructure.broker.rabbit.consumer import RabbitConsumer
+from src.infrastructure.broker.rabbit.producer import Producer
 from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderQueryUnitOfWork, SQLAlchemyOrderUnitOfWork
 from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleQueryUnitOfWork, SQLAlchemyScheduleUnitOfWork
 from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersQueryUnitOfWork, SQLAlchemyUsersUnitOfWork
 from src.logic.commands.order_commands import (
     AddPromotionCommand,
     AddPromotionCommandHandler,
+    AdduserPointCommand,
+    AdduserPointCommandHandler,
     DeletePromotionCommand,
     DeletePromotionCommandHandler,
     UpdatePromotionCommand,
@@ -34,7 +37,8 @@ from src.logic.commands.user_commands import (
     VerifyUserCredentialsCommand,
     VerifyUserCredentialsCommandHandler,
 )
-from src.logic.events.order_handlers import OrderCreatedEmailEventHandler, OrderCreatedPointIncreaseEventHandler
+from src.logic.event_consumers.orders_consumers import UserCreatedEventConsumer
+from src.logic.events.user_events import UserCreatedEvent, UserCreatedEventHandler
 from src.logic.mediator.base import Mediator
 from src.logic.queries.order_queries import (
     GetAllPromotionsQuery,
@@ -76,13 +80,8 @@ from src.logic.queries.user_queries import GetUserByIdQuery, GetUserByIdQueryHan
 class LogicProvider(Provider):
     scope = Scope.APP
 
-    user_uow = provide(SQLAlchemyUsersUnitOfWork)
-    schedule_uow = provide(SQLAlchemyScheduleUnitOfWork)
-    order_uow = provide(SQLAlchemyOrderUnitOfWork)
-
-    user_query_uow = provide(SQLAlchemyUsersQueryUnitOfWork)
-    schedule_query_uow = provide(SQLAlchemyScheduleQueryUnitOfWork)
-    order_query_uow = provide(SQLAlchemyOrderQueryUnitOfWork)
+    consumer = provide(RabbitConsumer)
+    user_created_consumer = provide(UserCreatedEventConsumer)
 
     @provide(scope=Scope.APP)
     def init_mediator(
@@ -93,6 +92,8 @@ class LogicProvider(Provider):
         user_query_uow: SQLAlchemyUsersQueryUnitOfWork,
         schedule_query_uow: SQLAlchemyScheduleQueryUnitOfWork,
         order_query_uow: SQLAlchemyOrderQueryUnitOfWork,
+        publisher: Producer,
+        # connector: RabbitConnector,
     ) -> Mediator:
         mediator = Mediator()
 
@@ -119,6 +120,7 @@ class LogicProvider(Provider):
         mediator.register_command(
             DeletePromotionCommand, [DeletePromotionCommandHandler(mediator=mediator, uow=order_uow)]
         )
+        mediator.register_command(AdduserPointCommand, [AdduserPointCommandHandler(mediator=mediator, uow=order_uow)])
 
         # query
         mediator.register_query(GetUserByIdQuery, GetUserByIdQueryHandler(uow=user_query_uow))
@@ -142,7 +144,7 @@ class LogicProvider(Provider):
 
         # events
         mediator.register_event(
-            OrderCreatedEvent,
-            [OrderCreatedPointIncreaseEventHandler(uow=schedule_uow), OrderCreatedEmailEventHandler(uow=schedule_uow)],
+            UserCreatedEvent,
+            [UserCreatedEventHandler(uow=schedule_uow, message_broker=publisher)],
         )
         return mediator

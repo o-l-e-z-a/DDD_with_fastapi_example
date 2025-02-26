@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
 
-from dishka import make_async_container
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
 from fastapi_cache import FastAPICache
@@ -13,9 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy_file.storage import StorageManager
 from starlette.staticfiles import StaticFiles
 
-from src.infrastructure.db.provider import DBProvider
+from src.infrastructure.broker.rabbit.consumer import RabbitConsumer
 from src.infrastructure.redis_adapter.redis_connector import RedisConnectorFactory
-from src.logic.provider import LogicProvider
+from src.logic.event_consumers.orders_consumers import UserCreatedEventConsumer
 from src.presentation.api.admin.auth import authentication_backend
 from src.presentation.api.admin.views import (
     MasterAdmin,
@@ -27,10 +26,9 @@ from src.presentation.api.admin.views import (
     UserPointAdmin,
     UsersAdmin,
 )
-from src.presentation.api.dependencies import MyFastapiProvider
+from src.presentation.api.dependencies import setup_container
 from src.presentation.api.orders.router import router as order_router
 from src.presentation.api.schedules.router import router as schedule_router
-from src.presentation.api.settings import Settings, settings
 from src.presentation.api.users.router import router_auth, router_users
 
 media_dir = Path("src/presentation/api/media")
@@ -63,12 +61,25 @@ async def add_sql_admin(app: FastAPI):
     admin.add_view(OrderAdmin)
 
 
+async def start_consumer(app: FastAPI):
+    user_created_consumer = await app.state.dishka_container.get(UserCreatedEventConsumer)
+    base_consumer = await app.state.dishka_container.get(RabbitConsumer)
+
+    await base_consumer.consume_messages(
+        user_created_consumer,
+        queue_name=user_created_consumer.queue_name,
+        exchange_name=user_created_consumer.exchange_name,
+        routing_key=user_created_consumer.routing_key,
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     redis_connector = RedisConnectorFactory.create()
     redis_connection = await redis_connector.get_async_connection()
     FastAPICache.init(RedisBackend(redis_connection), prefix="cache")
     await add_sql_admin(app)
+    await start_consumer(app)
     yield
     if redis_connection:
         await redis_connection.close()
@@ -76,6 +87,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = create_fastapi_app()
-container = make_async_container(LogicProvider(), DBProvider(), MyFastapiProvider(), context={Settings: settings})
+container = setup_container()
 setup_dishka(container, app)
 app.mount("/media", StaticFiles(directory=media_dir), name="media")

@@ -1,15 +1,12 @@
 from typing import Optional
 
-from dishka import make_async_container
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
-from src.infrastructure.db.provider import DBProvider
 from src.logic.commands.user_commands import VerifyUserCredentialsCommand
 from src.logic.mediator.base import Mediator
-from src.logic.provider import LogicProvider
-from src.presentation.api.settings import Settings, settings
+from src.presentation.api.dependencies import setup_container
 from src.presentation.api.users.utils import create_access_token, get_current_user
 
 
@@ -43,4 +40,4 @@ class AdminAuth(AuthenticationBackend):
 
 
 authentication_backend = AdminAuth(secret_key="...")
-container = make_async_container(LogicProvider(), DBProvider(), context={Settings: settings})
+container = setup_container()

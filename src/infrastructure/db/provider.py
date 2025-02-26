@@ -1,21 +1,25 @@
-import asyncio
-from collections import defaultdict
-
-from datetime import date, timedelta
-from typing import Type
-
-from dishka import Provider, Scope, from_context, make_async_container, provide, AnyOf
+from dishka import Provider, Scope, from_context, provide
 from sqlalchemy import Engine
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
-from src.presentation.api.settings import Settings, settings
 from src.infrastructure.db.config import get_async_engine, get_async_session_factory, get_sync_engine
+from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderQueryUnitOfWork, SQLAlchemyOrderUnitOfWork
+from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleQueryUnitOfWork, SQLAlchemyScheduleUnitOfWork
+from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersQueryUnitOfWork, SQLAlchemyUsersUnitOfWork
+from src.presentation.api.settings import Settings
 
 
 class DBProvider(Provider):
     scope = Scope.APP
 
     settings = from_context(provides=Settings)
+    user_uow = provide(SQLAlchemyUsersUnitOfWork)
+    schedule_uow = provide(SQLAlchemyScheduleUnitOfWork)
+    order_uow = provide(SQLAlchemyOrderUnitOfWork)
+
+    user_query_uow = provide(SQLAlchemyUsersQueryUnitOfWork)
+    schedule_query_uow = provide(SQLAlchemyScheduleQueryUnitOfWork)
+    order_query_uow = provide(SQLAlchemyOrderQueryUnitOfWork)
 
     @provide(scope=Scope.APP)
     def engine(self, setting: Settings) -> AsyncEngine:
