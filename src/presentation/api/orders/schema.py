@@ -10,12 +10,20 @@ class TotalAmountSchema(BaseSchema):
     total_amount: int_ge_0
     point_uses: int_ge_0
     promotion_sale: int_ge_0
-    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
 
 class TotalAmountInputSchema(BaseSchema):
     input_point: int_ge_0 | None = 0
     promotion_code: str | None = "0"
+
+
+class OrderPaymentSchema(BaseSchema):
+    order_id: int
+    total_amount: int_ge_0
+    point_uses: int_ge_0
+    promotion_sale: int_ge_0
+    is_payed: bool
 
 
 class PromotionAddSchema(BaseSchema):

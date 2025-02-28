@@ -243,9 +243,6 @@ class Order(Base):
     slot_id: Mapped[int] = mapped_column(ForeignKey("slot.id", ondelete="CASCADE"))
     service_id: Mapped[int] = mapped_column(ForeignKey("service.id", ondelete="CASCADE"), nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    # point_uses: Mapped[int] = mapped_column(default=0)
-    # promotion_sale: Mapped[int] = mapped_column(default=0)
-    # total_amount: Mapped[int] = mapped_column(default=0)
     status: Mapped[int] = mapped_column(nullable=True)
     date_add: Mapped[datetime] = mapped_column(default=datetime.today())
     photo_after = Column(ImageField)
@@ -255,11 +252,6 @@ class Order(Base):
     service: Mapped["Service"] = relationship(back_populates="orders")
     user: Mapped["Users"] = relationship()
 
-    # __table_args__ = (
-    #     CheckConstraint("point_uses >= 0", name="check_point_uses_positive"),
-    #     CheckConstraint("promotion_sale >= 0", name="check_promotion_sale_positive"),
-    #     CheckConstraint("total_amount >= 0", name="check_total_amount_positive"),
-    # )
 
     @hybrid_property
     def photo_before_path(self):

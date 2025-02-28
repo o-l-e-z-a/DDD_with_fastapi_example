@@ -14,7 +14,7 @@ class TestTotalAmount:
         input_user_point = CountNumber(150)
         total_amount = TotalAmountDomainService().calculate(
             promotion_sale=promotion_20, user_point_count=ivanov_user_point,
-            service=henna_staining_service, input_user_point=input_user_point
+            service=henna_staining_service, user_point_input=input_user_point
         )
         expected_total_amount = int(1500 * 0.8 - 150)
         expected_total_amount_result = TotalAmountResult(
@@ -30,7 +30,7 @@ class TestTotalAmount:
         input_user_point = CountNumber(150)
         total_amount = TotalAmountDomainService().calculate(
             promotion_sale=None, user_point_count=ivanov_user_point,
-            service=henna_staining_service, input_user_point=input_user_point
+            service=henna_staining_service, user_point_input=input_user_point
         )
         expected_total_amount = 1500 - 150
         expected_total_amount_result = TotalAmountResult(
@@ -47,7 +47,7 @@ class TestTotalAmount:
         henna_staining_service.price = PositiveIntNumber(680)
         total_amount = TotalAmountDomainService().calculate(
             promotion_sale=promotion_20, user_point_count=ivanov_user_point,
-            service=henna_staining_service, input_user_point=input_user_point
+            service=henna_staining_service, user_point_input=input_user_point
         )
         expected_total_amount = MINIMUM_BALANCE
         expected_total_amount_result = TotalAmountResult(
@@ -64,7 +64,7 @@ class TestTotalAmount:
         ivanov_user_point.count = CountNumber(1)
         total_amount = TotalAmountDomainService().calculate(
             promotion_sale=promotion_20, user_point_count=ivanov_user_point,
-            service=henna_staining_service, input_user_point=input_user_point
+            service=henna_staining_service, user_point_input=input_user_point
         )
         expected_total_amount = int(1500 * 0.8)
         expected_total_amount_result = TotalAmountResult(

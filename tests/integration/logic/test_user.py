@@ -1,6 +1,7 @@
 import pytest
 
-from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException, UserPointNotFoundLogicException
+from src.logic.exceptions.user_exceptions import UserAlreadyExistsLogicException
+from src.logic.exceptions.order_exceptions import UserPointNotFoundLogicException
 
 
 class TestUserService:

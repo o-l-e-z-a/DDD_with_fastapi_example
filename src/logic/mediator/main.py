@@ -20,10 +20,10 @@ async def create_user():
     mediator = await container.get(Mediator)
     await mediator.handle_command(
         AddUserCommand(
-            email="safaasd213s@wsefg.com",
+            email="s8s@wsefg.com",
             first_name="sad",
             last_name="asdas",
-            telephone="880075534323",
+            telephone="880085534323",
             password="asdas@13H",
         )
     )

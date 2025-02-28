@@ -1,23 +1,20 @@
 from dataclasses import dataclass
 
-from src.domain.orders.events import OrderCreatedEvent
-from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
-from src.logic.events.base import EventHandler
+from src.domain.base.events import BaseEvent
+from src.domain.schedules.events import OrderCancelledEvent
+from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
+from src.logic.events.base import BrokerEventhandler
+
+
+@dataclass(kw_only=True)
+class OrderPayedEvent(BaseEvent):
+    order_payment_id: int
+    user_point_id: int
+    point_uses: int
 
 
 @dataclass
-class OrderCreatedEmailEventHandler(EventHandler[OrderCreatedEvent]):
-    uow: SQLAlchemyScheduleUnitOfWork
-
-    async def handle(self, event: OrderCreatedEvent) -> None:
-        print(f"{self.__class__.__name__}, event: {event}")
-        return None
-
-
-@dataclass
-class OrderCreatedPointIncreaseEventHandler(EventHandler[OrderCreatedEvent]):
-    uow: SQLAlchemyScheduleUnitOfWork
-
-    async def handle(self, event: OrderCreatedEvent):
-        print(f"{self.__class__.__name__}, event: {event}")
-        return None
+class OrderPayedEventHandler(BrokerEventhandler[OrderCancelledEvent]):
+    uow: SQLAlchemyOrderUnitOfWork
+    exchange_name = "order_payed"
+    routing_key = "order_payed"

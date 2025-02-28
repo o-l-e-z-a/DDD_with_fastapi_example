@@ -4,10 +4,10 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from src.domain.orders import entities
 from src.infrastructure.db.exceptions import InsertException
-from src.infrastructure.db.models.orders import Promotion, UserPoint
+from src.infrastructure.db.models.orders import Promotion, UserPoint, OrderPayment
 from src.infrastructure.db.models.schedules import Service
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyQueryRepository, GenericSQLAlchemyRepository
-from src.logic.dto.mappers import promotion_to_detail_dto_mapper, user_point_dto_mapper
+from src.logic.dto.mappers.order_mappers import promotion_to_detail_dto_mapper, user_point_dto_mapper
 from src.logic.dto.order_dto import PromotionDetailDTO, UserPointDTO
 
 
@@ -55,7 +55,11 @@ class UserPointRepository(GenericSQLAlchemyRepository[UserPoint, entities.UserPo
         query = select(self.model).options(joinedload(self.model.user)).filter_by(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
-        return scalar.to_domain(with_join=True) if scalar else None
+        return scalar.to_domain() if scalar else None
+
+
+class OrderPaymentRepository(GenericSQLAlchemyRepository[OrderPayment, entities.OrderPayment]):
+    model = OrderPayment
 
 
 class PromotionQueryRepository(GenericSQLAlchemyQueryRepository[Promotion]):

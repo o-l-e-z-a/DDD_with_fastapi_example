@@ -11,10 +11,15 @@ class NotUserOrderLogicException(LogicException):
 
 
 @dataclass(eq=False)
-class OrderNotFoundLogicException(NotFoundLogicException):
-    model: str = 'Заказ'
+class PromotionNotFoundLogicException(NotFoundLogicException):
+    model: str = 'Промокод'
 
 
 @dataclass(eq=False)
-class PromotionNotFoundLogicException(NotFoundLogicException):
-    model: str = 'Промокод'
+class OrderPaymentNotFoundLogicException(NotFoundLogicException):
+    model: str = 'Оплата заказа'
+
+
+@dataclass(eq=False)
+class UserPointNotFoundLogicException(NotFoundLogicException):
+    model: str = "Баллы пользователя"

@@ -19,11 +19,6 @@ class UserNotFoundLogicException(NotFoundLogicException):
 
 
 @dataclass(eq=False)
-class UserPointNotFoundLogicException(NotFoundLogicException):
-    model: str = "Баллы пользователя"
-
-
-@dataclass(eq=False)
 class IncorrectEmailOrPasswordLogicException(LogicException):
     @property
     def title(self) -> str:

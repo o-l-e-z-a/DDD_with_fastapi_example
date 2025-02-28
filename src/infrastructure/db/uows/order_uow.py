@@ -4,7 +4,7 @@ from src.infrastructure.db.repositories.orders import (
     PromotionQueryRepository,
     PromotionRepository,
     UserPointQueryRepository,
-    UserPointRepository,
+    UserPointRepository, OrderPaymentRepository,
 )
 from src.infrastructure.db.repositories.schedules import OrderRepository, ServiceRepository
 from src.infrastructure.db.repositories.users import UserRepository
@@ -18,6 +18,7 @@ class SQLAlchemyOrderUnitOfWork(SQLAlchemyAbstractUnitOfWork):
         self.users = UserRepository(session=self._session)
         self.promotions = PromotionRepository(session=self._session)
         self.orders = OrderRepository(session=self._session)
+        self.order_payments = OrderPaymentRepository(session=self._session)
         self.user_points = UserPointRepository(session=self._session)
         return uow
 

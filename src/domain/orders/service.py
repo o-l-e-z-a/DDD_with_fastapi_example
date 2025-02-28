@@ -8,15 +8,17 @@ from src.domain.orders.values import LESS_POINT_WARNINGS, MINIMUM_BALANCE, MORE_
 class TotalAmountDomainService:
     @staticmethod
     def calculate(
-        promotion_sale: int | None, user_point_count: int | None, service_price: int, input_user_point: int
+        promotion_sale: int | None, user_point_count: int | None, service_price: int, user_point_input: int
     ) -> TotalAmountResult:
         total_amount = service_price
-        point = input_user_point
+        point = user_point_input
         warnings = []
         promotion_sale_value = 0
-
+        print(f"total_amount={total_amount}, user_point_count: {user_point_count}, point_uses={point}, promotion_sale={promotion_sale_value}, service_price: {service_price}")
         if promotion_sale:
             promotion_sale_value = int(service_price * promotion_sale / 100)
+            if 1 < total_amount - promotion_sale_value < MINIMUM_BALANCE:
+                promotion_sale_value = total_amount - MINIMUM_BALANCE
             total_amount -= promotion_sale_value
         if user_point_count < point:
             point = 0
@@ -31,7 +33,7 @@ class TotalAmountDomainService:
             total_amount -= point
         else:
             total_amount -= point
-
+        print(f"total_amount={total_amount}, user_point_count: {user_point_count}, point_uses={point}, promotion_sale={promotion_sale_value}, service_price: {service_price}")
         return TotalAmountResult(
             total_amount=total_amount, point_uses=point, promotion_sale=promotion_sale_value, warnings=warnings
         )

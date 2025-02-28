@@ -327,7 +327,7 @@ async def update_photo(
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
     except OrderNotInProgressException as err:
-        raise NotUserOrderException(detail=err.title)
+        raise OrderNotCorrectStatusException(detail=err.title)
     except UpdateException as err:
         raise CannotUpdateDataToDatabase(detail=err.title)
     print(order.to_dict())

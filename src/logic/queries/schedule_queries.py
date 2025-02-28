@@ -147,7 +147,7 @@ class GetScheduleSlotsQueryHandler(QueryHandler[GetScheduleSlotsQuery, list[Slot
 
     async def handle(self, query: GetScheduleSlotsQuery) -> list[SlotShortDTO]:
         async with self.uow:
-            results = await self.uow.schedules.find_occupied_slots(schedule_id=query.schedule_id)
+            results = await self.uow.schedules.find_free_slots(schedule_id=query.schedule_id)
         return results
 
 

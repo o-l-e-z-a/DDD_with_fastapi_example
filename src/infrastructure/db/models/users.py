@@ -31,9 +31,7 @@ class Users(Base[entities.User]):
     is_active: Mapped[bool] = mapped_column(server_default="t", default=True)
     is_superuser: Mapped[bool] = mapped_column(server_default="f", default=False)
 
-    master: Mapped["Master"] = relationship(
-        back_populates="user",
-    )
+    master: Mapped["Master"] = relationship(back_populates="user")
     points: Mapped[list["UserPoint"]] = relationship(back_populates="user")
 
     def to_domain(self) -> entities.User:

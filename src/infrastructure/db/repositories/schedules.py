@@ -12,7 +12,7 @@ from src.infrastructure.db.exceptions import InsertException, UpdateException
 from src.infrastructure.db.models.schedules import Master, Order, Schedule, Service, Slot
 from src.infrastructure.db.models.users import Users
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyQueryRepository, GenericSQLAlchemyRepository
-from src.logic.dto.mappers import (
+from src.logic.dto.mappers.schedule_mappers import (
     master_to_detail_dto_mapper,
     order_to_detail_dto_mapper,
     schedule_to_detail_dto_mapper,
@@ -236,6 +236,20 @@ class ScheduleQueryRepository(GenericSQLAlchemyQueryRepository[Schedule]):
                 and_(
                     Slot.schedule_id == schedule_id,
                     or_(Order.status != OrderStatus.CANCELLED.value, Order.status == None),  # noqa: E711
+                )
+            )
+        )
+        result = await self.session.execute(query)
+        return [slot_to_short_dto_mapper(el) for el in result.scalars().all()]
+
+    async def find_free_slots(self, schedule_id: int) -> list[SlotShortDTO]:
+        query = (
+            select(Slot)
+            .join(Slot.orders, isouter=True)
+            .where(
+                and_(
+                    Slot.schedule_id == schedule_id,
+                    ~Slot.orders.any(),  # noqa: E711
                 )
             )
         )

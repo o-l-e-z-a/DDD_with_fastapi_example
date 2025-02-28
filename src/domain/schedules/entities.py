@@ -7,7 +7,8 @@ from datetime import date, datetime
 
 from src.domain.base.entities import BaseEntity
 from src.domain.base.values import Name, PositiveIntNumber
-from src.domain.orders.events import OrderCancelledEvent, OrderCreatedEvent
+from src.domain.schedules.events import OrderCancelledEvent
+# from src.domain.orders.events import OrderCancelledEvent, OrderCreatedEvent
 from src.domain.schedules.exceptions import (
     OrderNotInProgressException,
     OrderNotReceivedException,
@@ -179,13 +180,13 @@ class Order(BaseEntity):
             slot_id=slot_id,
         )
 
-        order.register_event(
-            OrderCreatedEvent(
-                user_id=order.user_id,
-                service_id=order.service_id,
-                slot_id=order.slot_id,
-            )
-        )
+        # order.register_event(
+        #     OrderCreatedEvent(
+        #         user_id=order.user_id,
+        #         service_id=order.service_id,
+        #         slot_id=order.slot_id,
+        #     )
+        # )
         return order
 
     def update_slot_time(self, slot_id: int, occupied_slots: list[Slot]):
@@ -219,7 +220,7 @@ class Order(BaseEntity):
             OrderCancelledEvent(
                 user_id=self.user_id,
                 service_id=self.service_id,
-                slot_id=self.slot_id,
+                order_id=self.slot_id,
             )
         )
 

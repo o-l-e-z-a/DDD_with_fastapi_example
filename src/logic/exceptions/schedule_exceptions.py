@@ -26,3 +26,8 @@ class MasterNotFoundLogicException(NotFoundLogicException):
 @dataclass(eq=False)
 class ScheduleNotFoundLogicException(NotFoundLogicException):
     model: str = "Расписание"
+
+
+@dataclass(eq=False)
+class OrderNotFoundLogicException(NotFoundLogicException):
+    model: str = 'Заказ'

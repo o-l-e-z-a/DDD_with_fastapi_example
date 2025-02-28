@@ -6,24 +6,25 @@ from fastapi import APIRouter
 from starlette import status
 
 from src.domain.orders.entities import Promotion
+from src.domain.orders.exceptions import OrderIsPayedException
 from src.logic.commands.order_commands import (
     AddPromotionCommand,
     CalculateOrderCommand,
     DeletePromotionCommand,
-    UpdatePromotionCommand,
+    UpdatePromotionCommand, OrderPayCommand,
 )
 from src.logic.dto.order_dto import PromotionDetailDTO
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.mediator.base import Mediator
 from src.logic.queries.order_queries import GetAllPromotionsQuery, UserPointQuery
-from src.presentation.api.exceptions import NotFoundHTTPException
+from src.presentation.api.exceptions import NotFoundHTTPException, OrderPaymentNotCorrectStatusException
 from src.presentation.api.orders.schema import (
     PromotionAddSchema,
     PromotionDetailSchema,
     PromotionSchema,
     TotalAmountInputSchema,
     TotalAmountSchema,
-    UserPointSchema,
+    UserPointSchema, OrderPaymentSchema,
 )
 from src.presentation.api.users.utils import CurrentUser
 
@@ -51,7 +52,7 @@ async def get_promotions(
 
 @router.post("/order/{order_pk}/calculate")
 async def calculate_total_amount(
-    order_pk: int,
+    order_payment_pk: int,
     total_amount_data: TotalAmountInputSchema,
     user: FromDishka[CurrentUser],
     mediator: FromDishka[Mediator],
@@ -59,12 +60,37 @@ async def calculate_total_amount(
     try:
         total_amount = (
             await mediator.handle_command(
-                CalculateOrderCommand(user_id=user.id, order_id=order_pk, **total_amount_data.model_dump())
+                CalculateOrderCommand(user_id=user.id, order_payment_id=order_payment_pk,
+                                      **total_amount_data.model_dump()
+                                      )
             )
         )[0]
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
     return TotalAmountSchema(**asdict(total_amount))
+
+
+@router.post("/order/{order_pk}/pay")
+async def calculate_total_amount(
+    order_payment_pk: int,
+    total_amount_data: TotalAmountInputSchema,
+    user: FromDishka[CurrentUser],
+    mediator: FromDishka[Mediator],
+) -> OrderPaymentSchema:
+    try:
+        order_payment = (
+            await mediator.handle_command(
+                OrderPayCommand(
+                    user_id=user.id, order_payment_id=order_payment_pk, **total_amount_data.model_dump()
+                )
+            )
+        )[0]
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    except OrderIsPayedException as err:
+        raise OrderPaymentNotCorrectStatusException(detail=err.title)
+    order_payment_schema = OrderPaymentSchema.model_validate(order_payment.to_dict())
+    return order_payment_schema
 
 
 @router.post("/promotion/add/", status_code=status.HTTP_201_CREATED)

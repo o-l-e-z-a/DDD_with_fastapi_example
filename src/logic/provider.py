@@ -1,5 +1,6 @@
 from dishka import Provider, Scope, provide
 
+from src.domain.schedules.events import OrderCancelledEvent
 from src.infrastructure.broker.rabbit.consumer import RabbitConsumer
 from src.infrastructure.broker.rabbit.producer import Producer
 from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderQueryUnitOfWork, SQLAlchemyOrderUnitOfWork
@@ -8,12 +9,14 @@ from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersQueryUnitOfWork,
 from src.logic.commands.order_commands import (
     AddPromotionCommand,
     AddPromotionCommandHandler,
-    AdduserPointCommand,
-    AdduserPointCommandHandler,
+    AddUserPointCommand,
+    AddUserPointCommandHandler,
     DeletePromotionCommand,
     DeletePromotionCommandHandler,
     UpdatePromotionCommand,
-    UpdatePromotionCommandHandler,
+    UpdatePromotionCommandHandler, AddOrderPaymentCommand, AddOrderPaymentCommandHandler, CalculateOrderCommand,
+    CalculateOrderCommandHandler, OrderPayCommandHandler, OrderPayCommand, UpdateUserPointCommandHandler,
+    UpdateUserPointCommand,
 )
 from src.logic.commands.schedule_commands import (
     AddMasterCommand,
@@ -37,7 +40,11 @@ from src.logic.commands.user_commands import (
     VerifyUserCredentialsCommand,
     VerifyUserCredentialsCommandHandler,
 )
-from src.logic.event_consumers.orders_consumers import UserCreatedEventConsumer
+from src.logic.event_consumers.orders_consumers import UserCreatedEventConsumer, OrderCreatedEventConsumer, \
+    OrderPayedEventConsumer
+from src.logic.events.order_events import OrderPayedEvent, OrderPayedEventHandler
+from src.logic.events.schedule_events import OrderCreatedEvent, OrderCreatedEmailEventHandler, \
+    OrderCreatedBrokerEventHandler, OrderCanceledBrokerEventHandler
 from src.logic.events.user_events import UserCreatedEvent, UserCreatedEventHandler
 from src.logic.mediator.base import Mediator
 from src.logic.queries.order_queries import (
@@ -80,8 +87,10 @@ from src.logic.queries.user_queries import GetUserByIdQuery, GetUserByIdQueryHan
 class LogicProvider(Provider):
     scope = Scope.APP
 
-    # consumer = provide(RabbitConsumer)
-    # user_created_consumer = provide(UserCreatedEventConsumer)
+    consumer = provide(RabbitConsumer)
+    user_created_consumer = provide(UserCreatedEventConsumer)
+    order_created_consumer = provide(OrderCreatedEventConsumer)
+    order_payed_consumer = provide(OrderPayedEventConsumer)
 
     @provide(scope=Scope.APP)
     def init_mediator(
@@ -120,7 +129,17 @@ class LogicProvider(Provider):
         mediator.register_command(
             DeletePromotionCommand, [DeletePromotionCommandHandler(mediator=mediator, uow=order_uow)]
         )
-        mediator.register_command(AdduserPointCommand, [AdduserPointCommandHandler(mediator=mediator, uow=order_uow)])
+        mediator.register_command(AddUserPointCommand, [AddUserPointCommandHandler(mediator=mediator, uow=order_uow)])
+        mediator.register_command(
+            AddOrderPaymentCommand, [AddOrderPaymentCommandHandler(mediator=mediator, uow=order_uow)]
+        )
+        mediator.register_command(
+            CalculateOrderCommand, [CalculateOrderCommandHandler(mediator=mediator, uow=order_uow)]
+        )
+        mediator.register_command(OrderPayCommand, [OrderPayCommandHandler(mediator=mediator, uow=order_uow)])
+        mediator.register_command(
+            UpdateUserPointCommand, [UpdateUserPointCommandHandler(mediator=mediator, uow=order_uow)]
+        )
 
         # query
         mediator.register_query(GetUserByIdQuery, GetUserByIdQueryHandler(uow=user_query_uow))
@@ -145,6 +164,21 @@ class LogicProvider(Provider):
         # events
         mediator.register_event(
             UserCreatedEvent,
-            [UserCreatedEventHandler(uow=schedule_uow, message_broker=publisher)],
+            [UserCreatedEventHandler(uow=user_uow, message_broker=publisher)],
+        )
+        mediator.register_event(
+            OrderCancelledEvent,
+            [OrderCanceledBrokerEventHandler(uow=schedule_uow, message_broker=publisher)],
+        )
+        mediator.register_event(
+            OrderCreatedEvent,
+            [
+                OrderCreatedBrokerEventHandler(uow=schedule_uow, message_broker=publisher),
+                OrderCreatedEmailEventHandler(uow=schedule_query_uow),
+            ],
+        )
+        mediator.register_event(
+            OrderPayedEvent,
+            [OrderPayedEventHandler(uow=order_uow, message_broker=publisher)]
         )
         return mediator

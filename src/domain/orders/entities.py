@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date
+from typing import Literal
 
 from src.domain.base.entities import BaseEntity
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
+from src.domain.orders.exceptions import OrderIsPayedException
 from src.domain.orders.service import TotalAmountDomainService, TotalAmountResult
 
 
@@ -33,6 +35,14 @@ class Promotion(BaseEntity):
 class UserPoint(BaseEntity):
     user_id: int
     count: CountNumber = CountNumber(0)
+
+    def update(self, operation: Literal["+", "-"], point_to_operation: int):
+        if operation == "+":
+            self.count = CountNumber(self.count + point_to_operation)
+        elif operation == "-":
+            self.count = CountNumber(self.count - point_to_operation)
+        else:
+            raise ValueError("")
 
     def to_dict(self) -> dict:
         return {
@@ -65,15 +75,18 @@ class OrderPayment(BaseEntity):
             promotion_sale=promotion_sale,
             user_point_count=user_point_count,
             service_price=self.total_amount.as_generic_type(),
-            input_user_point=input_user_point,
+            user_point_input=input_user_point,
         )
         return total_amount_result
 
     def pay(self, promotion_sale: int | None, user_point_count: int | None, input_user_point: int):
+        if self.is_payed:
+            raise OrderIsPayedException()
         total_amount_result = self.calculate_amount(promotion_sale, user_point_count, input_user_point)
         self.point_uses = CountNumber(total_amount_result.point_uses)
         self.promotion_sale = CountNumber(total_amount_result.promotion_sale)
         self.total_amount = PositiveIntNumber(total_amount_result.total_amount)
+        self.is_payed = True
 
     def to_dict(self) -> dict:
         return {
@@ -82,4 +95,5 @@ class OrderPayment(BaseEntity):
             "promotion_sale": self.promotion_sale.as_generic_type(),
             "total_amount": self.total_amount.as_generic_type(),
             "order_id": self.order_id,
+            "is_payed": self.is_payed,
         }

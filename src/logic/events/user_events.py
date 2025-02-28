@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
 from src.domain.base.events import BaseEvent
-from src.infrastructure.broker.converters import convert_event_to_broker_message
-from src.logic.events.base import EventHandler
+from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersUnitOfWork
+from src.logic.events.base import EventHandler, BrokerEventhandler
 
 
 @dataclass
@@ -13,19 +13,8 @@ class UserCreatedEvent(BaseEvent):
     last_name: str
 
 
-from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
-
-
 @dataclass
-class UserCreatedEventHandler(EventHandler[UserCreatedEvent]):
-    uow: SQLAlchemyScheduleUnitOfWork
+class UserCreatedEventHandler(BrokerEventhandler[UserCreatedEvent]):
+    uow: SQLAlchemyUsersUnitOfWork
     exchange_name = "user_create"
     routing_key = "user_create"
-
-    async def handle(self, event: UserCreatedEvent):
-        await self.message_broker.declare_exchange(self.exchange_name)
-        await self.message_broker.publish_message(
-            message_data=convert_event_to_broker_message(event),
-            exchange_name=self.exchange_name,
-            routing_key=self.routing_key,
-        )
