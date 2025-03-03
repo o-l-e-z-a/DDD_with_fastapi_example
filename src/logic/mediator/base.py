@@ -5,7 +5,7 @@ from typing import Type
 
 from src.domain.base.events import BaseEvent
 from src.logic.commands.base import CR, CT, BaseCommand, CommandHandler
-from src.logic.events.base import ER, ET, EventHandler
+from src.logic.events.base import ET, EventHandler
 from src.logic.exceptions.mediator_exceptions import (
     CommandHandlersNotRegisteredException,
     QueryHandlersNotRegisteredException,
@@ -40,15 +40,11 @@ class Mediator(EventMediator, CommandMediator, QueryMediator):
     def register_query(self, query: Type[QT], query_handler: QueryHandler[QT, QR]):
         self.queries_map[query] = query_handler
 
-    async def publish(self, events: Iterable[BaseEvent]) -> Iterable[ER]:
-        result = []
-
+    async def publish(self, events: Iterable[BaseEvent]):
         for event in events:
             event_type = event.__class__
             handlers: Iterable[EventHandler] = self.events_map[event_type]
-            result.extend([await handler.handle(event) for handler in handlers])
-
-        return result
+            [await handler.handle(event) for handler in handlers]  # type: ignore[func-returns-value]
 
     async def handle_command(self, command: BaseCommand) -> list[CR]:
         command_type = command.__class__

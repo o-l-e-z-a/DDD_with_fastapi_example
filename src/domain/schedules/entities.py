@@ -8,6 +8,7 @@ from datetime import date, datetime
 from src.domain.base.entities import BaseEntity
 from src.domain.base.values import Name, PositiveIntNumber
 from src.domain.schedules.events import OrderCancelledEvent
+
 # from src.domain.orders.events import OrderCancelledEvent, OrderCreatedEvent
 from src.domain.schedules.exceptions import (
     OrderNotInProgressException,
@@ -219,8 +220,7 @@ class Order(BaseEntity):
         self.register_event(
             OrderCancelledEvent(
                 user_id=self.user_id,
-                service_id=self.service_id,
-                order_id=self.slot_id,
+                order_id=self.id,
             )
         )
 

@@ -11,15 +11,7 @@ from src.presentation.api.settings import Settings
 
 class DBProvider(Provider):
     scope = Scope.APP
-
-    settings = from_context(provides=Settings)
-    user_uow = provide(SQLAlchemyUsersUnitOfWork)
-    schedule_uow = provide(SQLAlchemyScheduleUnitOfWork)
-    order_uow = provide(SQLAlchemyOrderUnitOfWork)
-
-    user_query_uow = provide(SQLAlchemyUsersQueryUnitOfWork)
-    schedule_query_uow = provide(SQLAlchemyScheduleQueryUnitOfWork)
-    order_query_uow = provide(SQLAlchemyOrderQueryUnitOfWork)
+    settings = from_context(provides=Settings, scope=Scope.APP)
 
     @provide(scope=Scope.APP)
     def engine(self, setting: Settings) -> AsyncEngine:
@@ -34,3 +26,11 @@ class DBProvider(Provider):
     @provide(scope=Scope.APP)
     def get_async_session_maker(self, engine: AsyncEngine) -> async_sessionmaker:
         return get_async_session_factory(engine)
+
+    user_uow = provide(SQLAlchemyUsersUnitOfWork)
+    schedule_uow = provide(SQLAlchemyScheduleUnitOfWork)
+    order_uow = provide(SQLAlchemyOrderUnitOfWork)
+
+    user_query_uow = provide(SQLAlchemyUsersQueryUnitOfWork)
+    schedule_query_uow = provide(SQLAlchemyScheduleQueryUnitOfWork)
+    order_query_uow = provide(SQLAlchemyOrderQueryUnitOfWork)

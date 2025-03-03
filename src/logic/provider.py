@@ -7,16 +7,24 @@ from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderQueryUnitOfWork,
 from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleQueryUnitOfWork, SQLAlchemyScheduleUnitOfWork
 from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersQueryUnitOfWork, SQLAlchemyUsersUnitOfWork
 from src.logic.commands.order_commands import (
+    AddOrderPaymentCommand,
+    AddOrderPaymentCommandHandler,
     AddPromotionCommand,
     AddPromotionCommandHandler,
     AddUserPointCommand,
     AddUserPointCommandHandler,
+    CalculateOrderCommand,
+    CalculateOrderCommandHandler,
     DeletePromotionCommand,
     DeletePromotionCommandHandler,
+    OrderPayCommand,
+    OrderPayCommandHandler,
+    OrderPaymentCancelCommand,
+    OrderPaymentCancelCommandHandler,
     UpdatePromotionCommand,
-    UpdatePromotionCommandHandler, AddOrderPaymentCommand, AddOrderPaymentCommandHandler, CalculateOrderCommand,
-    CalculateOrderCommandHandler, OrderPayCommandHandler, OrderPayCommand, UpdateUserPointCommandHandler,
+    UpdatePromotionCommandHandler,
     UpdateUserPointCommand,
+    UpdateUserPointCommandHandler,
 )
 from src.logic.commands.schedule_commands import (
     AddMasterCommand,
@@ -40,11 +48,25 @@ from src.logic.commands.user_commands import (
     VerifyUserCredentialsCommand,
     VerifyUserCredentialsCommandHandler,
 )
-from src.logic.event_consumers.orders_consumers import UserCreatedEventConsumer, OrderCreatedEventConsumer, \
-    OrderPayedEventConsumer
-from src.logic.events.order_events import OrderPayedEvent, OrderPayedEventHandler
-from src.logic.events.schedule_events import OrderCreatedEvent, OrderCreatedEmailEventHandler, \
-    OrderCreatedBrokerEventHandler, OrderCanceledBrokerEventHandler
+from src.logic.event_consumers.orders_consumers import (
+    OrderCancelledEventConsumer,
+    OrderCreatedEventConsumer,
+    OrderPayedEventConsumer,
+    OrderPaymentCancelledEventConsumer,
+    UserCreatedEventConsumer,
+)
+from src.logic.events.order_events import (
+    OrderPayedEvent,
+    OrderPayedEventHandler,
+    OrderPaymentCanceledEvent,
+    OrderPaymentCanceledEventHandler,
+)
+from src.logic.events.schedule_events import (
+    OrderCanceledBrokerEventHandler,
+    OrderCreatedBrokerEventHandler,
+    OrderCreatedEmailEventHandler,
+    OrderCreatedEvent,
+)
 from src.logic.events.user_events import UserCreatedEvent, UserCreatedEventHandler
 from src.logic.mediator.base import Mediator
 from src.logic.queries.order_queries import (
@@ -87,10 +109,12 @@ from src.logic.queries.user_queries import GetUserByIdQuery, GetUserByIdQueryHan
 class LogicProvider(Provider):
     scope = Scope.APP
 
-    consumer = provide(RabbitConsumer)
-    user_created_consumer = provide(UserCreatedEventConsumer)
-    order_created_consumer = provide(OrderCreatedEventConsumer)
-    order_payed_consumer = provide(OrderPayedEventConsumer)
+    consumer = provide(RabbitConsumer, scope=Scope.APP)
+    user_created_consumer = provide(UserCreatedEventConsumer, scope=Scope.APP)
+    order_created_consumer = provide(OrderCreatedEventConsumer, scope=Scope.APP)
+    order_canceled_consumer = provide(OrderCancelledEventConsumer, scope=Scope.APP)
+    order_payed_consumer = provide(OrderPayedEventConsumer, scope=Scope.APP)
+    order_payment_canceled_consumer = provide(OrderPaymentCancelledEventConsumer, scope=Scope.APP)
 
     @provide(scope=Scope.APP)
     def init_mediator(
@@ -140,6 +164,9 @@ class LogicProvider(Provider):
         mediator.register_command(
             UpdateUserPointCommand, [UpdateUserPointCommandHandler(mediator=mediator, uow=order_uow)]
         )
+        mediator.register_command(
+            OrderPaymentCancelCommand, [OrderPaymentCancelCommandHandler(mediator=mediator, uow=order_uow)]
+        )
 
         # query
         mediator.register_query(GetUserByIdQuery, GetUserByIdQueryHandler(uow=user_query_uow))
@@ -177,8 +204,8 @@ class LogicProvider(Provider):
                 OrderCreatedEmailEventHandler(uow=schedule_query_uow),
             ],
         )
+        mediator.register_event(OrderPayedEvent, [OrderPayedEventHandler(uow=order_uow, message_broker=publisher)])
         mediator.register_event(
-            OrderPayedEvent,
-            [OrderPayedEventHandler(uow=order_uow, message_broker=publisher)]
+            OrderPaymentCanceledEvent, [OrderPaymentCanceledEventHandler(uow=order_uow, message_broker=publisher)]
         )
         return mediator

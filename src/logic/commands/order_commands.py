@@ -5,16 +5,21 @@ from typing import Annotated, Literal
 from pydantic import Field, PositiveInt
 
 from src.domain.base.values import Name, PositiveIntNumber
-from src.domain.orders.entities import Promotion, UserPoint, OrderPayment
+from src.domain.orders.entities import OrderPayment, Promotion, UserPoint
 from src.domain.orders.service import TotalAmountResult
 from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
+from src.infrastructure.logger_adapter.logger import init_logger
 from src.logic.commands.base import BaseCommand, CommandHandler
-from src.logic.events.order_events import OrderPayedEvent
-from src.logic.exceptions.order_exceptions import PromotionNotFoundLogicException, OrderPaymentNotFoundLogicException, \
-    NotUserOrderLogicException, UserPointNotFoundLogicException
-from src.logic.exceptions.schedule_exceptions import ServiceNotFoundLogicException, OrderNotFoundLogicException
+from src.logic.events.order_events import OrderPayedEvent, OrderPaymentCanceledEvent
+from src.logic.exceptions.order_exceptions import (
+    OrderPaymentNotFoundLogicException,
+    PromotionNotFoundLogicException,
+    UserPointNotFoundLogicException,
+)
+from src.logic.exceptions.schedule_exceptions import OrderNotFoundLogicException, ServiceNotFoundLogicException
 from src.logic.exceptions.user_exceptions import UserNotFoundLogicException
 
+logger = init_logger(__name__)
 int_ge_0 = Annotated[int, Field(ge=0)]
 
 
@@ -36,7 +41,7 @@ class AddUserPointCommandHandler(CommandHandler[AddUserPointCommand, UserPoint])
             )
             user_point_from_repo = await self.uow.user_points.add(entity=user_point)
             await self.uow.commit()
-            return user_point_from_repo
+        return user_point_from_repo
 
 
 class AddOrderPaymentCommand(BaseCommand):
@@ -53,13 +58,107 @@ class AddOrderPaymentCommandHandler(CommandHandler[AddOrderPaymentCommand, Order
             order = await self.uow.orders.find_one_or_none(id=command.order_id)
             if not order:
                 raise OrderNotFoundLogicException(id=command.order_id)
-            order_payment = OrderPayment.add(
-                order_id=command.order_id,
-                service_price=command.service_price
-            )
+            order_payment = OrderPayment.add(order_id=command.order_id, service_price=command.service_price)
             order_payment_from_repo = await self.uow.order_payments.add(entity=order_payment)
             await self.uow.commit()
-            return order_payment_from_repo
+        return order_payment_from_repo
+
+
+class OrderPayCommand(BaseCommand):
+    order_payment_id: PositiveInt
+    user_id: PositiveInt
+    input_point: int_ge_0 | None = 0
+    promotion_code: str | None = "0"
+
+
+@dataclass(frozen=True)
+class OrderPayCommandHandler(CommandHandler[OrderPayCommand, OrderPayment]):
+    uow: SQLAlchemyOrderUnitOfWork
+
+    async def handle(self, command: OrderPayCommand) -> OrderPayment:
+        async with self.uow:
+            order_payment = await self.uow.order_payments.find_one_or_none(id=command.order_payment_id)
+            if not order_payment:
+                raise OrderPaymentNotFoundLogicException(id=command.order_payment_id)
+            promotion = await self.uow.promotions.find_one_or_none(code=command.promotion_code)
+            user_point = await self.uow.user_points.find_one_or_none(user_id=command.user_id)
+            promotion_sale = promotion.sale.as_generic_type() if promotion else None
+            user_point_count = user_point.count.as_generic_type() if user_point else None
+            order_payment.pay(
+                promotion_sale=promotion_sale,
+                user_point_count=user_point_count,
+                input_user_point=command.input_point,
+            )
+            await self.uow.order_payments.update(entity=order_payment)
+            await self.uow.commit()
+        logger.debug(f"{self.__class__.__name__}: uow.commit(); starting pulling events")
+        events = order_payment.pull_events()
+        if order_payment.point_uses:
+            payed_event = OrderPayedEvent(
+                order_payment_id=order_payment.id,
+                user_point_id=user_point.id,
+                point_uses=order_payment.point_uses.as_generic_type(),
+            )
+            events.append(payed_event)
+            logger.debug(f"{self.__class__.__name__}: events: {events}, publushing ...")
+            await self.mediator.publish(events)
+            logger.debug(f"{self.__class__.__name__}: after mediator publish")
+        return order_payment
+
+
+class OrderPaymentCancelCommand(BaseCommand):
+    order_id: PositiveInt
+    user_id: PositiveInt
+
+
+@dataclass(frozen=True)
+class OrderPaymentCancelCommandHandler(CommandHandler[OrderPaymentCancelCommand, OrderPayment]):
+    uow: SQLAlchemyOrderUnitOfWork
+
+    async def handle(self, command: OrderPaymentCancelCommand) -> OrderPayment:
+        async with self.uow:
+            order_payment = await self.uow.order_payments.find_one_or_none(order_id=command.order_id)
+            if not order_payment:
+                raise OrderPaymentNotFoundLogicException(id=command.order_id)
+            user_point = await self.uow.user_points.find_one_or_none(user_id=command.user_id)
+            order_payment.cancel_payment()
+            await self.uow.order_payments.update(entity=order_payment)
+            await self.uow.commit()
+        logger.debug(f"{self.__class__.__name__}: uow.commit(); starting pulling events")
+        events = order_payment.pull_events()
+        if order_payment.point_uses:
+            payed_event = OrderPaymentCanceledEvent(
+                order_payment_id=order_payment.id,
+                user_point_id=user_point.id,
+                point_uses=order_payment.point_uses.as_generic_type(),
+            )
+            events.append(payed_event)
+            logger.debug(f"{self.__class__.__name__}: events: {events}, publushing ...")
+            await self.mediator.publish(events)
+            logger.debug(f"{self.__class__.__name__}: after mediator publish")
+        return order_payment
+
+
+class UpdateUserPointCommand(BaseCommand):
+    user_point_id: int
+    point_to_operation: int
+    operation: Literal["+", "-"]
+
+
+@dataclass(frozen=True)
+class UpdateUserPointCommandHandler(CommandHandler[UpdateUserPointCommand, UserPoint]):
+    uow: SQLAlchemyOrderUnitOfWork
+
+    async def handle(self, command: UpdateUserPointCommand) -> UserPoint:
+        async with self.uow:
+            user_point = await self.uow.user_points.find_one_or_none(id=command.user_point_id)
+            if not user_point:
+                raise UserPointNotFoundLogicException(id=command.user_point_id)
+            user_point.update(operation=command.operation, point_to_operation=command.point_to_operation)
+            await self.uow.user_points.update(entity=user_point)
+            await self.uow.commit()
+        logger.debug(f"{self.__class__.__name__}: uow.commit()")
+        return user_point
 
 
 class CalculateOrderCommand(BaseCommand):
@@ -90,72 +189,7 @@ class CalculateOrderCommandHandler(CommandHandler[CalculateOrderCommand, TotalAm
             return amount_result
 
 
-class OrderPayCommand(BaseCommand):
-    order_payment_id: PositiveInt
-    user_id: PositiveInt
-    input_point: int_ge_0 | None = 0
-    promotion_code: str | None = "0"
-
-
-@dataclass(frozen=True)
-class OrderPayCommandHandler(CommandHandler[OrderPayCommand, OrderPayment]):
-    uow: SQLAlchemyOrderUnitOfWork
-
-    async def handle(self, command: OrderPayCommand) -> OrderPayment:
-        async with self.uow:
-            order_payment = await self.uow.order_payments.find_one_or_none(id=command.order_payment_id)
-            if not order_payment:
-                raise OrderPaymentNotFoundLogicException(id=command.order_payment_id)
-            order = await self.uow.orders.find_one_or_none(id=order_payment.order_id)
-            if not order:
-                raise OrderNotFoundLogicException(id=order_payment.order_id)
-            elif not order.user_id == command.user_id:
-                raise NotUserOrderLogicException()
-            promotion = await self.uow.promotions.find_one_or_none(code=command.promotion_code)
-            user_point = await self.uow.user_points.find_one_or_none(user_id=command.user_id)
-            promotion_sale = promotion.sale.as_generic_type() if promotion else None
-            user_point_count = user_point.count.as_generic_type() if user_point else None
-            order_payment.pay(
-                promotion_sale=promotion_sale,
-                user_point_count=user_point_count,
-                input_user_point=command.input_point,
-            )
-            await self.uow.order_payments.update(entity=order_payment)
-            events = order_payment.pull_events()
-            if order_payment.point_uses:
-                payed_event = OrderPayedEvent(
-                    order_payment_id=order_payment.id,
-                    user_point_id=user_point.id,
-                    point_uses=order_payment.point_uses.as_generic_type()
-                )
-                events.append(payed_event)
-            await self.mediator.publish(events)
-            await self.uow.commit()
-            return order_payment
-
-
-class UpdateUserPointCommand(BaseCommand):
-    user_point_id: PositiveInt
-    point_to_operation: PositiveInt
-    operation: Literal["+", "-"]
-
-
-@dataclass(frozen=True)
-class UpdateUserPointCommandHandler(CommandHandler[UpdateUserPointCommand, UserPoint]):
-    uow: SQLAlchemyOrderUnitOfWork
-
-    async def handle(self, command: UpdateUserPointCommand) -> UserPoint:
-        async with self.uow:
-            user_point = await self.uow.user_points.find_one_or_none(id=command.user_point_id)
-            if not user_point:
-                raise UserPointNotFoundLogicException(id=command.user_point_id)
-            print(f"UpdateUserPointCommand: {command}")
-            user_point.update(operation=command.operation, point_to_operation=command.point_to_operation)
-            await self.uow.user_points.update(entity=user_point)
-            await self.uow.commit()
-            return user_point
-
-
+# Promotions
 class AddPromotionCommand(BaseCommand):
     code: str = Field(..., max_length=15)
     sale: int = Field(..., ge=0, lt=100)
@@ -184,7 +218,7 @@ class AddPromotionCommandHandler(CommandHandler[AddPromotionCommand, Promotion])
             )
             promotion_from_repo = await self.uow.promotions.add(entity=promotion)
             await self.uow.commit()
-            return promotion_from_repo
+        return promotion_from_repo
 
 
 class UpdatePromotionCommand(AddPromotionCommand):
@@ -211,7 +245,7 @@ class UpdatePromotionCommandHandler(CommandHandler[UpdatePromotionCommand, Promo
             promotion.services = services
             promotion_from_repo = await self.uow.promotions.update(entity=promotion)
             await self.uow.commit()
-            return promotion_from_repo
+        return promotion_from_repo
 
 
 class DeletePromotionCommand(BaseCommand):
@@ -229,4 +263,3 @@ class DeletePromotionCommandHandler(CommandHandler[DeletePromotionCommand, Promo
                 raise PromotionNotFoundLogicException(id=command.promotion_id)
             await self.uow.promotions.delete(id=command.promotion_id)
             await self.uow.commit()
-

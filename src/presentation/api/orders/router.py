@@ -11,7 +11,8 @@ from src.logic.commands.order_commands import (
     AddPromotionCommand,
     CalculateOrderCommand,
     DeletePromotionCommand,
-    UpdatePromotionCommand, OrderPayCommand,
+    OrderPayCommand,
+    UpdatePromotionCommand,
 )
 from src.logic.dto.order_dto import PromotionDetailDTO
 from src.logic.exceptions.base_exception import NotFoundLogicException
@@ -19,12 +20,13 @@ from src.logic.mediator.base import Mediator
 from src.logic.queries.order_queries import GetAllPromotionsQuery, UserPointQuery
 from src.presentation.api.exceptions import NotFoundHTTPException, OrderPaymentNotCorrectStatusException
 from src.presentation.api.orders.schema import (
+    OrderPaymentSchema,
     PromotionAddSchema,
     PromotionDetailSchema,
     PromotionSchema,
     TotalAmountInputSchema,
     TotalAmountSchema,
-    UserPointSchema, OrderPaymentSchema,
+    UserPointSchema,
 )
 from src.presentation.api.users.utils import CurrentUser
 
@@ -60,9 +62,9 @@ async def calculate_total_amount(
     try:
         total_amount = (
             await mediator.handle_command(
-                CalculateOrderCommand(user_id=user.id, order_payment_id=order_payment_pk,
-                                      **total_amount_data.model_dump()
-                                      )
+                CalculateOrderCommand(
+                    user_id=user.id, order_payment_id=order_payment_pk, **total_amount_data.model_dump()
+                )
             )
         )[0]
     except NotFoundLogicException as err:
@@ -70,8 +72,8 @@ async def calculate_total_amount(
     return TotalAmountSchema(**asdict(total_amount))
 
 
-@router.post("/order/{order_pk}/pay")
-async def calculate_total_amount(
+@router.post("/order/{order_payment_pk}/pay")
+async def order_pay(
     order_payment_pk: int,
     total_amount_data: TotalAmountInputSchema,
     user: FromDishka[CurrentUser],
@@ -80,9 +82,7 @@ async def calculate_total_amount(
     try:
         order_payment = (
             await mediator.handle_command(
-                OrderPayCommand(
-                    user_id=user.id, order_payment_id=order_payment_pk, **total_amount_data.model_dump()
-                )
+                OrderPayCommand(user_id=user.id, order_payment_id=order_payment_pk, **total_amount_data.model_dump())
             )
         )[0]
     except NotFoundLogicException as err:

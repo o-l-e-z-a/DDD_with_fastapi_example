@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from src.domain.base.events import BaseEvent
 from src.domain.schedules.events import OrderCancelledEvent
 from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleQueryUnitOfWork, SQLAlchemyScheduleUnitOfWork
-from src.logic.events.base import EventHandler, BrokerEventhandler
+from src.logic.events.base import BrokerEventhandler, EventHandler
 
 
 @dataclass
@@ -13,7 +13,7 @@ class OrderCreatedEvent(BaseEvent):
     schedule_id: int
     slot_time_start: str
     service_name: str
-    service_price: str
+    service_price: int
 
 
 @dataclass

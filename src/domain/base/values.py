@@ -4,8 +4,8 @@ from typing import Any, Generic, TypeVar
 
 from src.domain.base.exceptions import (
     CountNumberException,
-    IntegerException,
     EmptyNameException,
+    IntegerException,
     NameTooLongException,
     PositiveNumberException,
 )
@@ -35,6 +35,9 @@ class BaseIntValueObject(BaseValueObject[int]):
     def validate(self):
         if not isinstance(self.value, int):
             raise IntegerException(value=self.value)
+
+    def __bool__(self):
+        return self.value > 0
 
     def __eq__(self, other):
         return self.value == other

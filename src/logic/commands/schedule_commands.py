@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import date
-from pprint import pprint
 from tempfile import SpooledTemporaryFile
 from typing import Annotated, BinaryIO
 
@@ -8,15 +7,19 @@ from pydantic import BaseModel, Field, PositiveInt
 
 from src.domain.schedules.entities import Master, Order, Schedule
 from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleUnitOfWork
+from src.infrastructure.logger_adapter.logger import init_logger
 from src.logic.commands.base import BaseCommand, CommandHandler
 from src.logic.events.schedule_events import OrderCreatedEvent
 from src.logic.exceptions.order_exceptions import NotUserOrderLogicException
 from src.logic.exceptions.schedule_exceptions import (
     MasterNotFoundLogicException,
+    OrderNotFoundLogicException,
     ServiceNotFoundLogicException,
-    SlotNotFoundLogicException, OrderNotFoundLogicException,
+    SlotNotFoundLogicException,
 )
 from src.logic.exceptions.user_exceptions import UserNotFoundLogicException
+
+logger = init_logger(__name__)
 
 
 class AddMasterCommand(BaseCommand):
@@ -82,6 +85,7 @@ class AddOrderCommandHandler(CommandHandler[AddOrderCommand, Order]):
 
     async def handle(self, command: AddOrderCommand) -> Order:
         async with self.uow:
+            logger.debug(f"{self.__class__.__name__}: async with uow: {self.uow}, {self.uow._session}")
             service = await self.uow.services.find_one_or_none(id=command.service_id)
             if not service:
                 raise ServiceNotFoundLogicException(id=command.service_id)
@@ -101,20 +105,22 @@ class AddOrderCommandHandler(CommandHandler[AddOrderCommand, Order]):
                 occupied_slots_ids=occupied_slots_ids,
             )
             order_from_repo = await self.uow.orders.add(order_from_aggregate)
-            events = order_from_aggregate.pull_events()
-            created_event = OrderCreatedEvent(
-                order_id=order_from_repo.id,
-                slot_time_start=slot.time_start.as_generic_type(),
-                schedule_id=slot.schedule_id,
-                user_id=order_from_repo.user_id,
-                service_name=service.name.as_generic_type(),
-                service_price=service.price.as_generic_type(),
-            )
-            events.append(created_event)
-            pprint(f"created_event, {created_event}")
-            await self.mediator.publish(events)
             await self.uow.commit()
-            return order_from_repo
+            logger.debug(f"{self.__class__.__name__}: uow.commit()")
+        events = order_from_aggregate.pull_events()
+        created_event = OrderCreatedEvent(
+            order_id=order_from_repo.id,
+            slot_time_start=slot.time_start.as_generic_type(),
+            schedule_id=slot.schedule_id,
+            user_id=order_from_repo.user_id,
+            service_name=service.name.as_generic_type(),
+            service_price=service.price.as_generic_type(),
+        )
+        events.append(created_event)
+        logger.debug(f"{self.__class__.__name__}: created_event, {created_event}")
+        await self.mediator.publish(events)
+        logger.debug(f"{self.__class__.__name__}: после медиатор паблиш")
+        return order_from_repo
 
 
 class UpdateOrderCommand(BaseCommand):
@@ -215,13 +221,15 @@ class CancelOrderCommandHandler(CommandHandler[CancelOrderCommand, Order]):
                 raise OrderNotFoundLogicException(id=command.order_id)
             elif not order.user_id == command.user_id:
                 raise NotUserOrderLogicException()
-
             order.cancel()
-            await self.uow.orders.update(order)
-            events = order.pull_events()
-            await self.mediator.publish(events)
             await self.uow.commit()
-            return order
+            await self.uow.orders.update(order)
+        logger.debug(f"{self.__class__.__name__}: uow.commit(); starting pulling events")
+        events = order.pull_events()
+        logger.debug(f"{self.__class__.__name__}: events: {events}, publushing ...")
+        await self.mediator.publish(events)
+        logger.debug(f"{self.__class__.__name__}: after mediator publish")
+        return order
 
 
 # class DeleteInventoryCommand(BaseCommand):

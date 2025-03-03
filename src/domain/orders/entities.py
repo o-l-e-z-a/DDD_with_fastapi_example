@@ -88,6 +88,11 @@ class OrderPayment(BaseEntity):
         self.total_amount = PositiveIntNumber(total_amount_result.total_amount)
         self.is_payed = True
 
+    def cancel_payment(self):
+        if not self.is_payed:
+            return
+        self.is_payed = False
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,

@@ -3,14 +3,12 @@ import asyncio
 from typing import Any, Callable
 
 import aio_pika
-import orjson as orjson
 
-from aio_pika.abc import AbstractIncomingMessage, AbstractRobustQueue, ExchangeType, AbstractRobustChannel
+from aio_pika.abc import AbstractIncomingMessage, AbstractRobustQueue, ExchangeType
 
 from src.infrastructure.broker.converters import convert_broker_message_to_dict
 from src.infrastructure.broker.rabbit.connector import RabbitConnector
 from src.infrastructure.logger_adapter.logger import init_logger
-from src.presentation.api.settings import settings
 
 logger = init_logger(__name__)
 
@@ -56,7 +54,7 @@ class RabbitConsumer:
             await queue.consume(
                 callback=message_callback,
             )
-            logger.warning("Waiting for messages...")
+            logger.info("Waiting for messages...")
 
             await asyncio.Future()
 
@@ -93,8 +91,9 @@ async def process_new_message(
 
 
 async def main():
-    c = RabbitConnector(settings)
-    p = RabbitConsumer(c)
+    pass
+    # c = RabbitConnector(settings)
+    # p = RabbitConsumer(c)
     # callback = UserCreatedCallback()
     # await p.consume_messages(
     #     callback,

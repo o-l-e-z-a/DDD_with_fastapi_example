@@ -12,4 +12,3 @@ class ScheduleCreatedEvent(BaseEvent):
 class OrderCancelledEvent(BaseEvent):
     order_id: int
     user_id: int
-    service_id: int

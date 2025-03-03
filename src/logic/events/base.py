@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from pprint import pprint
 from typing import Any, ClassVar, Generic, TypeVar
 
 from src.domain.base.events import BaseEvent
@@ -28,7 +27,6 @@ class BrokerEventhandler(EventHandler, Generic[ET]):
 
     async def handle(self, event: ET) -> None:
         converted_event = convert_event_to_broker_message(event)
-        pprint(f"converted_event, {converted_event}")
         await self.message_broker.declare_exchange(self.exchange_name)
         await self.message_broker.publish_message(
             message_data=converted_event,

@@ -1,4 +1,5 @@
 import asyncio
+
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
@@ -14,12 +15,15 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy_file.storage import StorageManager
 from starlette.staticfiles import StaticFiles
 
-from src.infrastructure.broker.rabbit.connector import RabbitConnector
 from src.infrastructure.broker.rabbit.consumer import RabbitConsumer
 from src.infrastructure.redis_adapter.redis_connector import RedisConnectorFactory
-from src.logic.event_consumers.orders_consumers import UserCreatedEventConsumer, OrderCreatedEventConsumer, \
-    OrderPayedEventConsumer
-from src.logic.mediator.base import Mediator
+from src.logic.event_consumers.orders_consumers import (
+    OrderCancelledEventConsumer,
+    OrderCreatedEventConsumer,
+    OrderPayedEventConsumer,
+    OrderPaymentCancelledEventConsumer,
+    UserCreatedEventConsumer,
+)
 from src.presentation.api.admin.auth import authentication_backend
 from src.presentation.api.admin.views import (
     MasterAdmin,
@@ -34,7 +38,6 @@ from src.presentation.api.admin.views import (
 from src.presentation.api.dependencies import setup_container
 from src.presentation.api.orders.router import router as order_router
 from src.presentation.api.schedules.router import router as schedule_router
-from src.presentation.api.settings import Settings
 from src.presentation.api.users.router import router_auth, router_users
 
 media_dir = Path("src/presentation/api/media")
@@ -83,11 +86,20 @@ async def add_sql_admin(app: FastAPI):
 
 async def start_consumer(app: FastAPI):
     scheduler: Scheduler = Scheduler()
-    user_created_consumer = await app.state.dishka_container.get(UserCreatedEventConsumer)
-    order_created_consumer = await app.state.dishka_container.get(OrderCreatedEventConsumer)
-    order_payed_consumer = await app.state.dishka_container.get(OrderPayedEventConsumer)
-    base_consumer = await app.state.dishka_container.get(RabbitConsumer)
-    consumers = [user_created_consumer, order_created_consumer, order_payed_consumer]
+    container = app.state.dishka_container
+    user_created_consumer = await container.get(UserCreatedEventConsumer)
+    order_created_consumer = await container.get(OrderCreatedEventConsumer)
+    order_payed_consumer = await container.get(OrderPayedEventConsumer)
+    order_payment_canceled_consumer = await container.get(OrderPaymentCancelledEventConsumer)
+    order_canceled_consumer = await container.get(OrderCancelledEventConsumer)
+    base_consumer = await container.get(RabbitConsumer)
+    consumers = [
+        user_created_consumer,
+        order_created_consumer,
+        order_payed_consumer,
+        order_payment_canceled_consumer,
+        order_canceled_consumer,
+    ]
     tasks = []
     for consumer in consumers:
         coro = base_consumer.consume_messages(
