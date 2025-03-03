@@ -1,6 +1,6 @@
-from src.infrastructure.db.models.orders import Promotion, UserPoint
+from src.infrastructure.db.models.orders import OrderPayment, Promotion, UserPoint
 from src.logic.dto.mappers.schedule_mappers import service_to_detail_dto_mapper
-from src.logic.dto.order_dto import PromotionDetailDTO, UserPointDTO
+from src.logic.dto.order_dto import OrderPaymentDetailDTO, PromotionDetailDTO, UserPointDTO
 
 
 def promotion_to_detail_dto_mapper(promotion: Promotion) -> PromotionDetailDTO:
@@ -18,4 +18,15 @@ def promotion_to_detail_dto_mapper(promotion: Promotion) -> PromotionDetailDTO:
 def user_point_dto_mapper(user_point: UserPoint) -> UserPointDTO:
     return UserPointDTO(
         count=user_point.count,
+    )
+
+
+def order_payment_detail_dto_mapper(order_payment: OrderPayment) -> OrderPaymentDetailDTO:
+    return OrderPaymentDetailDTO(
+        id=order_payment.id,
+        order_id=order_payment.order_id,
+        total_amount=order_payment.total_amount,
+        point_uses=order_payment.point_uses,
+        promotion_sale=order_payment.promotion_sale,
+        is_payed=order_payment.is_payed,
     )

@@ -51,3 +51,12 @@ class PromotionDetailSchema(BaseSchema):
     day_start: date
     day_end: date
     services: list[ServiceSchema]
+
+
+class OrderPaymentDetailSchema(BaseSchema):
+    id: int
+    order_id: int
+    total_amount: int_ge_0
+    point_uses: int
+    promotion_sale: int
+    is_payed: bool

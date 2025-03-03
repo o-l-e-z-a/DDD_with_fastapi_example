@@ -1,10 +1,12 @@
 from typing import Self
 
 from src.infrastructure.db.repositories.orders import (
+    OrderPaymentQueryRepository,
+    OrderPaymentRepository,
     PromotionQueryRepository,
     PromotionRepository,
     UserPointQueryRepository,
-    UserPointRepository, OrderPaymentRepository,
+    UserPointRepository,
 )
 from src.infrastructure.db.repositories.schedules import OrderRepository, ServiceRepository
 from src.infrastructure.db.repositories.users import UserRepository
@@ -28,4 +30,5 @@ class SQLAlchemyOrderQueryUnitOfWork(SQLAlchemyAbstractUnitOfWork):
         uow = await super().__aenter__()
         self.promotions = PromotionQueryRepository(session=self._session)
         self.user_points = UserPointQueryRepository(session=self._session)
+        self.order_payments = OrderPaymentQueryRepository(session=self._session)
         return uow

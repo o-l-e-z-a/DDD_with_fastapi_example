@@ -17,9 +17,10 @@ from src.logic.commands.order_commands import (
 from src.logic.dto.order_dto import PromotionDetailDTO
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.mediator.base import Mediator
-from src.logic.queries.order_queries import GetAllPromotionsQuery, UserPointQuery
+from src.logic.queries.order_queries import GetAllPromotionsQuery, OrderPaymentDetailQuery, UserPointQuery
 from src.presentation.api.exceptions import NotFoundHTTPException, OrderPaymentNotCorrectStatusException
 from src.presentation.api.orders.schema import (
+    OrderPaymentDetailSchema,
     OrderPaymentSchema,
     PromotionAddSchema,
     PromotionDetailSchema,
@@ -52,7 +53,22 @@ async def get_promotions(
     return promotion_schemas
 
 
-@router.post("/order/{order_pk}/calculate")
+@router.get("/order_payment/{order_payment_pk}/detail")
+async def get_order_payment_detail(
+    order_payment_pk: int,
+    mediator: FromDishka[Mediator],
+) -> OrderPaymentDetailSchema:
+    try:
+        result: list[PromotionDetailDTO] = await mediator.handle_query(
+            OrderPaymentDetailQuery(order_payment_id=order_payment_pk)
+        )
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
+    result_schema = OrderPaymentDetailSchema.model_validate(result)
+    return result_schema
+
+
+@router.post("/order_payment/{order_payment_pk}/calculate")
 async def calculate_total_amount(
     order_payment_pk: int,
     total_amount_data: TotalAmountInputSchema,
@@ -72,7 +88,7 @@ async def calculate_total_amount(
     return TotalAmountSchema(**asdict(total_amount))
 
 
-@router.post("/order/{order_payment_pk}/pay")
+@router.post("/order_payment/{order_payment_pk}/pay")
 async def order_pay(
     order_payment_pk: int,
     total_amount_data: TotalAmountInputSchema,

@@ -72,6 +72,8 @@ from src.logic.mediator.base import Mediator
 from src.logic.queries.order_queries import (
     GetAllPromotionsQuery,
     GetAllPromotionsQueryHandler,
+    OrderPaymentDetailQuery,
+    OrderPaymentDetailQueryHandler,
     UserPointQuery,
     UserPointQueryHandler,
 )
@@ -187,6 +189,7 @@ class LogicProvider(Provider):
 
         mediator.register_query(GetAllPromotionsQuery, GetAllPromotionsQueryHandler(uow=order_query_uow))
         mediator.register_query(UserPointQuery, UserPointQueryHandler(uow=order_query_uow))
+        mediator.register_query(OrderPaymentDetailQuery, OrderPaymentDetailQueryHandler(uow=order_query_uow))
 
         # events
         mediator.register_event(

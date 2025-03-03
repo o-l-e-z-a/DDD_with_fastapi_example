@@ -33,3 +33,13 @@ class PromotionDetailDTO(BaseDTO):
 @dataclass(frozen=True)
 class UserPointDTO(BaseDTO):
     count: int
+
+
+@dataclass(frozen=True)
+class OrderPaymentDetailDTO(BaseDTO):
+    id: int
+    order_id: int
+    total_amount: int
+    point_uses: int
+    promotion_sale: int
+    is_payed: bool

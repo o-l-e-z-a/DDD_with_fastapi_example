@@ -4,11 +4,15 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from src.domain.orders import entities
 from src.infrastructure.db.exceptions import InsertException
-from src.infrastructure.db.models.orders import Promotion, UserPoint, OrderPayment
+from src.infrastructure.db.models.orders import OrderPayment, Promotion, UserPoint
 from src.infrastructure.db.models.schedules import Service
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyQueryRepository, GenericSQLAlchemyRepository
-from src.logic.dto.mappers.order_mappers import promotion_to_detail_dto_mapper, user_point_dto_mapper
-from src.logic.dto.order_dto import PromotionDetailDTO, UserPointDTO
+from src.logic.dto.mappers.order_mappers import (
+    order_payment_detail_dto_mapper,
+    promotion_to_detail_dto_mapper,
+    user_point_dto_mapper,
+)
+from src.logic.dto.order_dto import OrderPaymentDetailDTO, PromotionDetailDTO, UserPointDTO
 
 
 class PromotionRepository(GenericSQLAlchemyRepository[Promotion, entities.Promotion]):
@@ -79,3 +83,15 @@ class UserPointQueryRepository(GenericSQLAlchemyQueryRepository[UserPoint]):
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
         return user_point_dto_mapper(scalar) if scalar else None
+
+
+class OrderPaymentQueryRepository(GenericSQLAlchemyQueryRepository[OrderPayment]):
+    async def find_one_or_none(self, **filter_by) -> OrderPaymentDetailDTO | None:
+        query = (
+            select(OrderPayment)
+            # .options(joinedload(UserPoint.user))
+            .filter_by(**filter_by)
+        )
+        result = await self.session.execute(query)
+        scalar = result.scalar_one_or_none()
+        return order_payment_detail_dto_mapper(scalar) if scalar else None
