@@ -39,7 +39,7 @@ class UserPointQueryHandler(QueryHandler[UserPointQuery, UserPointDTO | None]):
 
 
 @dataclass(frozen=True)
-class OrderPaymentDetailQueryHandler(QueryHandler[OrderPaymentDetailQuery, list[PromotionDetailDTO]]):
+class OrderPaymentDetailQueryHandler(QueryHandler[OrderPaymentDetailQuery, OrderPaymentDetailDTO | None]):
     uow: SQLAlchemyOrderQueryUnitOfWork
 
     async def handle(self, query: OrderPaymentDetailQuery) -> OrderPaymentDetailDTO | None:
