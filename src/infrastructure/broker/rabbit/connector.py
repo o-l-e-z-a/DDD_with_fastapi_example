@@ -3,6 +3,7 @@ from typing import Self
 import aio_pika
 
 from aio_pika.abc import AbstractRobustChannel, AbstractRobustConnection
+from aiormq import AMQPConnectionError
 
 from src.infrastructure.logger_adapter.logger import init_logger
 from src.presentation.api.settings import Settings
@@ -17,14 +18,18 @@ class RabbitConnector:
         self.config = settings.rabbit
         self.loop = loop
 
-    async def get_connection(self) -> AbstractRobustConnection:
-        return await aio_pika.connect_robust(
-            host=self.config.RABBIT_HOST,
-            port=self.config.RABBIT_PORT,
-            login=self.config.RABBIT_USER,
-            password=self.config.RABBIT_PASS,
-            loop=self.loop
-        )
+    async def get_connection(self) -> AbstractRobustConnection | None:
+        try:
+            return await aio_pika.connect_robust(
+                host=self.config.RABBIT_HOST,
+                port=self.config.RABBIT_PORT,
+                login=self.config.RABBIT_USER,
+                password=self.config.RABBIT_PASS,
+                loop=self.loop,
+            )
+        except AMQPConnectionError as err:
+            logger.error(err)
+            return None
 
     @property
     def channel(self) -> AbstractRobustChannel:
@@ -34,7 +39,8 @@ class RabbitConnector:
 
     async def open_connection(self):
         self._connection = await self.get_connection()
-        self._channel = await self._connection.channel()
+        if self._connection:
+            self._channel = await self._connection.channel()
 
     async def __aenter__(self) -> Self:
         await self.open_connection()

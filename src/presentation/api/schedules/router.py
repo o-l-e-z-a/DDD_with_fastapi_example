@@ -330,7 +330,6 @@ async def update_photo(
         raise OrderNotCorrectStatusException(detail=err.title)
     except UpdateException as err:
         raise CannotUpdateDataToDatabase(detail=err.title)
-    print(order.to_dict())
     order_schema = OrderSchema.model_validate(order.to_dict())
     return order_schema
 
@@ -372,6 +371,5 @@ async def add_master(
         raise NotFoundHTTPException(detail=err.title)
     except InsertException as err:
         raise NotCorrectDataHTTPException(detail=err.title)
-    print(master.to_dict())
     master_schema = MasterSchema.model_validate(master.to_dict())
     return master_schema

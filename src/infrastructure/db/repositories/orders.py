@@ -4,8 +4,7 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from src.domain.orders import entities
 from src.infrastructure.db.exceptions import InsertException
-from src.infrastructure.db.models.orders import OrderPayment, Promotion, UserPoint
-from src.infrastructure.db.models.schedules import Service
+from src.infrastructure.db.models.orders import OrderPayment, Promotion, PromotionToService, UserPoint
 from src.infrastructure.db.repositories.base import GenericSQLAlchemyQueryRepository, GenericSQLAlchemyRepository
 from src.logic.dto.mappers.order_mappers import (
     order_payment_detail_dto_mapper,
@@ -20,8 +19,8 @@ class PromotionRepository(GenericSQLAlchemyRepository[Promotion, entities.Promot
 
     async def add(self, entity: entities.Promotion) -> entities.Promotion:
         model = self.model.from_entity(entity)
-        services = [await self.session.get(Service, service_id) for service_id in entity.services_id]
-        model.services = [await self.session.merge(service) for service in services]
+        services = [PromotionToService(service_id=service_id) for service_id in entity.services_id]
+        model.services = services
         self.session.add(model)
         try:
             await self.session.flush()
@@ -31,19 +30,14 @@ class PromotionRepository(GenericSQLAlchemyRepository[Promotion, entities.Promot
 
     async def update(self, entity: entities.Promotion) -> entities.Promotion:
         model = self.model.from_entity(entity)
-        services = [await self.session.get(Service, service_id) for service_id in entity.services_id]
-        model.services = [await self.session.merge(service) for service in services]
+        services = [PromotionToService(service_id=service_id) for service_id in entity.services_id]
+        model.services = services
         await self.session.merge(model)
         try:
             await self.session.flush()
         except IntegrityError as err:
             raise InsertException(entity=entity, detail=str(err.args))
         return model.to_domain()
-
-    async def find_all(self, **filter_by) -> list[entities.Promotion]:
-        query = select(self.model).options(selectinload(self.model.services)).filter_by(**filter_by)
-        result = await self.session.execute(query)
-        return [el.to_domain() for el in result.scalars().all()]
 
     async def find_one_or_none(self, **filter_by) -> entities.Promotion:
         query = select(self.model).options(selectinload(self.model.services)).filter_by(**filter_by)
@@ -75,11 +69,7 @@ class PromotionQueryRepository(GenericSQLAlchemyQueryRepository[Promotion]):
 
 class UserPointQueryRepository(GenericSQLAlchemyQueryRepository[UserPoint]):
     async def find_one_or_none(self, **filter_by) -> UserPointDTO | None:
-        query = (
-            select(UserPoint)
-            # .options(joinedload(UserPoint.user))
-            .filter_by(**filter_by)
-        )
+        query = select(UserPoint).filter_by(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
         return user_point_dto_mapper(scalar) if scalar else None
@@ -87,11 +77,7 @@ class UserPointQueryRepository(GenericSQLAlchemyQueryRepository[UserPoint]):
 
 class OrderPaymentQueryRepository(GenericSQLAlchemyQueryRepository[OrderPayment]):
     async def find_one_or_none(self, **filter_by) -> OrderPaymentDetailDTO | None:
-        query = (
-            select(OrderPayment)
-            # .options(joinedload(UserPoint.user))
-            .filter_by(**filter_by)
-        )
+        query = select(OrderPayment).filter_by(**filter_by)
         result = await self.session.execute(query)
         scalar = result.scalar_one_or_none()
         return order_payment_detail_dto_mapper(scalar) if scalar else None

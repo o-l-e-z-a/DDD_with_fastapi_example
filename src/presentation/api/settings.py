@@ -80,6 +80,17 @@ class AuthConfig(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int
 
 
+class OtherServiceConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
+
+    SCHEDULE_SERVICE_HOST: str
+    SCHEDULE_SERVICE_PORT: str
+    USER_SERVICE_HOST: str
+    USER_SERVICE_PORT: str
+    ORDER_SERVICE_HOST: str
+    ORDER_SERVICE_PORT: str
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
 

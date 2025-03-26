@@ -3,7 +3,6 @@ from datetime import date
 from pydantic import Field
 
 from src.presentation.api.base.base_schema import BaseSchema, int_ge_0
-from src.presentation.api.schedules.schema import ServiceSchema
 
 
 class TotalAmountSchema(BaseSchema):
@@ -50,7 +49,7 @@ class PromotionDetailSchema(BaseSchema):
     is_active: bool = True
     day_start: date
     day_end: date
-    services: list[ServiceSchema]
+    services: list[int]
 
 
 class OrderPaymentDetailSchema(BaseSchema):

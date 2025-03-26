@@ -1,5 +1,4 @@
 from src.infrastructure.db.models.orders import OrderPayment, Promotion, UserPoint
-from src.logic.dto.mappers.schedule_mappers import service_to_detail_dto_mapper
 from src.logic.dto.order_dto import OrderPaymentDetailDTO, PromotionDetailDTO, UserPointDTO
 
 
@@ -11,7 +10,7 @@ def promotion_to_detail_dto_mapper(promotion: Promotion) -> PromotionDetailDTO:
         code=promotion.code,
         sale=promotion.sale,
         is_active=promotion.is_active,
-        services=[service_to_detail_dto_mapper(service) for service in promotion.services],
+        services=[service.service_id for service in promotion.services],
     )
 
 

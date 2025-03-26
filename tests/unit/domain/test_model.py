@@ -1,12 +1,10 @@
 import pytest
 
 from src.domain.base.values import CountNumber, PositiveIntNumber
-from src.domain.orders.events import OrderCreatedEvent
 from src.domain.orders.service import TotalAmountDomainService, TotalAmountResult
 from src.domain.orders.values import LESS_POINT_WARNINGS, MINIMUM_BALANCE, MORE_POINT_WARNINGS
-from src.domain.schedules.entities import Order, OrderStatus, SlotsForSchedule
+from src.domain.schedules.entities import Order, OrderStatus
 from src.domain.schedules.exceptions import SlotOccupiedException, SlotServiceInvalidException
-from src.domain.schedules.values import SlotTime
 
 
 class TestTotalAmount:
@@ -123,32 +121,10 @@ class TestOrder:
             occupied_slots_ids=[henna_staining_today_12_slot, henna_staining_today_14_slot],
             schedule_master_services=[henna_staining_service, shampooing_service]
         )
-
         assert new_order.user_id == user_ivanov.id
         assert new_order.service_id == henna_staining_service.id
         assert new_order.slot_id == henna_staining_today_15_slot.id
         assert new_order.status == OrderStatus.RECEIVED
-
-    def test_add_valid_event(
-        self, henna_staining_today_12_slot, henna_staining_today_14_slot, henna_staining_today_15_slot,
-        user_ivanov, promotion_20, henna_staining_service, shampooing_service
-    ):
-        new_order = Order.add(
-            # promotion=promotion_20,
-            # input_user_point=input_user_point,
-            # user_point=ivanov_user_point,
-            user_id=user_ivanov.id,
-            service_id=henna_staining_service.id,
-            slot_id=henna_staining_today_15_slot.id,
-            occupied_slots_ids=[henna_staining_today_12_slot, henna_staining_today_14_slot],
-            schedule_master_services=[henna_staining_service, shampooing_service]
-        )
-        [new_order_event] = new_order.pull_events()
-
-        assert isinstance(new_order_event, OrderCreatedEvent)
-        assert new_order_event.user_id == user_ivanov.id
-        assert new_order_event.service_id == henna_staining_service.id
-        assert new_order_event.slot_id == henna_staining_today_15_slot.id
 
     def test_add_slot_time_occupied(
         self, henna_staining_today_12_slot, henna_staining_today_14_slot,

@@ -12,7 +12,6 @@ from src.domain.users.values import Email, HumanName, Telephone
 from src.infrastructure.db.models.base import Base, created_at, int_pk, updated_at
 
 if TYPE_CHECKING:
-    from src.infrastructure.db.models.orders import UserPoint
     from src.infrastructure.db.models.schedules import Master
 
 
@@ -32,7 +31,7 @@ class Users(Base[entities.User]):
     is_superuser: Mapped[bool] = mapped_column(server_default="f", default=False)
 
     master: Mapped["Master"] = relationship(back_populates="user")
-    points: Mapped[list["UserPoint"]] = relationship(back_populates="user")
+    # points: Mapped[list["UserPoint"]] = relationship(back_populates="user")
 
     def to_domain(self) -> entities.User:
         user = entities.User(

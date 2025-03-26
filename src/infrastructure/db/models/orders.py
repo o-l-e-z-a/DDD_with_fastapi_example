@@ -11,8 +11,7 @@ from src.domain.orders import entities
 from src.infrastructure.db.models.base import Base, int_pk
 
 if TYPE_CHECKING:
-    from src.infrastructure.db.models.schedules import Service, Order
-    from src.infrastructure.db.models.users import Users
+    pass
 
 
 POINT_AFTER_ORDER = 50
@@ -25,10 +24,7 @@ class PromotionToService(Base):
         ForeignKey("promotion.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    service_id: Mapped[int] = mapped_column(
-        ForeignKey("service.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
+    service_id: Mapped[int_pk]
 
 
 class Promotion(Base[entities.Promotion]):
@@ -40,12 +36,12 @@ class Promotion(Base[entities.Promotion]):
     is_active: Mapped[bool] = mapped_column(server_default="f", default=False)
     day_start: Mapped[date] = mapped_column(default=date.today())
     day_end: Mapped[date]
-    services: Mapped[list["Service"]] = relationship(secondary="promotion_to_service")
+    services: Mapped[list["PromotionToService"]] = relationship(PromotionToService)
 
     __table_args__ = (CheckConstraint("sale > 0 AND sale < 100", name="check_sale_percent"),)
 
     def to_domain(self) -> entities.Promotion:
-        services = [service.id for service in self.services]
+        services = [service.service_id for service in self.services]
         promotion = entities.Promotion(
             code=Name(self.code),
             sale=PositiveIntNumber(self.sale),
@@ -76,7 +72,7 @@ class UserPoint(Base[entities.UserPoint]):
     count: Mapped[int] = mapped_column(Integer, default=0)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
 
-    user: Mapped["Users"] = relationship(back_populates="points")
+    # user: Mapped["Users"] = relationship(back_populates="points")
 
     __table_args__ = (CheckConstraint("count >= 0", name="check_count_positive"),)
 
@@ -103,7 +99,7 @@ class OrderPayment(Base[entities.OrderPayment]):
     promotion_sale: Mapped[int] = mapped_column(Integer, default=0)
     is_payed: Mapped[bool] = mapped_column(server_default="f", default=False)
 
-    order: Mapped["Order"] = relationship()
+    # order: Mapped["Order"] = relationship()
 
     __table_args__ = (
         CheckConstraint("point_uses >= 0", name="check_point_uses_positive"),
@@ -132,4 +128,3 @@ class OrderPayment(Base[entities.OrderPayment]):
             is_payed=entity.is_payed,
             order_id=entity.order_id,
         )
-
