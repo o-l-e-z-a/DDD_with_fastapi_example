@@ -7,7 +7,7 @@ import aio_pika
 from aio_pika.abc import AbstractIncomingMessage, AbstractRobustQueue, ExchangeType
 
 from src.infrastructure.broker.converters import convert_broker_message_to_dict
-from src.infrastructure.broker.rabbit.connector import RabbitConnector
+from src.infrastructure.broker.rabbit.connector import RabbitConnector, except_rabbit_exception_deco
 from src.infrastructure.logger_adapter.logger import init_logger
 
 logger = init_logger(__name__)
@@ -22,6 +22,7 @@ class RabbitConsumer:
         self.connector = connector
         # self.channel = channel
 
+    @except_rabbit_exception_deco
     async def declare_queue(
         self,
         channel,
@@ -37,6 +38,7 @@ class RabbitConsumer:
         await queue.bind(exchange=exchange, routing_key=routing_key)
         return queue
 
+    @except_rabbit_exception_deco
     async def consume_messages(
         self,
         message_callback: Callable[[AbstractIncomingMessage], Any],
@@ -82,11 +84,10 @@ class RabbitConsumer:
 async def process_new_message(
     message: aio_pika.abc.AbstractIncomingMessage,
 ) -> None:
-    print("Processing new message")
+    logger.debug("Start processing new message")
     async with message.process():
         print(convert_broker_message_to_dict(message.body))
         await asyncio.sleep(1)
-        print()
         # raise ValueError
 
 

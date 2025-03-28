@@ -9,6 +9,7 @@ from src.domain.orders.entities import OrderPayment, Promotion, UserPoint
 from src.domain.orders.service import TotalAmountResult
 from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.infrastructure.logger_adapter.logger import init_logger
+from src.infrastructure.other_service_integration.schedule_service import ScheduleServiceIntegration
 from src.logic.commands.base import BaseCommand, CommandHandler
 from src.logic.events.order_events import OrderPayedEvent, OrderPaymentCanceledEvent
 from src.logic.exceptions.order_exceptions import (
@@ -52,10 +53,11 @@ class AddOrderPaymentCommand(BaseCommand):
 @dataclass(frozen=True)
 class AddOrderPaymentCommandHandler(CommandHandler[AddOrderPaymentCommand, OrderPayment]):
     uow: SQLAlchemyOrderUnitOfWork
+    schedule_client: ScheduleServiceIntegration
 
     async def handle(self, command: AddOrderPaymentCommand) -> OrderPayment:
         async with self.uow:
-            order = await self.uow.orders.find_one_or_none(id=command.order_id)
+            order = await self.schedule_client.get_order_by_id(order_id=command.order_id)
             if not order:
                 raise OrderNotFoundLogicException(id=command.order_id)
             order_payment = OrderPayment.add(order_id=command.order_id, service_price=command.service_price)
@@ -124,7 +126,7 @@ class OrderPaymentCancelCommandHandler(CommandHandler[OrderPaymentCancelCommand,
             order_payment.cancel_payment()
             await self.uow.order_payments.update(entity=order_payment)
             await self.uow.commit()
-        logger.debug(f"{self.__class__.__name__}: uow.commit(); starting pulling events")
+        logger.debug(f"{self.__class__.__name__}: uow.commit(), starting pulling events")
         events = order_payment.pull_events()
         if order_payment.point_uses:
             payed_event = OrderPaymentCanceledEvent(
@@ -202,12 +204,14 @@ class AddPromotionCommand(BaseCommand):
 @dataclass(frozen=True)
 class AddPromotionCommandHandler(CommandHandler[AddPromotionCommand, Promotion]):
     uow: SQLAlchemyOrderUnitOfWork
+    schedule_client: ScheduleServiceIntegration
 
     async def handle(self, command: AddPromotionCommand) -> Promotion:
         async with self.uow:
-            services = await self.uow.services.get_services_by_ids(command.services_id)
-            if not services:
-                raise ServiceNotFoundLogicException(id=command.services_id)
+            services_id = await self.schedule_client.get_services_id_only(command.services_id)
+            for service_id in command.services_id:
+                if service_id not in services_id:
+                    raise ServiceNotFoundLogicException(id=service_id)
             promotion = Promotion(
                 code=Name(command.code),
                 sale=PositiveIntNumber(command.sale),
@@ -228,21 +232,23 @@ class UpdatePromotionCommand(AddPromotionCommand):
 @dataclass(frozen=True)
 class UpdatePromotionCommandHandler(CommandHandler[UpdatePromotionCommand, Promotion]):
     uow: SQLAlchemyOrderUnitOfWork
+    schedule_client: ScheduleServiceIntegration
 
     async def handle(self, command: UpdatePromotionCommand) -> Promotion:
         async with self.uow:
             promotion = await self.uow.promotions.find_one_or_none(id=command.promotion_id)
             if not promotion:
                 raise PromotionNotFoundLogicException(id=command.promotion_id)
-            services = await self.uow.services.get_services_by_ids(command.services_id)
-            if not services:
-                raise ServiceNotFoundLogicException(id=command.services_id)
+            services_id = await self.schedule_client.get_services_id_only(command.services_id)
+            for service_id in command.services_id:
+                if service_id not in services_id:
+                    raise ServiceNotFoundLogicException(id=service_id)
             promotion.code = Name(command.code)
             promotion.sale = PositiveIntNumber(command.sale)
             promotion.is_active = command.is_active
             promotion.day_start = command.day_start
             promotion.day_end = command.day_end
-            promotion.services = services
+            promotion.services_id = command.services_id
             promotion_from_repo = await self.uow.promotions.update(entity=promotion)
             await self.uow.commit()
         return promotion_from_repo

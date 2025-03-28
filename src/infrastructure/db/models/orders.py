@@ -21,7 +21,7 @@ class PromotionToService(Base):
     __tablename__ = "promotion_to_service"
 
     promotion_id: Mapped[int] = mapped_column(
-        ForeignKey("promotion.id", ondelete="CASCADE"),
+        ForeignKey("promotion.id", ondelete="CASCADE", onupdate="CASCADE"),
         primary_key=True,
     )
     service_id: Mapped[int_pk]
@@ -36,7 +36,7 @@ class Promotion(Base[entities.Promotion]):
     is_active: Mapped[bool] = mapped_column(server_default="f", default=False)
     day_start: Mapped[date] = mapped_column(default=date.today())
     day_end: Mapped[date]
-    services: Mapped[list["PromotionToService"]] = relationship(PromotionToService)
+    services: Mapped[list["PromotionToService"]] = relationship(PromotionToService, cascade="all, delete-orphan")
 
     __table_args__ = (CheckConstraint("sale > 0 AND sale < 100", name="check_sale_percent"),)
 

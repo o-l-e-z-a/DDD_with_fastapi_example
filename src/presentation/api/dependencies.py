@@ -5,6 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.infrastructure.broker.rabbit.provider import RabbitProvider
 from src.infrastructure.db.provider import DBProvider
+from src.infrastructure.other_service_integration.provider import OtherServiceProvider
 from src.logic.mediator.base import Mediator
 from src.logic.provider import LogicProvider
 from src.logic.queries.schedule_queries import GetMasterByUserQuery
@@ -88,6 +89,11 @@ class MyFastapiProvider(FastapiProvider):
 
 def setup_container() -> AsyncContainer:
     container = make_async_container(
-        DBProvider(), RabbitProvider(), LogicProvider(), MyFastapiProvider(), context={Settings: settings}
+        DBProvider(),
+        RabbitProvider(),
+        LogicProvider(),
+        MyFastapiProvider(),
+        OtherServiceProvider(),
+        context={Settings: settings},
     )
     return container

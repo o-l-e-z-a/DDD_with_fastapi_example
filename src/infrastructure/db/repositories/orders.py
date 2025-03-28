@@ -30,7 +30,9 @@ class PromotionRepository(GenericSQLAlchemyRepository[Promotion, entities.Promot
 
     async def update(self, entity: entities.Promotion) -> entities.Promotion:
         model = self.model.from_entity(entity)
-        services = [PromotionToService(service_id=service_id) for service_id in entity.services_id]
+        services = [
+            PromotionToService(service_id=service_id, promotion_id=entity.id) for service_id in entity.services_id
+        ]
         model.services = services
         await self.session.merge(model)
         try:

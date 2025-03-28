@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Any, Self
 
 import aio_pika
 
@@ -9,6 +9,21 @@ from src.infrastructure.logger_adapter.logger import init_logger
 from src.presentation.api.settings import Settings
 
 logger = init_logger(__name__)
+
+
+class BlankChannelException(Exception):
+    message = "Please use context manager for Rabbit helper or check connection"
+
+
+def except_rabbit_exception_deco(func):
+    async def wrapped(*args, **kwargs) -> Any:
+        try:
+            return await func(*args, **kwargs)
+        except BlankChannelException as err:
+            logger.error(f"err: {err}")
+            return None
+
+    return wrapped
 
 
 class RabbitConnector:
@@ -34,7 +49,7 @@ class RabbitConnector:
     @property
     def channel(self) -> AbstractRobustChannel:
         if self._channel is None:
-            raise Exception("Please use context manager for Rabbit helper.")
+            raise BlankChannelException()
         return self._channel
 
     async def open_connection(self):
@@ -50,7 +65,7 @@ class RabbitConnector:
         await self.close_connection()
 
     async def close_connection(self):
-        if not self._channel.is_closed:
+        if self._channel and not self._channel.is_closed:
             await self._channel.close()
-        if not self._connection.is_closed:
+        if self._connection and not self._connection.is_closed:
             await self._connection.close()

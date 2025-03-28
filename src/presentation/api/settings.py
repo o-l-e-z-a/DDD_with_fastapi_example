@@ -97,6 +97,7 @@ class Settings(BaseSettings):
     MODE: Literal["DEV", "TEST", "PROD"]
     # LOG_LEVEL: str
     db: DatabaseConfig = DatabaseConfig()
+    other_service_config: OtherServiceConfig = OtherServiceConfig()
     redis: RedisConfig = RedisConfig()
     email: EmailConfig = EmailConfig()
     auth: AuthConfig = AuthConfig()

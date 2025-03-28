@@ -1,6 +1,8 @@
+from typing import Annotated
+
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, UploadFile, status
+from fastapi import APIRouter, Query, UploadFile, status
 
 from src.domain.schedules.entities import Master, Order, Schedule
 from src.domain.schedules.exceptions import (
@@ -42,6 +44,7 @@ from src.logic.queries.schedule_queries import (
     GetMasterForServiceQuery,
     GetMasterReportQuery,
     GetMasterScheduleQuery,
+    GetOrderDetailQuery,
     GetScheduleSlotsQuery,
     GetServiceForMasterQuery,
     GetServiceReportQuery,
@@ -83,9 +86,12 @@ router = APIRouter(route_class=DishkaRoute, prefix="/api", tags=["schedule"])
 # @cache(expire=60)
 async def get_services(
     mediator: FromDishka[Mediator],
+    services_id: Annotated[list[int] | None, Query()] = None,
 ):
-    results: list[ServiceDTO] = await mediator.handle_query(GetAllServiceQuery())
+    print(f"services_id: {services_id}")
+    results: list[ServiceDTO] = await mediator.handle_query(GetAllServiceQuery(services_id=services_id))
     service_schemas = [ServiceSchema.model_validate(result) for result in results]
+    # raise ValueError
     return service_schemas
 
 
@@ -190,6 +196,18 @@ async def get_client_orders(
     results: list[OrderDetailDTO] = await mediator.handle_query(GetUserOrdersQuery(user_id=user.id))
     order_schemas = [OrderDetailSchema.model_validate(result) for result in results]
     return order_schemas
+
+
+@router.get("/order/{order_id}", description="детальный просмотр заказа")
+# @cache(expire=60)
+async def get_order_detial(
+    order_id: int,
+    # user: FromDishka[CurrentUser],
+    mediator: FromDishka[Mediator],
+) -> OrderDetailSchema:
+    result: OrderDetailDTO = await mediator.handle_query(GetOrderDetailQuery(order_id=order_id))
+    order_schema = OrderDetailSchema.model_validate(result)
+    return order_schema
 
 
 @router.get("/master_report/")

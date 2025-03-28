@@ -8,15 +8,17 @@ from src.logic.dto.schedule_dto import (
     MasterReportDTO,
     OrderDetailDTO,
     ScheduleDetailDTO,
+    ScheduleShortDTO,
     ServiceDTO,
     ServiceReportDTO,
-    SlotShortDTO, ScheduleShortDTO,
+    SlotShortDTO,
 )
 from src.logic.dto.user_dto import UserDetailDTO
 from src.logic.queries.base import BaseQuery, QueryHandler
 
 
-class GetAllServiceQuery(BaseQuery): ...
+class GetAllServiceQuery(BaseQuery):
+    services_id: list[PositiveInt] | None = None
 
 
 class GetAllMasterQuery(BaseQuery): ...
@@ -57,6 +59,10 @@ class GetUserOrdersQuery(BaseQuery):
     user_id: PositiveInt
 
 
+class GetOrderDetailQuery(BaseQuery):
+    order_id: PositiveInt
+
+
 class GetMasterByUserQuery(BaseQuery):
     user_id: PositiveInt
 
@@ -67,7 +73,7 @@ class GetAllServiceQueryHandler(QueryHandler[GetAllServiceQuery, list[ServiceDTO
 
     async def handle(self, query: GetAllServiceQuery) -> list[ServiceDTO]:
         async with self.uow:
-            results = await self.uow.services.find_all()
+            results = await self.uow.services.find_all(services_id=query.services_id)
         return results
 
 
@@ -158,6 +164,16 @@ class GetUserOrdersQueryHandler(QueryHandler[GetUserOrdersQuery, list[OrderDetai
     async def handle(self, query: GetUserOrdersQuery) -> list[OrderDetailDTO]:
         async with self.uow:
             results = await self.uow.orders.find_all(user_id=query.user_id)
+        return results
+
+
+@dataclass(frozen=True)
+class GetOrderDetailQueryHandler(QueryHandler[GetOrderDetailQuery, OrderDetailDTO | None]):
+    uow: SQLAlchemyScheduleQueryUnitOfWork
+
+    async def handle(self, query: GetOrderDetailQuery) -> OrderDetailDTO | None:
+        async with self.uow:
+            results = await self.uow.orders.find_one_or_none(id=query.order_id)
         return results
 
 

@@ -1,11 +1,10 @@
 import asyncio
 
 import aio_pika
-import orjson as orjson
 
 from src.domain.base.events import BaseEvent
 from src.infrastructure.broker.converters import convert_event_to_broker_message
-from src.infrastructure.broker.rabbit.connector import RabbitConnector
+from src.infrastructure.broker.rabbit.connector import RabbitConnector, except_rabbit_exception_deco
 from src.infrastructure.logger_adapter.logger import init_logger
 from src.presentation.api.settings import settings
 
@@ -21,10 +20,12 @@ class Producer:
         self.connector = connector
         # self.channel = channel
 
+    @except_rabbit_exception_deco
     async def declare_exchange(self, exchange_name: str) -> None:
         async with self.connector:
             await self.connector.channel.declare_exchange(exchange_name, aio_pika.ExchangeType.DIRECT)
 
+    @except_rabbit_exception_deco
     async def publish_message(
         self,
         message_data: bytes,

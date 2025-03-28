@@ -136,8 +136,10 @@ class OrderRepository(GenericSQLAlchemyRepository[Order, entities.Order]):
 
 
 class ServiceQueryRepository(GenericSQLAlchemyQueryRepository[Service]):
-    async def find_all(self, **filter_by) -> list[ServiceDTO]:
-        query = select(Service).filter_by(**filter_by)
+    async def find_all(self, services_id: list[int] | None = None) -> list[ServiceDTO]:
+        query = select(Service)
+        if services_id:
+            query = query.where(Service.id.in_(services_id))
         result = await self.session.execute(query)
         return [service_to_detail_dto_mapper(el) for el in result.scalars().all()]
 
@@ -263,6 +265,26 @@ class ScheduleQueryRepository(GenericSQLAlchemyQueryRepository[Schedule]):
 
 
 class OrderQueryRepository(GenericSQLAlchemyQueryRepository[Order]):
+    async def find_one_or_none(self, **filter_by) -> OrderDetailDTO | None:
+        query = (
+            select(Order)
+            .options(
+                joinedload(Order.slot, innerjoin=True)
+                .joinedload(Slot.schedule, innerjoin=True)
+                .options(
+                    joinedload(Schedule.master, innerjoin=True)
+                    .options(joinedload(Master.user, innerjoin=True))
+                    .options(selectinload(Master.services))
+                )
+            )
+            .options(joinedload(Order.service, innerjoin=True))
+            .options(joinedload(Order.user, innerjoin=True))
+            .filter_by(**filter_by)
+        )
+        result = await self.session.execute(query)
+        scalar = result.scalar_one_or_none()
+        return order_to_detail_dto_mapper(scalar) if scalar else None
+
     async def find_all(self, **filter_by) -> list[OrderDetailDTO]:
         query = (
             select(Order)

@@ -1,7 +1,8 @@
 import asyncio
-import datetime
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.orm import selectinload
 
 from src.infrastructure.db.models.orders import Promotion, PromotionToService
 from src.presentation.api.dependencies import setup_container
@@ -14,13 +15,15 @@ async def add_promotion():
         # query = select(Slot, Schedule).join(Schedule).filter_by(day=datetime.date(year=2024, month=12, day=25))
         # result = await session.execute(query)
         # result = result.scalars()
-        p = Promotion(
-            code="code15",
-            sale=15,
-            day_end=datetime.date.today(),
-        )
-        session.add(p)
-        p.services = [PromotionToService(service_id=1), PromotionToService(service_id=2)]
+        query = select(Promotion).options(selectinload(Promotion.services)).filter_by(id=19)
+        result = await session.execute(query)
+        scalar = result.scalar_one_or_none()
+        p = scalar.to_domain()
+        model = Promotion.from_entity(p)
+        p.services_id = [2, 1]
+        services = [PromotionToService(service_id=service_id) for service_id in p.services_id]
+        model.services = services
+        await session.merge(model)
         await session.flush()
         await session.commit()
 

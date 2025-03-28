@@ -7,6 +7,7 @@ from starlette import status
 
 from src.domain.orders.entities import Promotion
 from src.domain.orders.exceptions import OrderIsPayedException
+from src.infrastructure.db.exceptions import InsertException
 from src.logic.commands.order_commands import (
     AddPromotionCommand,
     CalculateOrderCommand,
@@ -18,7 +19,11 @@ from src.logic.dto.order_dto import PromotionDetailDTO
 from src.logic.exceptions.base_exception import NotFoundLogicException
 from src.logic.mediator.base import Mediator
 from src.logic.queries.order_queries import GetAllPromotionsQuery, OrderPaymentDetailQuery, UserPointQuery
-from src.presentation.api.exceptions import NotFoundHTTPException, OrderPaymentNotCorrectStatusException
+from src.presentation.api.exceptions import (
+    NotCorrectDataHTTPException,
+    NotFoundHTTPException,
+    OrderPaymentNotCorrectStatusException,
+)
 from src.presentation.api.orders.schema import (
     OrderPaymentDetailSchema,
     OrderPaymentSchema,
@@ -121,6 +126,8 @@ async def add_promotion(
         )[0]
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
+    except InsertException as err:
+        raise NotCorrectDataHTTPException(detail=err.title)
     promotion_schema = PromotionSchema.model_validate(promotion.to_dict())
     return promotion_schema
 
@@ -140,6 +147,8 @@ async def patch_promotion(
         )[0]
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
+    except InsertException as err:
+        raise NotCorrectDataHTTPException(detail=err.title)
     promotion_schema = PromotionSchema.model_validate(promotion.to_dict())
     return promotion_schema
 
