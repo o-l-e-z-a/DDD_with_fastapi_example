@@ -8,7 +8,7 @@ services:
     volumes:
       - schedule_db_data:/var/lib/postgresql/data/
     env_file:
-      - .env.docker
+      - .env_db.docker
     ports:
       - "5433:5432"
 
@@ -17,7 +17,6 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.10.7-management
-    hostname: rabbitmq
     container_name: rabbitmq
     ports:
       - 15672:15672
@@ -25,23 +24,32 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 
-  fast_api:
+  schedule_fast_api:
     restart: always
     container_name: schedule_fast_api
     build:
       context: ./
       dockerfile: Dockerfile
     command: bash -c "alembic upgrade head
-      && gunicorn src.presentation.api.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000"
+      && uvicorn src.presentation.api.main:app --reload --host 0.0.0.0 --port 8000"
     ports:
       - "8001:8000"
     depends_on:
       - schedule_db
       - rabbitmq
+      - redis
     volumes:
       - fast_api_media_volume:/usr/src/presentation/api/media
     env_file:
       - ./.env.docker
+
+  krakend:
+    container_name: krakend
+    build:
+      context: ./krakend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
 
 volumes:
   schedule_db_data:

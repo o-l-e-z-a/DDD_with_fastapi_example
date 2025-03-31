@@ -58,15 +58,13 @@ async def get_promotions(
     return promotion_schemas
 
 
-@router.get("/order_payment/{order_payment_pk}/detail")
+@router.get("/order_payment/{order_pk}/detail")
 async def get_order_payment_detail(
-    order_payment_pk: int,
+    order_pk: int,
     mediator: FromDishka[Mediator],
 ) -> OrderPaymentDetailSchema:
     try:
-        result: list[PromotionDetailDTO] = await mediator.handle_query(
-            OrderPaymentDetailQuery(order_payment_id=order_payment_pk)
-        )
+        result: list[PromotionDetailDTO] = await mediator.handle_query(OrderPaymentDetailQuery(order_id=order_pk))
     except NotFoundLogicException as err:
         raise NotFoundHTTPException(detail=err.title)
     result_schema = OrderPaymentDetailSchema.model_validate(result)

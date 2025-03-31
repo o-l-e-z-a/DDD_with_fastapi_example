@@ -1,6 +1,6 @@
 from src.infrastructure.http_client.client import HTTPClientAdapter, HTTPMethod, HTTPParams
 from src.infrastructure.other_service_integration.base import BaseServiceIntegration, ServiceNotAvailableError
-from src.infrastructure.other_service_integration.mappers import json_to_service_id_only_mapper
+from src.infrastructure.other_service_integration.mappers import json_to_order_mapper, json_to_service_id_only_mapper
 from src.presentation.api.settings import Settings
 
 
@@ -23,11 +23,9 @@ class ScheduleServiceIntegration(BaseServiceIntegration):
             return None
 
     async def get_order_by_id(self, order_id: int):
-        param = HTTPParams(
-            url="http://127.0.0.1:8000/api/services/", query_params={"order_id": order_id}, method=HTTPMethod.GET
-        )
+        param = HTTPParams(url=f"http://127.0.0.1:8000/api/order/{order_id}", method=HTTPMethod.GET)
         try:
             result = await self.client.get(param)
-            return json_to_service_id_only_mapper(result)
+            return json_to_order_mapper(result)
         except ServiceNotAvailableError:
             return None

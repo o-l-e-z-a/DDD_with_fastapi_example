@@ -3,7 +3,7 @@ from datetime import date, datetime, time
 from pydantic import PositiveInt, field_serializer
 
 from src.presentation.api.base.base_schema import BaseSchema, int_ge_0
-from src.presentation.api.users.schema import AllUserSchema
+from src.presentation.api.users.schema import AllUserSchema, UserFIOSchema
 
 # slot_type = Annotated[str, Field(pattern=r"^(?:[01][0-9]|2?[0-3]):[0-5]{1}\d{1}$")]
 
@@ -47,14 +47,14 @@ class MasterSchema(BaseSchema):
 class MasterDetailSchema(BaseSchema):
     id: int
     description: str
-    user: AllUserSchema
+    user: UserFIOSchema
     services: list[ServiceSchema]
 
 
 class MasterWithoutServiceSchema(BaseSchema):
     id: int
     description: str
-    user: AllUserSchema
+    user: UserFIOSchema
 
 
 class MasterReportSchema(BaseSchema):
@@ -99,7 +99,7 @@ class ScheduleDay(BaseSchema):
 class SlotSchema(BaseSchema):
     id: int
     time_start: time
-    schedule: ScheduleDay
+    schedule: ScheduleDetailSchema
 
     @field_serializer("time_start")
     def serialize_time_start(self, time_start: time, _info):

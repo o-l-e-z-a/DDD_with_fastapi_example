@@ -45,3 +45,9 @@ class AllUserSchema(BaseSchema):
     # @property
     # def fio(self) -> str:
     #     return f'{self.last_name} {self.first_name}'
+
+
+class UserFIOSchema(BaseSchema):
+    id: int
+    first_name: str
+    last_name: str

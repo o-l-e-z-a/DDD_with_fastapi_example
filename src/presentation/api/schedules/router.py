@@ -198,14 +198,17 @@ async def get_client_orders(
     return order_schemas
 
 
-@router.get("/order/{order_id}", description="детальный просмотр заказа")
+@router.get("/order/{order_id}/", description="детальный просмотр заказа")
 # @cache(expire=60)
 async def get_order_detial(
     order_id: int,
     # user: FromDishka[CurrentUser],
     mediator: FromDishka[Mediator],
 ) -> OrderDetailSchema:
-    result: OrderDetailDTO = await mediator.handle_query(GetOrderDetailQuery(order_id=order_id))
+    try:
+        result: OrderDetailDTO = await mediator.handle_query(GetOrderDetailQuery(order_id=order_id))
+    except NotFoundLogicException as err:
+        raise NotFoundHTTPException(detail=err.title)
     order_schema = OrderDetailSchema.model_validate(result)
     return order_schema
 

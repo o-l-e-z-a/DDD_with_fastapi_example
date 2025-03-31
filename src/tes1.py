@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import selectinload
 
 from src.infrastructure.db.models.orders import Promotion, PromotionToService
+from src.infrastructure.other_service_integration.schedule_service import ScheduleServiceIntegration
 from src.presentation.api.dependencies import setup_container
 
 
@@ -28,5 +29,12 @@ async def add_promotion():
         await session.commit()
 
 
+async def client1():
+    container = setup_container()
+    client = await container.get(ScheduleServiceIntegration)
+    order = await client.get_order_by_id(order_id=59)
+    print(order)
+
+
 if __name__ == "__main__":
-    asyncio.new_event_loop().run_until_complete(add_promotion())
+    asyncio.new_event_loop().run_until_complete(client1())

@@ -1,0 +1,22 @@
+{
+  "version": 3,
+  "$schema": "https://www.krakend.io/schema/v2.9/krakend.json",
+  "name": "My API Gateway",
+  "port": 8081,
+  "endpoints": [
+    {
+      "endpoint": "/order_with_payments/{order_pk}/",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/api/order/{order_pk}/",
+          "host": ["http://schedule_fast_api:8001"]
+        },
+        {
+          "url_pattern": "/api/order_payment/{order_pk}/detail/",
+          "host": ["http://schedule_fast_api:8001"]
+        }
+      ]
+    }
+  ]
+}

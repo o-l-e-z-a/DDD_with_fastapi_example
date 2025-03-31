@@ -4,6 +4,7 @@ from pydantic import PositiveInt
 
 from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderQueryUnitOfWork
 from src.logic.dto.order_dto import OrderPaymentDetailDTO, PromotionDetailDTO, UserPointDTO
+from src.logic.exceptions.schedule_exceptions import OrderNotFoundLogicException
 from src.logic.queries.base import BaseQuery, QueryHandler
 
 
@@ -15,7 +16,7 @@ class UserPointQuery(BaseQuery):
 
 
 class OrderPaymentDetailQuery(BaseQuery):
-    order_payment_id: PositiveInt
+    order_id: PositiveInt
 
 
 @dataclass(frozen=True)
@@ -44,5 +45,7 @@ class OrderPaymentDetailQueryHandler(QueryHandler[OrderPaymentDetailQuery, Order
 
     async def handle(self, query: OrderPaymentDetailQuery) -> OrderPaymentDetailDTO | None:
         async with self.uow:
-            results = await self.uow.order_payments.find_one_or_none(id=query.order_payment_id)
-        return results
+            result = await self.uow.order_payments.find_one_or_none(order_id=query.order_id)
+        if not result:
+            raise OrderNotFoundLogicException(id=query.order_id)
+        return result

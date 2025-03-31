@@ -1,13 +1,13 @@
 services:
   rabbitmq:
     image: rabbitmq:3.10.7-management
-    hostname: rabbitmq
-    container_name: rabbitmq
+    hostname: rabbitmq_docker
+    container_name: rabbitmq_docker
     ports:
       - 15672:15672
       - 5672:5672
     volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
+      - rabbitmq_docker-data:/var/lib/rabbitmq
 
 volumes:
-  rabbitmq-data:
+  rabbitmq_docker-data:

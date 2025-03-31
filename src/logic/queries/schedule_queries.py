@@ -14,6 +14,7 @@ from src.logic.dto.schedule_dto import (
     SlotShortDTO,
 )
 from src.logic.dto.user_dto import UserDetailDTO
+from src.logic.exceptions.schedule_exceptions import OrderNotFoundLogicException
 from src.logic.queries.base import BaseQuery, QueryHandler
 
 
@@ -173,8 +174,10 @@ class GetOrderDetailQueryHandler(QueryHandler[GetOrderDetailQuery, OrderDetailDT
 
     async def handle(self, query: GetOrderDetailQuery) -> OrderDetailDTO | None:
         async with self.uow:
-            results = await self.uow.orders.find_one_or_none(id=query.order_id)
-        return results
+            result = await self.uow.orders.find_one_or_none(id=query.order_id)
+        if not result:
+            raise OrderNotFoundLogicException(id=query.order_id)
+        return result
 
 
 @dataclass(frozen=True)
