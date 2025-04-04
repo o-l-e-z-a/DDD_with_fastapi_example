@@ -1,10 +1,13 @@
 from dataclasses import dataclass
 
+from dataclasses_json import dataclass_json
+
 from src.domain.base.events import BaseEvent
 from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderUnitOfWork
 from src.logic.events.base import BrokerEventhandler
 
 
+@dataclass_json
 @dataclass(kw_only=True)
 class OrderPayedEvent(BaseEvent):
     order_payment_id: int
@@ -19,6 +22,7 @@ class OrderPayedEventHandler(BrokerEventhandler[OrderPayedEvent]):
     routing_key = "order_payed"
 
 
+@dataclass_json
 @dataclass(kw_only=True)
 class OrderPaymentCanceledEvent(BaseEvent):
     order_payment_id: int

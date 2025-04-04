@@ -30,7 +30,8 @@ async def register_user(
         user: User = (await mediator.handle_command(AddUserCommand(**user_data.model_dump())))[0]
     except UserAlreadyExistsLogicException as err:
         raise UserAlreadyExistsException(err.title)
-    return AllUserSchema.model_validate(user.to_dict())
+    user_dict = user.to_dict()
+    return AllUserSchema.model_validate(user_dict)
 
 
 @router_auth.post("/login/")

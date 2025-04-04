@@ -14,7 +14,9 @@ class ScheduleServiceIntegration(BaseServiceIntegration):
 
     async def get_services_id_only(self, schedules_id: list[int]) -> list[int] | None:
         param = HTTPParams(
-            url="http://127.0.0.1:8000/api/services/", query_params={"services_id": schedules_id}, method=HTTPMethod.GET
+            url=f"http://{self.base_url}/api/services/",
+            query_params={"services_id": schedules_id},
+            method=HTTPMethod.GET,
         )
         try:
             result = await self.client.get(param)
@@ -23,7 +25,7 @@ class ScheduleServiceIntegration(BaseServiceIntegration):
             return None
 
     async def get_order_by_id(self, order_id: int):
-        param = HTTPParams(url=f"http://127.0.0.1:8000/api/order/{order_id}", method=HTTPMethod.GET)
+        param = HTTPParams(url=f"http://{self.base_url}/api/order/{order_id}/", method=HTTPMethod.GET)
         try:
             result = await self.client.get(param)
             return json_to_order_mapper(result)

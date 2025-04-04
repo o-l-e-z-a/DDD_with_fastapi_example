@@ -1,13 +1,12 @@
 from dataclasses import dataclass, field
 from datetime import date
 
-from src.domain.base.entities import BaseEntity
-from src.domain.base.values import CountNumber
+from src.domain.base.entities import BaseEntityWithIntIdAndEvents
 from src.domain.users.values import Email, HumanName, Telephone
 
 
 @dataclass(kw_only=True)
-class User(BaseEntity):
+class User(BaseEntityWithIntIdAndEvents):
     email: Email
     hashed_password: str = field(init=False, default="", compare=False)
     first_name: HumanName
@@ -22,11 +21,11 @@ class User(BaseEntity):
 
     def to_dict(self) -> dict:
         return {
-            'id': self.id,
-            'email': self.email.as_generic_type(),
-            'first_name': self.first_name.as_generic_type(),
-            'last_name': self.last_name.as_generic_type(),
-            'telephone': self.telephone.as_generic_type(),
-            'date_birthday': self.date_birthday,
-            'is_admin': self.is_admin,
+            "id": self.id,
+            "email": self.email.as_generic_type(),
+            "first_name": self.first_name.as_generic_type(),
+            "last_name": self.last_name.as_generic_type(),
+            "telephone": self.telephone.as_generic_type(),
+            "date_birthday": self.date_birthday,
+            "is_admin": self.is_admin,
         }

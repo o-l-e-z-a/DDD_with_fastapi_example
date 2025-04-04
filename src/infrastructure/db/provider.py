@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
 from src.infrastructure.db.config import get_async_engine, get_async_session_factory, get_sync_engine
 from src.infrastructure.db.uows.order_uow import SQLAlchemyOrderQueryUnitOfWork, SQLAlchemyOrderUnitOfWork
+from src.infrastructure.db.uows.outbox_uow import SQLAlchemyOutboxUnitOfWork
 from src.infrastructure.db.uows.schedule_uow import SQLAlchemyScheduleQueryUnitOfWork, SQLAlchemyScheduleUnitOfWork
 from src.infrastructure.db.uows.users_uow import SQLAlchemyUsersQueryUnitOfWork, SQLAlchemyUsersUnitOfWork
 from src.presentation.api.settings import Settings
@@ -34,3 +35,5 @@ class DBProvider(Provider):
     user_query_uow = provide(SQLAlchemyUsersQueryUnitOfWork)
     schedule_query_uow = provide(SQLAlchemyScheduleQueryUnitOfWork)
     order_query_uow = provide(SQLAlchemyOrderQueryUnitOfWork)
+
+    outbox_uow = provide(SQLAlchemyOutboxUnitOfWork)

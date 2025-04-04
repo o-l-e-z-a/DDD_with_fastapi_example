@@ -5,11 +5,9 @@ import enum
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from src.domain.base.entities import BaseEntity
+from src.domain.base.entities import BaseEntityWithIntIdAndEvents
 from src.domain.base.values import Name, PositiveIntNumber
 from src.domain.schedules.events import OrderCancelledEvent
-
-# from src.domain.orders.events import OrderCancelledEvent, OrderCreatedEvent
 from src.domain.schedules.exceptions import (
     OrderNotInProgressException,
     OrderNotReceivedException,
@@ -18,42 +16,12 @@ from src.domain.schedules.exceptions import (
 )
 from src.domain.schedules.values import END_HOUR, SLOT_DELTA, START_HOUR, SlotTime
 
-# @dataclass()
-# class Inventory(BaseEntity):
-#     name: Name
-#     unit: Name
-#     stock_count: CountNumber
-#
-#     def to_dict(self) -> dict:
-#         return {
-#             'id': self.id,
-#             'name': self.name.as_generic_type(),
-#             'unit': self.unit.as_generic_type(),
-#             'stock_count': self.stock_count.as_generic_type(),
-#         }
-#
-#
-# @dataclass()
-# class Consumable(BaseEntity):
-#     inventory: Inventory
-#     count: PositiveIntNumber
-#
-#     def to_dict(self) -> dict:
-#         inventory = self.inventory.to_dict() if self.inventory else None
-#         return {
-#             'id': self.id,
-#             'count': self.count.as_generic_type(),
-#             'inventory': inventory
-#         }
-
 
 @dataclass()
-class Service(BaseEntity):
+class Service(BaseEntityWithIntIdAndEvents):
     name: Name
     description: str
     price: PositiveIntNumber
-
-    # consumables: list[Consumable] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -61,12 +29,11 @@ class Service(BaseEntity):
             "name": self.name.as_generic_type(),
             "price": self.price.as_generic_type(),
             "description": self.description,
-            # 'consumables': [consumable.to_dict() for consumable in self.consumables]
         }
 
 
 @dataclass()
-class Master(BaseEntity):
+class Master(BaseEntityWithIntIdAndEvents):
     description: str
     user_id: int
     services_id: list[int] = field(default_factory=list)
@@ -81,7 +48,7 @@ class Master(BaseEntity):
 
 
 @dataclass()
-class Schedule(BaseEntity):
+class Schedule(BaseEntityWithIntIdAndEvents):
     day: date
     master_id: int
     slots: list[Slot]
@@ -108,26 +75,19 @@ class Schedule(BaseEntity):
 
 
 @dataclass()
-class Slot(BaseEntity):
+class Slot(BaseEntityWithIntIdAndEvents):
     schedule_id: int = field(init=False, hash=False, repr=False, compare=False)
     time_start: SlotTime
-    # schedule_id: int
 
     def __eq__(self, other) -> bool:
         return self.time_start == other.time_start
 
     def __gt__(self, other) -> bool:
-        # if self.schedule.day > other.schedule.day:
-        #     return True
-        # elif self.schedule.day < other.schedule.day:
-        #     return False
-        # else:
         if self.time_start > other.time_start:
             return True
         return False
 
     def to_dict(self) -> dict:
-        # schedule = self.schedule.to_dict() if self.schedule else None
         schedule_id = self.schedule_id if self.schedule_id else None
         return {"id": self.id, "time_start": self.time_start.as_generic_type(), "schedule_id": schedule_id}
 
@@ -151,7 +111,7 @@ class OrderStatus(enum.Enum):
 
 
 @dataclass()
-class Order(BaseEntity):
+class Order(BaseEntityWithIntIdAndEvents):
     user_id: int
     slot_id: int
     service_id: int
@@ -181,13 +141,6 @@ class Order(BaseEntity):
             slot_id=slot_id,
         )
 
-        # order.register_event(
-        #     OrderCreatedEvent(
-        #         user_id=order.user_id,
-        #         service_id=order.service_id,
-        #         slot_id=order.slot_id,
-        #     )
-        # )
         return order
 
     def update_slot_time(self, slot_id: int, occupied_slots: list[Slot]):

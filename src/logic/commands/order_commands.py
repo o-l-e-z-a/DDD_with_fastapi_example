@@ -59,6 +59,7 @@ class AddOrderPaymentCommandHandler(CommandHandler[AddOrderPaymentCommand, Order
         async with self.uow:
             order = await self.schedule_client.get_order_by_id(order_id=command.order_id)
             if not order:
+                logger.error("OrderNotFoundLogicException with order: {command.order_i}")
                 raise OrderNotFoundLogicException(id=command.order_id)
             order_payment = OrderPayment.add(order_id=command.order_id, service_price=command.service_price)
             order_payment_from_repo = await self.uow.order_payments.add(entity=order_payment)
@@ -92,19 +93,19 @@ class OrderPayCommandHandler(CommandHandler[OrderPayCommand, OrderPayment]):
                 input_user_point=command.input_point,
             )
             await self.uow.order_payments.update(entity=order_payment)
+            logger.debug(f"{self.__class__.__name__}: uow.commit(); starting pulling events")
+            events = order_payment.pull_events()
+            if order_payment.point_uses:
+                payed_event = OrderPayedEvent(
+                    order_payment_id=order_payment.id,
+                    user_point_id=user_point.id,
+                    point_uses=order_payment.point_uses.as_generic_type(),
+                )
+                events.append(payed_event)
+                logger.debug(f"{self.__class__.__name__}: events: {events}, publushing ...")
+                await self.uow.outbox.bulk_add(events)
+                logger.debug(f"{self.__class__.__name__}: after mediator publish")
             await self.uow.commit()
-        logger.debug(f"{self.__class__.__name__}: uow.commit(); starting pulling events")
-        events = order_payment.pull_events()
-        if order_payment.point_uses:
-            payed_event = OrderPayedEvent(
-                order_payment_id=order_payment.id,
-                user_point_id=user_point.id,
-                point_uses=order_payment.point_uses.as_generic_type(),
-            )
-            events.append(payed_event)
-            logger.debug(f"{self.__class__.__name__}: events: {events}, publushing ...")
-            await self.mediator.publish(events)
-            logger.debug(f"{self.__class__.__name__}: after mediator publish")
         return order_payment
 
 
@@ -125,19 +126,19 @@ class OrderPaymentCancelCommandHandler(CommandHandler[OrderPaymentCancelCommand,
             user_point = await self.uow.user_points.find_one_or_none(user_id=command.user_id)
             order_payment.cancel_payment()
             await self.uow.order_payments.update(entity=order_payment)
+            logger.debug(f"{self.__class__.__name__}: uow.commit(), starting pulling events")
+            events = order_payment.pull_events()
+            if order_payment.point_uses:
+                payed_event = OrderPaymentCanceledEvent(
+                    order_payment_id=order_payment.id,
+                    user_point_id=user_point.id,
+                    point_uses=order_payment.point_uses.as_generic_type(),
+                )
+                events.append(payed_event)
+                logger.debug(f"{self.__class__.__name__}: events: {events}, publushing ...")
+                await self.uow.outbox.bulk_add(events)
+                logger.debug(f"{self.__class__.__name__}: after mediator publish")
             await self.uow.commit()
-        logger.debug(f"{self.__class__.__name__}: uow.commit(), starting pulling events")
-        events = order_payment.pull_events()
-        if order_payment.point_uses:
-            payed_event = OrderPaymentCanceledEvent(
-                order_payment_id=order_payment.id,
-                user_point_id=user_point.id,
-                point_uses=order_payment.point_uses.as_generic_type(),
-            )
-            events.append(payed_event)
-            logger.debug(f"{self.__class__.__name__}: events: {events}, publushing ...")
-            await self.mediator.publish(events)
-            logger.debug(f"{self.__class__.__name__}: after mediator publish")
         return order_payment
 
 

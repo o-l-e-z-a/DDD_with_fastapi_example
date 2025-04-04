@@ -4,14 +4,14 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import Literal
 
-from src.domain.base.entities import BaseEntity
+from src.domain.base.entities import BaseEntityWithIntIdAndEvents
 from src.domain.base.values import CountNumber, Name, PositiveIntNumber
 from src.domain.orders.exceptions import OrderIsPayedException
 from src.domain.orders.service import TotalAmountDomainService, TotalAmountResult
 
 
 @dataclass()
-class Promotion(BaseEntity):
+class Promotion(BaseEntityWithIntIdAndEvents):
     code: Name
     sale: PositiveIntNumber
     is_active: bool
@@ -32,7 +32,7 @@ class Promotion(BaseEntity):
 
 
 @dataclass()
-class UserPoint(BaseEntity):
+class UserPoint(BaseEntityWithIntIdAndEvents):
     user_id: int
     count: CountNumber = CountNumber(0)
 
@@ -53,7 +53,7 @@ class UserPoint(BaseEntity):
 
 
 @dataclass()
-class OrderPayment(BaseEntity):
+class OrderPayment(BaseEntityWithIntIdAndEvents):
     order_id: int
     total_amount: PositiveIntNumber
     point_uses: CountNumber = CountNumber(0)

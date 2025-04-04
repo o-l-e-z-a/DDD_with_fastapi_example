@@ -47,7 +47,7 @@ class AddMasterCommandHandler(CommandHandler[AddMasterCommand, Master]):
             )
             master_from_repo = await self.uow.masters.add(entity=master)
             await self.uow.commit()
-            return master_from_repo
+        return master_from_repo
 
 
 class AddScheduleCommand(BaseCommand):
@@ -67,7 +67,7 @@ class AddScheduleCommandHandler(CommandHandler[AddScheduleCommand, Schedule]):
             schedule = Schedule.add(day=command.day, master_id=command.master_id)
             schedule_from_repo = await self.uow.schedules.add(entity=schedule)
             await self.uow.commit()
-            return schedule_from_repo
+        return schedule_from_repo
 
 
 slot_type = Annotated[str, Field(pattern=r"^(?:[01][0-9]|2?[0-3]):[0-5]\d$")]
@@ -105,21 +105,21 @@ class AddOrderCommandHandler(CommandHandler[AddOrderCommand, Order]):
                 occupied_slots_ids=occupied_slots_ids,
             )
             order_from_repo = await self.uow.orders.add(order_from_aggregate)
-            await self.uow.commit()
             logger.debug(f"{self.__class__.__name__}: uow.commit()")
-        events = order_from_aggregate.pull_events()
-        created_event = OrderCreatedEvent(
-            order_id=order_from_repo.id,
-            slot_time_start=slot.time_start.as_generic_type(),
-            schedule_id=slot.schedule_id,
-            user_id=order_from_repo.user_id,
-            service_name=service.name.as_generic_type(),
-            service_price=service.price.as_generic_type(),
-        )
-        events.append(created_event)
-        logger.debug(f"{self.__class__.__name__}: created_event, {created_event}")
-        await self.mediator.publish(events)
-        logger.debug(f"{self.__class__.__name__}: после медиатор паблиш")
+            events = order_from_aggregate.pull_events()
+            created_event = OrderCreatedEvent(
+                order_id=order_from_repo.id,
+                slot_time_start=slot.time_start.as_generic_type(),
+                schedule_id=slot.schedule_id,
+                user_id=order_from_repo.user_id,
+                service_name=service.name.as_generic_type(),
+                service_price=service.price.as_generic_type(),
+            )
+            events.append(created_event)
+            logger.debug(f"{self.__class__.__name__}: created_event, {created_event}")
+            await self.uow.outbox.bulk_add(events)
+            logger.debug(f"{self.__class__.__name__}: после медиатор паблиш")
+            await self.uow.commit()
         return order_from_repo
 
 
@@ -147,9 +147,9 @@ class UpdateOrderCommandHandler(CommandHandler[UpdateOrderCommand, Order]):
             order.update_slot_time(slot_id=command.slot_id, occupied_slots=occupied_slots)
             await self.uow.orders.update(order)
             events = order.pull_events()
-            await self.mediator.publish(events)
+            await self.uow.outbox.bulk_add(events)
             await self.uow.commit()
-            return order
+        return order
 
 
 class StartOrderCommand(BaseCommand):
@@ -168,7 +168,7 @@ class StartOrderCommandHandler(CommandHandler[StartOrderCommand, Order]):
             order.start()
             await self.uow.orders.update(entity=order)
             await self.uow.commit()
-            return order
+        return order
 
 
 class PhotoType(BaseModel):
@@ -202,7 +202,7 @@ class UpdatePhotoOrderCommandHandler(CommandHandler[UpdatePhotoOrderCommand, Ord
                 photo_after=command.photo_after,
             )
             await self.uow.commit()
-            return order_from_repo
+        return order_from_repo
 
 
 class CancelOrderCommand(BaseCommand):
@@ -222,79 +222,12 @@ class CancelOrderCommandHandler(CommandHandler[CancelOrderCommand, Order]):
             elif not order.user_id == command.user_id:
                 raise NotUserOrderLogicException()
             order.cancel()
-            await self.uow.commit()
             await self.uow.orders.update(order)
-        logger.debug(f"{self.__class__.__name__}: uow.commit(); starting pulling events")
-        events = order.pull_events()
-        logger.debug(f"{self.__class__.__name__}: events: {events}, publushing ...")
-        await self.mediator.publish(events)
-        logger.debug(f"{self.__class__.__name__}: after mediator publish")
+            logger.debug(f"{self.__class__.__name__}: uow.commit(); starting pulling events")
+            events = order.pull_events()
+            logger.debug(f"{self.__class__.__name__}: events: {events}, publushing ...")
+            await self.uow.outbox.bulk_add(events)
+            logger.debug(f"{self.__class__.__name__}: after mediator publish")
+            await self.uow.commit()
+
         return order
-
-
-# class DeleteInventoryCommand(BaseCommand):
-#     inventory_id: PositiveInt
-#
-#
-# class UpdateInventoryCommand(BaseCommand):
-#     inventory_id: PositiveInt
-#     name: str | None = None
-#     unit: str | None = None
-#     stock_count: PositiveInt | None = None
-#
-#
-# class AddInventoryCommand(BaseCommand):
-#     name: str
-#     unit: str
-#     stock_count: PositiveInt
-
-
-# @dataclass(frozen=True)
-# class DeleteScheduleCommandHandler(CommandHandler[DeleteScheduleCommand, None]):
-#     uow: SQLAlchemyScheduleUnitOfWork
-#
-#     async def handle(self, command: DeleteScheduleCommand) -> None:
-#         inventory_id = command.inventory_id
-#         async with self.uow:
-#             inventory = await self.uow.inventories.find_one_or_none(id=inventory_id)
-#             if not inventory:
-#                 raise InventoryNotFoundLogicException(inventory_id)
-#             await self.uow.inventories.delete(id=inventory_id)
-#             await self.uow.commit()
-#
-#
-# @dataclass(frozen=True)
-# class UpdateInventoryCommandCommandHandler(CommandHandler[UpdateInventoryCommand, None]):
-#     uow: SQLAlchemyScheduleUnitOfWork
-#
-#     async def handle(sevvvf, command: UpdateInventoryCommand) -> None:
-#         async with self.uow:
-#             inventory = await self.uow.inventories.find_one_or_none(id=command.inventory_id)
-#             if not inventory:
-#                 raise InventoryNotFoundLogicException(command.inventory_id)
-#             key_mapper: dict[str, Type[BaseValueObject]] = {
-#                 "name": Name,
-#                 "unit": Name,
-#                 "stock_count": CountNumber,
-#             }
-#             for k, v in command.model_dump(exclude_none=True, exclude={"inventory_id"}).items():
-#                 setattr(inventory, k, key_mapper.get(k)(value=v))
-#             inventory_from_repo = await self.uow.inventories.update(entity=inventory)
-#             await self.uow.commit()
-#             return inventory_from_repo
-#
-#
-# @dataclass(frozen=True)
-# class AddInventoryCommandCommandHandler(CommandHandler[AddInventoryCommand, None]):
-#     uow: SQLAlchemyScheduleUnitOfWork
-#
-#     async def handle(self, command: AddInventoryCommand) -> None:
-#         async with self.uow:
-#             inventory = Inventory(
-#                 name=Name(command.name),
-#                 stock_count=CountNumber(command.stock_count),
-#                 unit=Name(command.unit),
-#             )
-#             inventory_from_repo = await self.uow.inventories.add(entity=inventory)
-#             await self.uow.commit()
-#             return inventory_from_repo

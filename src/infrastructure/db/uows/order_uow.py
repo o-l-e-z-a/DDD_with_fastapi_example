@@ -8,6 +8,7 @@ from src.infrastructure.db.repositories.orders import (
     UserPointQueryRepository,
     UserPointRepository,
 )
+from src.infrastructure.db.repositories.outbox import OutboxMessageRepository
 from src.infrastructure.db.repositories.users import UserRepository
 from src.infrastructure.db.uows.base import SQLAlchemyAbstractUnitOfWork
 
@@ -19,6 +20,7 @@ class SQLAlchemyOrderUnitOfWork(SQLAlchemyAbstractUnitOfWork):
         self.promotions = PromotionRepository(session=self._session)
         self.order_payments = OrderPaymentRepository(session=self._session)
         self.user_points = UserPointRepository(session=self._session)
+        self.outbox = OutboxMessageRepository(session=self._session)
         return uow
 
 

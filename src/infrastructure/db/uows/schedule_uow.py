@@ -1,5 +1,6 @@
 from typing import Self
 
+from src.infrastructure.db.repositories.outbox import OutboxMessageRepository
 from src.infrastructure.db.repositories.schedules import (
     MasterQueryRepository,
     MasterRepository,
@@ -22,6 +23,7 @@ class SQLAlchemyScheduleUnitOfWork(SQLAlchemyAbstractUnitOfWork):
         self.services = ServiceRepository(session=self._session)
         self.orders = OrderRepository(session=self._session)
         self.users = UserRepository(session=self._session)
+        self.outbox = OutboxMessageRepository(session=self._session)
         return uow
 
 

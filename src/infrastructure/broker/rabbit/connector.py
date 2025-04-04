@@ -56,6 +56,7 @@ class RabbitConnector:
         self._connection = await self.get_connection()
         if self._connection:
             self._channel = await self._connection.channel()
+            await self._channel.set_qos(prefetch_count=1)
 
     async def __aenter__(self) -> Self:
         await self.open_connection()

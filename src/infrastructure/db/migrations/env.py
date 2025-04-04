@@ -5,6 +5,7 @@ from alembic import context
 
 from src.infrastructure.db.models.base import Base
 from src.infrastructure.db.models.users import Users
+from src.infrastructure.db.models.outbox import OutboxMessage
 from src.infrastructure.db.models.schedules import (
     # Inventory,
     # ConsumableToService,

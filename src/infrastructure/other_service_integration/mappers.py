@@ -24,6 +24,6 @@ def json_to_order_mapper(order: dict[str, Any]) -> OrderShortDTO:
         id=order.get("id"),
         date_add=order.get("date_add"),
         service_id=order.get("service").get("id"),
-        user_id=order.get("user").get("id"),
+        user_id=order.get("user_id"),
         slot_id=order.get("slot").get("id"),
     )

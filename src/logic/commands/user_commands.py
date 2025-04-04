@@ -52,16 +52,16 @@ class AddUserCommandHandler(CommandHandler[AddUserCommand, User]):
             )
             user.hashed_password = password_hash
             user_from_repo = await self.uow.users.add(entity=user)
+            events = user.pull_events()
+            created_event = UserCreatedEvent(
+                user_id=user_from_repo.id,
+                email=user_from_repo.email.as_generic_type(),
+                first_name=user_from_repo.first_name.as_generic_type(),
+                last_name=user_from_repo.last_name.as_generic_type(),
+            )
+            events.append(created_event)
+            await self.uow.outbox.bulk_add(events)
             await self.uow.commit()
-        events = user.pull_events()
-        created_event = UserCreatedEvent(
-            user_id=user_from_repo.id,
-            email=user_from_repo.email.as_generic_type(),
-            first_name=user_from_repo.first_name.as_generic_type(),
-            last_name=user_from_repo.last_name.as_generic_type(),
-        )
-        events.append(created_event)
-        await self.mediator.publish(events)
         return user_from_repo
 
 
