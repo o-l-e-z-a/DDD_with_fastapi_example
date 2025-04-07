@@ -48,7 +48,8 @@ class OrderCreatedEventConsumer(BaseEventConsumer):
             cmd = AddOrderPaymentCommand(**data_dict)
             logger.debug(f"{self.__class__.__name__}: принял {self.routing_key} event: start cmd {cmd}")
             # for test
-            # await asyncio.sleep(200)
+            # import asyncio
+            # await asyncio.sleep(5)
             # raise ValueError
             results: list = await self.mediator.handle_command(cmd)
             logger.debug(f"{self.__class__.__name__}: result after mediator: {results}")

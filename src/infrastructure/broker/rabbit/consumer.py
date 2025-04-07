@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 import aio_pika
 
-from aio_pika.abc import AbstractIncomingMessage, AbstractRobustQueue, ExchangeType
+from aio_pika.abc import AbstractIncomingMessage, AbstractRobustChannel, AbstractRobustQueue, ExchangeType
 
 from src.infrastructure.broker.converters import convert_broker_message_to_dict
 from src.infrastructure.broker.rabbit.connector import RabbitConnector, except_rabbit_exception_deco
@@ -25,7 +25,7 @@ class RabbitConsumer:
     @except_rabbit_exception_deco
     async def declare_queue(
         self,
-        channel,
+        channel: AbstractRobustChannel,
         exchange_name: str,
         queue_name: str,
         routing_key: str,

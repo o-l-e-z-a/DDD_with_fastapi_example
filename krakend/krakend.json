@@ -10,11 +10,11 @@
       "backend": [
         {
           "url_pattern": "/api/order/{order_pk}/",
-          "host": ["http://schedule_fast_api:8001"]
+          "host": ["http://schedule_fast_api:8000"]
         },
         {
           "url_pattern": "/api/order_payment/{order_pk}/detail/",
-          "host": ["http://schedule_fast_api:8001"]
+          "host": ["http://schedule_fast_api:8000"]
         }
       ]
     }

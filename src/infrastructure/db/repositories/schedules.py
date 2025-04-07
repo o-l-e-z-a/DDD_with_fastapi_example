@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import and_, extract, func, or_, select
+from sqlalchemy import and_, extract, func, null, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy_file import File
@@ -97,7 +97,7 @@ class ScheduleRepository(GenericSQLAlchemyRepository[Schedule, entities.Schedule
             .where(
                 and_(
                     Slot.schedule_id == schedule_id,
-                    or_(Order.status != OrderStatus.CANCELLED.value, Order.status == None),  # noqa: E711
+                    or_(Order.status != OrderStatus.CANCELLED.value, Order.status == null()),  # noqa: E711
                 )
             )
         )

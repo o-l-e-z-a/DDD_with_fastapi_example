@@ -55,6 +55,7 @@ def create_fastapi_app() -> FastAPI:
     app.include_router(router_users)
     app.include_router(schedule_router)
     app.include_router(order_router)
+    setup_dishka(container, app)
     return app
 
 
@@ -71,7 +72,7 @@ async def add_sql_admin(app: FastAPI):
     admin.add_view(OrderAdmin)
 
 
-async def start_consumer(app: FastAPI):
+async def start_consumer(app: FastAPI, loop=None):
     scheduler: Scheduler = Scheduler()
     container = app.state.dishka_container
 
@@ -80,7 +81,10 @@ async def start_consumer(app: FastAPI):
     order_payed_consumer = await container.get(OrderPayedEventConsumer)
     order_payment_canceled_consumer = await container.get(OrderPaymentCancelledEventConsumer)
     order_canceled_consumer = await container.get(OrderCancelledEventConsumer)
-    base_consumer = await container.get(RabbitConsumer)
+    base_consumer: RabbitConsumer = await container.get(RabbitConsumer)
+
+    # base_consumer.connector.loop = loop
+
     consumers = [
         user_created_consumer,
         order_created_consumer,
@@ -90,6 +94,16 @@ async def start_consumer(app: FastAPI):
     ]
     tasks = []
     for consumer in consumers:
+        # create task in loop
+        # coro = loop.create_task(base_consumer.consume_messages(
+        #     consumer,
+        #     queue_name=consumer.queue_name,
+        #     exchange_name=consumer.exchange_name,
+        #     routing_key=consumer.routing_key,
+        # ))
+        # tasks.append(coro)
+
+        # with schedule
         coro = base_consumer.consume_messages(
             consumer,
             queue_name=consumer.queue_name,
@@ -102,17 +116,19 @@ async def start_consumer(app: FastAPI):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    # loop = asyncio.get_running_loop()
     redis_connector = RedisConnectorFactory.create()
     redis_connection = await redis_connector.get_async_connection()
     FastAPICache.init(RedisBackend(redis_connection), prefix="cache")
     await add_sql_admin(app)
-    # if not taskiq_broker.is_worker_process:
-    #     await taskiq_broker.startup()
-    # await add_one.kiq()
 
-    # jobs = await start_consumer(app)
+    jobs = await start_consumer(app)
+
+    if not taskiq_broker.is_worker_process:
+        await taskiq_broker.startup()
 
     yield
+
     if redis_connection:
         await redis_connection.close()
 
@@ -120,11 +136,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await taskiq_broker.shutdown()
 
     await app.state.dishka_container.close()
-    # for job in jobs:
-    #     await job.close()
+
+    for job in jobs:
+        await job.close()
 
 
-app = create_fastapi_app()
 container = setup_container()
-setup_dishka(container, app)
+app = create_fastapi_app()
 app.mount("/media", StaticFiles(directory=media_dir), name="media")
