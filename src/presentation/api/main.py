@@ -17,6 +17,7 @@ from starlette.staticfiles import StaticFiles
 
 from src.infrastructure.broker.rabbit.consumer import RabbitConsumer
 from src.infrastructure.redis_adapter.redis_connector import RedisConnectorFactory
+from src.infrastructure.tkq.broker import taskiq_broker
 from src.logic.event_consumers.orders_consumers import (
     OrderCancelledEventConsumer,
     OrderCreatedEventConsumer,
@@ -70,23 +71,10 @@ async def add_sql_admin(app: FastAPI):
     admin.add_view(OrderAdmin)
 
 
-# async def start_consumer(app: FastAPI):
-#     connector = await app.state.dishka_container.get(RabbitConnector)
-#     user_created_consumer = await app.state.dishka_container.get(UserCreatedEventConsumer)
-#     async with connector as conn:
-#         base_consumer = RabbitConsumer(conn.channel)
-#
-#         await base_consumer.consume_messages(
-#             user_created_consumer,
-#             queue_name=user_created_consumer.queue_name,
-#             exchange_name=user_created_consumer.exchange_name,
-#             routing_key=user_created_consumer.routing_key,
-#         )
-
-
 async def start_consumer(app: FastAPI):
     scheduler: Scheduler = Scheduler()
     container = app.state.dishka_container
+
     user_created_consumer = await container.get(UserCreatedEventConsumer)
     order_created_consumer = await container.get(OrderCreatedEventConsumer)
     order_payed_consumer = await container.get(OrderPayedEventConsumer)
@@ -118,16 +106,22 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     redis_connection = await redis_connector.get_async_connection()
     FastAPICache.init(RedisBackend(redis_connection), prefix="cache")
     await add_sql_admin(app)
-    # scheduler: Scheduler = Scheduler()
-    # job = await scheduler.spawn(start_consumer(app))
-    jobs = await start_consumer(app)
+    # if not taskiq_broker.is_worker_process:
+    #     await taskiq_broker.startup()
+    # await add_one.kiq()
+
+    # jobs = await start_consumer(app)
 
     yield
     if redis_connection:
         await redis_connection.close()
+
+    if not taskiq_broker.is_worker_process:
+        await taskiq_broker.shutdown()
+
     await app.state.dishka_container.close()
-    for job in jobs:
-        await job.close()
+    # for job in jobs:
+    #     await job.close()
 
 
 app = create_fastapi_app()
