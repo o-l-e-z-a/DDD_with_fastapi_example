@@ -43,6 +43,8 @@ class OrderCreatedEventConsumer(BaseEventConsumer):
         self,
         message: aio_pika.abc.AbstractIncomingMessage,
     ) -> None:
+        await message.nack(requeue=False)
+        return
         async with message.process():
             data_dict = convert_broker_message_to_dict(message.body)
             cmd = AddOrderPaymentCommand(**data_dict)
@@ -51,8 +53,10 @@ class OrderCreatedEventConsumer(BaseEventConsumer):
             # import asyncio
             # await asyncio.sleep(5)
             # raise ValueError
-            results: list = await self.mediator.handle_command(cmd)
-            logger.debug(f"{self.__class__.__name__}: result after mediator: {results}")
+            # await message.reject(requeue=False)
+            # return
+            # results: list = await self.mediator.handle_command(cmd)
+            # logger.debug(f"{self.__class__.__name__}: result after mediator: {results}")
 
 
 @dataclass(frozen=True)

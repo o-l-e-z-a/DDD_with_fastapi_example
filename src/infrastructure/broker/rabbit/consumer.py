@@ -17,10 +17,8 @@ class RabbitConsumer:
     def __init__(
         self,
         connector: RabbitConnector,
-        # channel: AbstractRobustChannel
     ):
         self.connector = connector
-        # self.channel = channel
 
     @except_rabbit_exception_deco
     async def declare_queue(
@@ -34,8 +32,33 @@ class RabbitConsumer:
             name=exchange_name,
             type=ExchangeType.DIRECT,
         )
-        queue = await channel.declare_queue(name=queue_name, durable=True)
+        dlx = await channel.declare_exchange(
+            name=f"{exchange_name}_dlx",
+            type=ExchangeType.FANOUT,
+            # type=ExchangeType.X_DELAYED_MESSAGE,
+            # arguments={
+            #     "x-delayed-type": "direct"
+            # }
+        )
+        dlq = await channel.declare_queue(
+            name=f"{queue_name}_dlq",
+            durable=True,
+            arguments={
+                # "x-delay": 5 * 1000,
+                'x-message-ttl': 60 * 1000,
+                "x-dead-letter-exchange": f"{exchange_name}",
+            }
+        )
+        queue = await channel.declare_queue(
+            name=queue_name,
+            durable=True,
+            arguments={
+                "x-dead-letter-exchange": f"{exchange_name}_delay",
+                # "x-dead-routing-key": routing_key,
+            }
+        )
         await queue.bind(exchange=exchange, routing_key=routing_key)
+        await dlq.bind(exchange=dlx, routing_key=routing_key)
         return queue
 
     @except_rabbit_exception_deco
@@ -59,26 +82,6 @@ class RabbitConsumer:
             logger.info("Waiting for messages...")
 
             await asyncio.Future()
-
-    # async def consume_messages(
-    #     self,
-    #     message_callback: Callable[[AbstractIncomingMessage], Any],
-    #     exchange_name: str,
-    #     queue_name: str,
-    #     routing_key: str,
-    # ):
-    #     queue = await self.declare_queue(
-    #         channel=self.channel,
-    #         exchange_name=exchange_name,
-    #         queue_name=queue_name,
-    #         routing_key=routing_key,
-    #     )
-    #     await queue.consume(
-    #         callback=message_callback,
-    #     )
-    #     logger.warning("Waiting for messages...")
-    #
-    #     await asyncio.Future()
 
 
 async def process_new_message(

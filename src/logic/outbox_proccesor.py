@@ -33,7 +33,7 @@ class OutboxProcessor:
             messages: list[OutboxMessage] = await self.uow.outbox.get_messages_to_publish()
             for message in messages:
                 await self._publish_message(message)
-            await self.uow.commit()
+            # await self.uow.commit()
 
     async def _publish_message(self, message):
         event_cls = self._get_cls_for(message.type)

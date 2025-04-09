@@ -86,11 +86,11 @@ async def start_consumer(app: FastAPI, loop=None):
     # base_consumer.connector.loop = loop
 
     consumers = [
-        user_created_consumer,
+        # user_created_consumer,
         order_created_consumer,
-        order_payed_consumer,
-        order_payment_canceled_consumer,
-        order_canceled_consumer,
+        # order_payed_consumer,
+        # order_payment_canceled_consumer,
+        # order_canceled_consumer,
     ]
     tasks = []
     for consumer in consumers:
