@@ -28,12 +28,10 @@ class RabbitConsumer:
         queue_name: str,
         routing_key: str,
     ) -> AbstractRobustQueue:
-        exchange = await channel.declare_exchange(
-            name=exchange_name,
-            type=ExchangeType.DIRECT,
-        )
+        dlx_name = f"{exchange_name}_dlx"
+        dlq_name = f"{queue_name}_dlq"
         dlx = await channel.declare_exchange(
-            name=f"{exchange_name}_dlx",
+            name=dlx_name,
             type=ExchangeType.FANOUT,
             # type=ExchangeType.X_DELAYED_MESSAGE,
             # arguments={
@@ -41,24 +39,28 @@ class RabbitConsumer:
             # }
         )
         dlq = await channel.declare_queue(
-            name=f"{queue_name}_dlq",
+            name=dlq_name,
             durable=True,
             arguments={
                 # "x-delay": 5 * 1000,
-                'x-message-ttl': 60 * 1000,
-                "x-dead-letter-exchange": f"{exchange_name}",
-            }
+                "x-dead-letter-exchange": exchange_name,
+                "x-message-ttl": 60 * 1000,
+            },
+        )
+        await dlq.bind(exchange=dlx)
+        exchange = await channel.declare_exchange(
+            name=exchange_name,
+            type=ExchangeType.DIRECT,
         )
         queue = await channel.declare_queue(
             name=queue_name,
             durable=True,
             arguments={
-                "x-dead-letter-exchange": f"{exchange_name}_delay",
+                "x-dead-letter-exchange": dlx_name,
                 # "x-dead-routing-key": routing_key,
-            }
+            },
         )
         await queue.bind(exchange=exchange, routing_key=routing_key)
-        await dlq.bind(exchange=dlx, routing_key=routing_key)
         return queue
 
     @except_rabbit_exception_deco

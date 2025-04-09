@@ -43,18 +43,16 @@ class OrderCreatedEventConsumer(BaseEventConsumer):
         self,
         message: aio_pika.abc.AbstractIncomingMessage,
     ) -> None:
-        await message.nack(requeue=False)
-        return
         async with message.process():
+            print(f"properties: {message.properties.headers}")
             data_dict = convert_broker_message_to_dict(message.body)
             cmd = AddOrderPaymentCommand(**data_dict)
             logger.debug(f"{self.__class__.__name__}: принял {self.routing_key} event: start cmd {cmd}")
             # for test
-            # import asyncio
-            # await asyncio.sleep(5)
-            # raise ValueError
-            # await message.reject(requeue=False)
-            # return
+            import asyncio
+
+            await asyncio.sleep(15)
+            raise ValueError
             # results: list = await self.mediator.handle_command(cmd)
             # logger.debug(f"{self.__class__.__name__}: result after mediator: {results}")
 
