@@ -29,25 +29,40 @@ class RabbitConsumer:
         routing_key: str,
     ) -> AbstractRobustQueue:
         dlx_name = f"{exchange_name}_dlx"
-        dlq_name = f"{queue_name}_dlq"
+        dlq_retry_1_name = f"{queue_name}_dlq_retry_1"
+        dlq_retry_2_name = f"{queue_name}_dlq_retry_2"
+        routing_key_retry_2 = f"{routing_key}_retry_2"
+        routing_key_fail = f"{routing_key}_fail"
+        dlq_fail_name = f"{queue_name}_dlq_fail"
         dlx = await channel.declare_exchange(
             name=dlx_name,
-            type=ExchangeType.FANOUT,
-            # type=ExchangeType.X_DELAYED_MESSAGE,
-            # arguments={
-            #     "x-delayed-type": "direct"
-            # }
+            type=ExchangeType.DIRECT,
         )
-        dlq = await channel.declare_queue(
-            name=dlq_name,
+        dlq_retry_1 = await channel.declare_queue(
+            name=dlq_retry_1_name,
             durable=True,
             arguments={
-                # "x-delay": 5 * 1000,
                 "x-dead-letter-exchange": exchange_name,
-                "x-message-ttl": 60 * 1000,
+                "x-dead-letter-routing-key": routing_key_retry_2,
+                "x-message-ttl": 1 * 60 * 1000,  # 1 min
             },
         )
-        await dlq.bind(exchange=dlx)
+        await dlq_retry_1.bind(exchange=dlx, routing_key=routing_key)
+        dlq_retry_2 = await channel.declare_queue(
+            name=dlq_retry_2_name,
+            durable=True,
+            arguments={
+                "x-dead-letter-exchange": exchange_name,
+                "x-dead-letter-routing-key": routing_key_fail,
+                "x-message-ttl": 5 * 60 * 1000,  # 5 min
+            },
+        )
+        await dlq_retry_2.bind(exchange=dlx, routing_key=routing_key_retry_2)
+        dlq_fail = await channel.declare_queue(
+            name=dlq_fail_name,
+            durable=True,
+        )
+        await dlq_fail.bind(exchange=dlx, routing_key=routing_key_fail)
         exchange = await channel.declare_exchange(
             name=exchange_name,
             type=ExchangeType.DIRECT,
@@ -57,10 +72,11 @@ class RabbitConsumer:
             durable=True,
             arguments={
                 "x-dead-letter-exchange": dlx_name,
-                # "x-dead-routing-key": routing_key,
             },
         )
         await queue.bind(exchange=exchange, routing_key=routing_key)
+        await queue.bind(exchange=exchange, routing_key=routing_key_retry_2)
+        await queue.bind(exchange=exchange, routing_key=routing_key_fail)
         return queue
 
     @except_rabbit_exception_deco
