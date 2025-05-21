@@ -27,11 +27,10 @@ def except_rabbit_exception_deco(func):
 
 
 class RabbitConnector:
-    def __init__(self, settings: Settings, loop: None = None):
+    def __init__(self, settings: Settings):
         self._connection: AbstractRobustConnection | None = None
         self._channel: AbstractRobustChannel | None = None
         self.config = settings.rabbit
-        self.loop = loop
 
     async def get_connection(self) -> AbstractRobustConnection | None:
         try:
@@ -40,7 +39,6 @@ class RabbitConnector:
                 port=self.config.RABBIT_PORT,
                 login=self.config.RABBIT_USER,
                 password=self.config.RABBIT_PASS,
-                loop=self.loop,
             )
         except AMQPConnectionError as err:
             logger.error(err)

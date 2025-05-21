@@ -144,3 +144,5 @@ src/presentation/api/media/
 /.ruff_cache/
 /.$DDD.drawio.dtmp
 /.$DDD.drawio.bkp
+DDD.drawio
+.env*

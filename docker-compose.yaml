@@ -11,18 +11,31 @@ services:
       - .env_db.docker
     ports:
       - "5433:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 3s
+      timeout: 6s
+      retries: 20
 
   redis:
     image: redis:7-alpine
+    volumes:
+      - redis_data:/data
 
   rabbitmq:
     image: rabbitmq:3.10.7-management
     container_name: rabbitmq
     ports:
-      - 15672:15672
-      - 5672:5672
+        - "15672:15672"
+        - "5672:5672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q status && rabbitmq-diagnostics -q check_local_alarms
+      interval: 30s
+      timeout: 40s
+      retries: 10
+      start_period: 30s
 
   schedule_fast_api:
     restart: always
@@ -35,23 +48,29 @@ services:
     ports:
       - "8001:8000"
     depends_on:
-      - schedule_db
-      - rabbitmq
-      - redis
+      schedule_db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - fast_api_media_volume:/usr/src/presentation/api/media
     env_file:
       - ./.env.docker
 
   krakend:
-    container_name: krakend
     build:
       context: ./krakend
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
+    depends_on:
+      schedule_fast_api:
+        condition: service_started
 
 volumes:
   schedule_db_data:
   fast_api_media_volume:
+  redis_data:
   rabbitmq-data:

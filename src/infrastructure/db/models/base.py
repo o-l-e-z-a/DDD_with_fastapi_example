@@ -8,6 +8,8 @@ from sqlalchemy.orm import DeclarativeBase, mapped_column
 
 from src.domain.base.entities import BaseEntity
 
+from src.infrastructure.db.models.media_storage import StorageManager  # noqa: F401  # type: ignore  # isort: skip
+
 E = TypeVar("E", bound=BaseEntity)
 
 int_pk = Annotated[int, mapped_column(BigInteger, primary_key=True)]
